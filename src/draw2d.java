@@ -1,8 +1,6 @@
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
 
 public class draw2d {
     public BufferedImage[] sprites;

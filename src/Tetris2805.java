@@ -1,5 +1,3 @@
-import com.sun.tools.javac.Main;
-
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
@@ -14,7 +12,6 @@ public class Tetris2805 extends Frame {
     public final int FRAMEBUFFER_W = 108, FRAMEBUFFER_H = 192, VIEWPORT_W = 720, VIEWPORT_H = 1280;
 
     private draw2d scene;
-    private long window;
     public float frame;
     public double delta;
 
