@@ -70,9 +70,7 @@ public class Tetris2805 extends Frame {
             frame += delta;
             lastTime = now;
 
-            for(int i = 0; i < 10000; i++){
-                scene.batchPush(1,(int)((frame+i)%FRAMEBUFFER_W),(int)((frame+i)%FRAMEBUFFER_H),10,10);
-            }
+            for(int i = 0; i < 10000; i++) scene.batchPush(1,(int)((frame+i)%FRAMEBUFFER_W),(int)((frame+i)%FRAMEBUFFER_H),10,10);
 
             //update();
             repaint();
@@ -80,7 +78,6 @@ public class Tetris2805 extends Frame {
             long timeTaken = System.nanoTime() - now;
             long sleepTime = (long)(expectedFrametime - timeTaken);
 
-            // Ensure sleepTime is positive
             if (sleepTime > 0) {
                 try {
                     Thread.sleep(sleepTime / 1000000, (int)(sleepTime % 1000000));
