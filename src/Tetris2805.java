@@ -8,8 +8,8 @@ import java.net.URL;
 import java.util.ArrayList;
 
 public class Tetris2805 extends Frame {
-    private final int SPR_WIDTH = 10;
-    private final int TET_WIDTH = 4;
+    public final int SPR_WIDTH = 10;
+    public final int TET_WIDTH = 4;
     public final int FRAMEBUFFER_W = 108, FRAMEBUFFER_H = 192, VIEWPORT_W = 720, VIEWPORT_H = 1280;
     public final float TPS = 240;
 
@@ -19,7 +19,7 @@ public class Tetris2805 extends Frame {
 
     public scene currentScene;
 
-    private BufferedImage loadTexture(String path){
+    public BufferedImage loadTexture(String path){
         try {
             URL in = Tetris2805.class.getResource(path);
             if(in != null){
