@@ -18,6 +18,8 @@ public class Tetris2805 extends JPanel implements ActionListener {
     public float frame;
     public double delta;
 
+    public int score;
+
     public scene currentScene;
 
     public BufferedImage loadTexture(String path){
@@ -55,6 +57,11 @@ public class Tetris2805 extends JPanel implements ActionListener {
         draw.batch = new ArrayList<draw2d.quad>();
         draw.clearColour = new Color(38,43,68);
 
+        for (char c = 'A'; c <= 'Z'; c++) draw.textAtlas.put(c, 74+c - 'A');
+        for (char c = '0'; c <= '9'; c++) draw.textAtlas.put(c, 63 + (c - '0'));
+        draw.textAtlas.put('.',73);
+        draw.textAtlas.put(' ',62);
+
         setPreferredSize(new Dimension(VIEWPORT_W, VIEWPORT_H));
         setFocusable(true);
         requestFocusInWindow();
@@ -78,6 +85,7 @@ public class Tetris2805 extends JPanel implements ActionListener {
         });
 
         currentScene = new splash(this,draw);
+        score = 0;
 
         Thread gameThread = new Thread(() -> {
             long lastTime = System.nanoTime();
@@ -89,9 +97,6 @@ public class Tetris2805 extends JPanel implements ActionListener {
                 delta = (now - lastTime) / expectedFrametime;
                 frame += delta;
                 lastTime = now;
-
-                //for(int i = 0; i < 10000; i++) draw.batchPush(1,(int)((frame+i)%FRAMEBUFFER_W),(int)((frame+i)%FRAMEBUFFER_H),10,10);
-
 
                 currentScene.loop();
                 repaint();
@@ -120,12 +125,16 @@ public class Tetris2805 extends JPanel implements ActionListener {
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
         draw.batchDraw();
-        g.drawImage(draw.framebuffer,0,0, getWidth(), getHeight(),null);
+
+        int w = Math.min(VIEWPORT_W,getWidth()), h = Math.min(VIEWPORT_H,getHeight());
+        g.setColor(new Color(24,20,37));
+        g.clearRect(0,0,getWidth(),getHeight());
+        g.drawImage(draw.framebuffer,(getWidth()-w)/2,(getHeight()-h)/2, w, h,null);
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
-
+        // unused
     }
 
     public static void main(String[] args){

@@ -27,6 +27,7 @@ class splash extends scene {
         if(time > main.TPS) main.currentScene = new tetris(main,draw);
 
         draw.batchPush(7,15,15,10,10);
+        draw.drawText("HELLO WORLD..",20,20,10);
     }
 }
 
@@ -36,7 +37,7 @@ class tetris extends scene {
     private int boardWidth,boardHeight,time,score;
     private int[][] board;
     private int[][][][] tetrominoList;
-    private static class tetromino {
+    private class tetromino {
         public int x,y,i,j,t;
         public tetromino(int _x, int _y, int _i, int _j, int _t){
             x = _x;
@@ -76,7 +77,8 @@ class tetris extends scene {
         return true;
     }
 
-    private void clearRows(){
+    private int clearRows(){
+        int rows = 0;
         for(int i = boardHeight-1; i > 0; i--){
             int clear = 1;
             for(int j = 0; j < boardWidth; j++){
@@ -87,8 +89,10 @@ class tetris extends scene {
                     for(int x = 0; x < boardWidth; x++) board[x][y] = board[x][y-1];
                 }
                 i++;
+                rows++;
             }
         }
+        return rows;
     }
 
     private tetromino spawnTetromino(){
@@ -105,6 +109,8 @@ class tetris extends scene {
         time = 0;
         score = 0;
 
+        System.out.println("tetris scene init");
+
         board = new int[boardWidth][boardHeight];
         for(int i = 0; i < boardWidth; i++){
             for(int j = 0; j < boardHeight; j++){
@@ -117,11 +123,11 @@ class tetris extends scene {
     public void loop(){
         //draw.batchPush(6,10,10,10,10);
         time++;
-        if(time%(main.TPS/(4*1)) == 0 || main.input.get(KeyEvent.VK_DOWN) == 1){
+        if(time%(main.TPS/(Math.max(1,score/250f))) < 1 || main.input.get(KeyEvent.VK_DOWN) == 1){
             time = 0;
-            System.out.println("checking board state");
+            //System.out.println("checking board state");
             if(!checkBoardState()){
-                System.out.println("collision");
+                //System.out.println("collision");
                 tetromino t = currentTetromino;
                 for(int i = 0; i < TET_WIDTH; i++){
                     for(int j = 0; j < TET_WIDTH; j++){
@@ -129,7 +135,8 @@ class tetris extends scene {
                         if(tetrominoList[t.i][t.j][i][j] > 0) board[x][y] = t.t;
                     }
                 }
-                clearRows();
+                int rows = clearRows();
+                if(rows > 0) score += Math.abs(100*rows*(1+Math.log(rows)));
                 currentTetromino = spawnTetromino();
             }else currentTetromino.y++;
         }
@@ -147,7 +154,7 @@ class tetris extends scene {
         // draw
         for(int i = 0; i < boardWidth; i++){
             for(int j = 2; j < boardHeight; j++){
-                draw.batchPush(board[i][j],i*(main.SPR_WIDTH),j*(main.SPR_WIDTH) + (int)(Math.sin(((main.frame/main.TPS)*0.2+i*5+j*5)*2*Math.PI)*1), main.SPR_WIDTH,main.SPR_WIDTH);
+                draw.batchPush(board[i][j],i*(main.SPR_WIDTH),j*(main.SPR_WIDTH), main.SPR_WIDTH,main.SPR_WIDTH);
             }
         }
 
@@ -158,6 +165,8 @@ class tetris extends scene {
                 if(tetrominoList[t.i][t.j][i][j] > 0) draw.batchPush(t.t,x*(main.SPR_WIDTH),y*(main.SPR_WIDTH),main.SPR_WIDTH,main.SPR_WIDTH);
             }
         }
+
+        draw.drawText(""+score,10,10,10);
     }
 }
 

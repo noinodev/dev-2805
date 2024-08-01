@@ -1,6 +1,8 @@
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class draw2d {
     public BufferedImage[] sprites;
@@ -9,6 +11,7 @@ public class draw2d {
     public Color clearColour;
     public static class quad { public int id,x,y,w,h; }
     public ArrayList<quad> batch;
+    public final Map<Character,Integer> textAtlas = new HashMap<>();
 
     public void batchPush(int id,int x,int y,int w,int h){
         quad q = new quad();
@@ -18,6 +21,13 @@ public class draw2d {
         q.w = w;
         q.h = h;
         batch.add(q);
+    }
+
+    public void drawText(String s, int x, int y, int size){
+        for(int i = 0; i < s.length(); i++){
+            char j = s.charAt(i);
+            batchPush(textAtlas.get(j),x+i*size,y,size,size);
+        }
     }
 
     public void batchDraw(){
