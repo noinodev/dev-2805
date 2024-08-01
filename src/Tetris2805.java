@@ -1,17 +1,18 @@
 import javax.imageio.ImageIO;
+import javax.swing.*;
 import java.awt.*;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.URL;
-import java.util.ArrayList;
+import java.util.*;
 
-public class Tetris2805 extends Frame {
+public class Tetris2805 extends JPanel implements ActionListener {
     public final int SPR_WIDTH = 10;
-    public final int TET_WIDTH = 4;
-    public final int FRAMEBUFFER_W = 108, FRAMEBUFFER_H = 192, VIEWPORT_W = 720, VIEWPORT_H = 1280;
+    public final int FRAMEBUFFER_W = 144, FRAMEBUFFER_H = 256, VIEWPORT_W = 720, VIEWPORT_H = 1280;
     public final float TPS = 240;
+
+    public final Map<Integer,Integer> input = new HashMap<>();
 
     private draw2d draw;
     public float frame;
@@ -48,66 +49,92 @@ public class Tetris2805 extends Frame {
     public Tetris2805(){
         BufferedImage atlas = loadTexture("atlas.png");
         draw = new draw2d();
-        draw.framebuffer = new BufferedImage(108,192,BufferedImage.TYPE_INT_ARGB);
+        draw.framebuffer = new BufferedImage(FRAMEBUFFER_W,FRAMEBUFFER_H,BufferedImage.TYPE_INT_ARGB);
         draw.viewport = draw.framebuffer.createGraphics();
         draw.sprites = getTextureAtlasSquare(atlas,SPR_WIDTH);
         draw.batch = new ArrayList<draw2d.quad>();
         draw.clearColour = new Color(38,43,68);
 
-        setSize(new Dimension(720,1280));
-        setVisible(true);
+        setPreferredSize(new Dimension(VIEWPORT_W, VIEWPORT_H));
+        setFocusable(true);
+        requestFocusInWindow();
 
-        this.addWindowListener(new WindowAdapter(){
+        input.put(KeyEvent.VK_RIGHT,0);
+        input.put(KeyEvent.VK_LEFT,0);
+        input.put(KeyEvent.VK_UP,0);
+        input.put(KeyEvent.VK_DOWN,0);
+
+
+        addKeyListener(new KeyAdapter() {
             @Override
-            public void windowClosing(WindowEvent e){
-                super.windowClosing(e);
-                System.exit(0);
+            public void keyPressed (KeyEvent e) {
+                input.put(e.getKeyCode(),1);
+            }
+
+            @Override
+            public void keyReleased(KeyEvent e) {
+                input.put(e.getKeyCode(),0);
             }
         });
 
         currentScene = new splash(this,draw);
 
-        long lastTime = System.nanoTime();
-        double expectedFrametime = 1000000000 / TPS;
-        delta = 0;
-        frame = 0;
-        while (true) {
-            long now = System.nanoTime();
-            delta = (now - lastTime) / expectedFrametime;
-            frame += delta;
-            lastTime = now;
+        Thread gameThread = new Thread(() -> {
+            long lastTime = System.nanoTime();
+            double expectedFrametime = 1000000000 / TPS;
+            delta = 0;
+            frame = 0;
+            while (true) {
+                long now = System.nanoTime();
+                delta = (now - lastTime) / expectedFrametime;
+                frame += delta;
+                lastTime = now;
 
-            //for(int i = 0; i < 10000; i++) draw.batchPush(1,(int)((frame+i)%FRAMEBUFFER_W),(int)((frame+i)%FRAMEBUFFER_H),10,10);
+                //for(int i = 0; i < 10000; i++) draw.batchPush(1,(int)((frame+i)%FRAMEBUFFER_W),(int)((frame+i)%FRAMEBUFFER_H),10,10);
 
-            currentScene.loop();
-            repaint();
 
-            long timeTaken = System.nanoTime() - now,
-            sleepTime = (long)(expectedFrametime - timeTaken);
+                currentScene.loop();
+                repaint();
 
-            if (sleepTime > 0) {
-                try {
-                    Thread.sleep(sleepTime / 1000000, (int)(sleepTime % 1000000));
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+                input.put(KeyEvent.VK_RIGHT,0);
+                input.put(KeyEvent.VK_LEFT,0);
+                input.put(KeyEvent.VK_UP,0);
+                input.put(KeyEvent.VK_DOWN,0);
+
+                long timeTaken = System.nanoTime() - now,
+                sleepTime = (long)(expectedFrametime - timeTaken);
+
+                if (sleepTime > 0) {
+                    try {
+                        Thread.sleep(sleepTime / 1000000, (int)(sleepTime % 1000000));
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
-        }
+        });
+        gameThread.start();
     }
 
     @Override
-    public void paint(Graphics g) {
-        super.paint(g);
+    public void paintComponent(Graphics g) {
+        super.paintComponent(g);
         draw.batchDraw();
         g.drawImage(draw.framebuffer,0,0, getWidth(), getHeight(),null);
     }
 
     @Override
-    public void update(Graphics g) {
-        paint(g);
+    public void actionPerformed(ActionEvent e) {
+
     }
 
     public static void main(String[] args){
-        new Tetris2805();
+        JFrame frame = new JFrame("Tetris");
+        Tetris2805 game = new Tetris2805();
+        frame.add(game);
+        frame.setSize(new Dimension(720,1280));
+        frame.pack();
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setVisible(true);
     }
 }
