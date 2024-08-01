@@ -6,9 +6,8 @@ public class draw2d {
     public BufferedImage[] sprites;
     public BufferedImage framebuffer;
     public Graphics2D viewport;
-    public class quad {
-        public int id,x,y,w,h;
-    }
+    public Color clearColour;
+    public static class quad { public int id,x,y,w,h; }
     public ArrayList<quad> batch;
 
     public void batchPush(int id,int x,int y,int w,int h){
@@ -22,7 +21,7 @@ public class draw2d {
     }
 
     public void batchDraw(){
-        viewport.setColor(Color.white);
+        viewport.setColor(clearColour);
         viewport.fillRect(0,0,framebuffer.getWidth(),framebuffer.getHeight());
 
         if(batch.size() > 0){

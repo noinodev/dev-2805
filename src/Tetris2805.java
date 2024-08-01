@@ -4,20 +4,28 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 
 public class Tetris2805 extends Frame {
     private final int SPR_WIDTH = 10;
     private final int TET_WIDTH = 4;
     public final int FRAMEBUFFER_W = 108, FRAMEBUFFER_H = 192, VIEWPORT_W = 720, VIEWPORT_H = 1280;
+    public final float TPS = 240;
 
-    private draw2d scene;
+    private draw2d draw;
     public float frame;
     public double delta;
 
-    private BufferedImage loadAtlas(String path){
+    public scene currentScene;
+
+    private BufferedImage loadTexture(String path){
         try {
-            return ImageIO.read(Tetris2805.class.getResource(path));
+            URL in = Tetris2805.class.getResource(path);
+            if(in != null){
+                BufferedImage out =  ImageIO.read(in);
+                if(out != null) return out;
+            }
         } catch(IOException e){
             System.out.println("failed to load texture atlas");
             System.exit(1);
@@ -25,7 +33,7 @@ public class Tetris2805 extends Frame {
         return null;
     }
 
-    private BufferedImage[] splitAtlas(BufferedImage a, int size){
+    private BufferedImage[] getTextureAtlasSquare(BufferedImage a, int size){
         BufferedImage[] out = new BufferedImage[size*size];
         int w = a.getWidth() / size;
         for(int i = 0; i < w; i++){
@@ -38,12 +46,13 @@ public class Tetris2805 extends Frame {
     }
 
     public Tetris2805(){
-        BufferedImage atlas = loadAtlas("atlas.png");
-        scene = new draw2d();
-        scene.framebuffer = new BufferedImage(108,192,BufferedImage.TYPE_INT_ARGB);
-        scene.viewport = scene.framebuffer.createGraphics();
-        scene.sprites = splitAtlas(atlas,SPR_WIDTH);
-        scene.batch = new ArrayList<draw2d.quad>();
+        BufferedImage atlas = loadTexture("atlas.png");
+        draw = new draw2d();
+        draw.framebuffer = new BufferedImage(108,192,BufferedImage.TYPE_INT_ARGB);
+        draw.viewport = draw.framebuffer.createGraphics();
+        draw.sprites = getTextureAtlasSquare(atlas,SPR_WIDTH);
+        draw.batch = new ArrayList<draw2d.quad>();
+        draw.clearColour = new Color(38,43,68);
 
         setSize(new Dimension(720,1280));
         setVisible(true);
@@ -56,9 +65,10 @@ public class Tetris2805 extends Frame {
             }
         });
 
+        currentScene = new splash(this,draw);
+
         long lastTime = System.nanoTime();
-        final double amountOfTicks = 240.0;
-        double expectedFrametime = 1000000000 / amountOfTicks;
+        double expectedFrametime = 1000000000 / TPS;
         delta = 0;
         frame = 0;
         while (true) {
@@ -67,13 +77,13 @@ public class Tetris2805 extends Frame {
             frame += delta;
             lastTime = now;
 
-            for(int i = 0; i < 10000; i++) scene.batchPush(1,(int)((frame+i)%FRAMEBUFFER_W),(int)((frame+i)%FRAMEBUFFER_H),10,10);
+            //for(int i = 0; i < 10000; i++) draw.batchPush(1,(int)((frame+i)%FRAMEBUFFER_W),(int)((frame+i)%FRAMEBUFFER_H),10,10);
 
-            //update();
+            currentScene.loop();
             repaint();
 
-            long timeTaken = System.nanoTime() - now;
-            long sleepTime = (long)(expectedFrametime - timeTaken);
+            long timeTaken = System.nanoTime() - now,
+            sleepTime = (long)(expectedFrametime - timeTaken);
 
             if (sleepTime > 0) {
                 try {
@@ -88,10 +98,8 @@ public class Tetris2805 extends Frame {
     @Override
     public void paint(Graphics g) {
         super.paint(g);
-        scene.batchDraw();
-        g.setColor(Color.white);
-        g.fillRect(0,0,getWidth(),getHeight());
-        g.drawImage(scene.framebuffer,0,0, getWidth(), getHeight(),null);
+        draw.batchDraw();
+        g.drawImage(draw.framebuffer,0,0, getWidth(), getHeight(),null);
     }
 
     @Override
