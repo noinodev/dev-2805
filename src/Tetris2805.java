@@ -13,12 +13,11 @@ public class Tetris2805 extends JPanel implements ActionListener {
     public final float TPS = 240;
 
     public final Map<Integer,Integer> input = new HashMap<>();
+    public double mousex,mousey;
 
     private draw2d draw;
     public float frame;
     public double delta;
-
-    public int score;
 
     public scene currentScene;
 
@@ -48,6 +47,20 @@ public class Tetris2805 extends JPanel implements ActionListener {
         return out;
     }
 
+    private void setInput(){
+        input.put(KeyEvent.VK_RIGHT,0);
+        input.put(KeyEvent.VK_LEFT,0);
+        input.put(KeyEvent.VK_UP,0);
+        input.put(KeyEvent.VK_DOWN,0);
+        input.put(KeyEvent.VK_ESCAPE,0);
+        input.put(-1,0);
+
+        /*Point mouse = MouseInfo.getPointerInfo().getLocation(),
+        screen = getLocationOnScreen();
+        mousex = ((mouse.x-screen.x)/getWidth())*FRAMEBUFFER_W;
+        mousey = ((mouse.y-screen.y)/getHeight())*FRAMEBUFFER_H;*/
+    }
+
     public Tetris2805(){
         BufferedImage atlas = loadTexture("atlas.png");
         draw = new draw2d();
@@ -65,12 +78,31 @@ public class Tetris2805 extends JPanel implements ActionListener {
         setPreferredSize(new Dimension(VIEWPORT_W, VIEWPORT_H));
         setFocusable(true);
         requestFocusInWindow();
+        setInput();
 
-        input.put(KeyEvent.VK_RIGHT,0);
-        input.put(KeyEvent.VK_LEFT,0);
-        input.put(KeyEvent.VK_UP,0);
-        input.put(KeyEvent.VK_DOWN,0);
+        addMouseMotionListener(new MouseMotionAdapter() {
+            @Override
+            public void mouseMoved(MouseEvent e) {
+                if (isShowing()) {
+                    Point mouse = MouseInfo.getPointerInfo().getLocation(),
+                    screen = getLocationOnScreen();
+                    mousex = ((mouse.getX()-screen.getX())/getWidth())*FRAMEBUFFER_W;
+                    mousey = ((mouse.getY()-screen.getY())/getHeight())*FRAMEBUFFER_H;
+                }
+            }
+        });
 
+        addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                input.put(-1,1);
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                input.put(-1,0);
+            }
+        });
 
         addKeyListener(new KeyAdapter() {
             @Override
@@ -85,7 +117,6 @@ public class Tetris2805 extends JPanel implements ActionListener {
         });
 
         currentScene = new splash(this,draw);
-        score = 0;
 
         Thread gameThread = new Thread(() -> {
             long lastTime = System.nanoTime();
@@ -100,11 +131,7 @@ public class Tetris2805 extends JPanel implements ActionListener {
 
                 currentScene.loop();
                 repaint();
-
-                input.put(KeyEvent.VK_RIGHT,0);
-                input.put(KeyEvent.VK_LEFT,0);
-                input.put(KeyEvent.VK_UP,0);
-                input.put(KeyEvent.VK_DOWN,0);
+                setInput();
 
                 long timeTaken = System.nanoTime() - now,
                 sleepTime = (long)(expectedFrametime - timeTaken);

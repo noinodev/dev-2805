@@ -34,7 +34,7 @@ class splash extends scene {
 class tetris extends scene {
     public final int TET_WIDTH = 4;
     private boolean paused;
-    private int boardWidth,boardHeight,time,score;
+    private int boardWidth,boardHeight,time,score,state;
     private int[][] board;
     private int[][][][] tetrominoList;
     private class tetromino {
@@ -108,6 +108,7 @@ class tetris extends scene {
         currentTetromino = spawnTetromino();
         time = 0;
         score = 0;
+        state = 0;
 
         System.out.println("tetris scene init");
 
@@ -122,57 +123,71 @@ class tetris extends scene {
     @Override
     public void loop(){
         //draw.batchPush(6,10,10,10,10);
+
         time++;
-        if(time%(main.TPS/(Math.max(1,score/250f))) < 1 || main.input.get(KeyEvent.VK_DOWN) == 1){
-            time = 0;
-            //System.out.println("checking board state");
-            if(!checkBoardState()){
-                //System.out.println("collision");
-                tetromino t = currentTetromino;
-                for(int i = 0; i < TET_WIDTH; i++){
-                    for(int j = 0; j < TET_WIDTH; j++){
-                        int x = t.x+i, y = t.y+j;
-                        if(tetrominoList[t.i][t.j][i][j] > 0) board[x][y] = t.t;
-                    }
+        if(state != 2){
+            if(main.input.get(KeyEvent.VK_ESCAPE) == 1) state = 1-state;
+            if(state != 1){
+                if(time%(main.TPS/(Math.max(1,score/250f))) < 1 || main.input.get(KeyEvent.VK_DOWN) == 1){
+                    time = 0;
+                    //System.out.println("checking board state");
+                    if(!checkBoardState()){
+                        //System.out.println("collision");
+                        tetromino t = currentTetromino;
+                        for(int i = 0; i < TET_WIDTH; i++){
+                            for(int j = 0; j < TET_WIDTH; j++){
+                                int x = t.x+i, y = t.y+j;
+                                if(tetrominoList[t.i][t.j][i][j] > 0) board[x][y] = t.t;
+                            }
+                        }
+                        int rows = clearRows();
+                        if(rows > 0) score += Math.abs(100*rows*(1+Math.log(rows)));
+                        currentTetromino = spawnTetromino();
+                        if(!checkBoardState()) state = 2;
+                    }else currentTetromino.y++;
                 }
-                int rows = clearRows();
-                if(rows > 0) score += Math.abs(100*rows*(1+Math.log(rows)));
-                currentTetromino = spawnTetromino();
-            }else currentTetromino.y++;
-        }
 
-        int xp =currentTetromino.x, rp = currentTetromino.j;
-        if(main.input.get(KeyEvent.VK_RIGHT) == 1) currentTetromino.x++;
-        if(main.input.get(KeyEvent.VK_LEFT) == 1) currentTetromino.x--;
-        if(main.input.get(KeyEvent.VK_UP) == 1) currentTetromino.j = (currentTetromino.j+1)%4;
-        if(!checkBoardState()){
-            currentTetromino.x = xp;
-            currentTetromino.j = rp;
-        }
-        //if(main.input.get(KeyEvent.VK_DOWN) == 1) currentTetromino.y++;
-
-        // draw
-        for(int i = 0; i < boardWidth; i++){
-            for(int j = 2; j < boardHeight; j++){
-                draw.batchPush(board[i][j],i*(main.SPR_WIDTH),j*(main.SPR_WIDTH), main.SPR_WIDTH,main.SPR_WIDTH);
+                int xp =currentTetromino.x, rp = currentTetromino.j;
+                if(main.input.get(KeyEvent.VK_RIGHT) == 1) currentTetromino.x++;
+                if(main.input.get(KeyEvent.VK_LEFT) == 1) currentTetromino.x--;
+                if(main.input.get(KeyEvent.VK_UP) == 1) currentTetromino.j = (currentTetromino.j+1)%4;
+                if(!checkBoardState()){
+                    currentTetromino.x = xp;
+                    currentTetromino.j = rp;
+                }
             }
-        }
+            //if(main.input.get(KeyEvent.VK_DOWN) == 1) currentTetromino.y++;
 
-        tetromino t = currentTetromino;
-        for(int i = 0; i < TET_WIDTH; i++){
-            for(int j = 0; j < TET_WIDTH; j++){
-                int x = t.x+i, y = t.y+j;
-                if(tetrominoList[t.i][t.j][i][j] > 0) draw.batchPush(t.t,x*(main.SPR_WIDTH),y*(main.SPR_WIDTH),main.SPR_WIDTH,main.SPR_WIDTH);
+            // draw
+            for(int i = 0; i < boardWidth; i++){
+                for(int j = 2; j < boardHeight; j++){
+                    draw.batchPush(board[i][j],i*(main.SPR_WIDTH),j*(main.SPR_WIDTH), main.SPR_WIDTH,main.SPR_WIDTH);
+                }
             }
-        }
+
+            tetromino t = currentTetromino;
+            for(int i = 0; i < TET_WIDTH; i++){
+                for(int j = 0; j < TET_WIDTH; j++){
+                    int x = t.x+i, y = t.y+j;
+                    if(tetrominoList[t.i][t.j][i][j] > 0) draw.batchPush(t.t,x*(main.SPR_WIDTH),y*(main.SPR_WIDTH),main.SPR_WIDTH,main.SPR_WIDTH);
+                }
+            }
+        }else draw.drawText("GAME OVER",10,20,10);
 
         draw.drawText(""+score,10,10,10);
+
+        draw.batchPush(6+main.input.get(-1),(int)main.mousex,(int)main.mousey,6,6);
     }
 }
 
 class menu extends scene {
     public menu(Tetris2805 m, draw2d d) {
         super(m, d);
+    }
+
+    @Override
+    public void loop(){
+
     }
 
 }
