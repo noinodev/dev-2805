@@ -27,13 +27,12 @@ class splash extends scene {
         if(time > main.TPS) main.currentScene = new tetris(main,draw);
 
         draw.batchPush(7,15,15,10,10);
-        draw.drawText("HELLO WORLD..",20,20,10);
+        draw.drawText("HELLO WORLD..",20,20,10,8,new Color(time,time,time));
     }
 }
 
 class tetris extends scene {
     public final int TET_WIDTH = 4;
-    private boolean paused;
     private int boardWidth,boardHeight,time,score,state;
     private int[][] board;
     private int[][][][] tetrominoList;
@@ -108,9 +107,7 @@ class tetris extends scene {
         currentTetromino = spawnTetromino();
         time = 0;
         score = 0;
-        state = 0;
-
-        System.out.println("tetris scene init");
+        state = 0; // state 0 run, state 1 pause, state 2 gameover
 
         board = new int[boardWidth][boardHeight];
         for(int i = 0; i < boardWidth; i++){
@@ -130,9 +127,7 @@ class tetris extends scene {
             if(state != 1){
                 if(time%(main.TPS/(Math.max(1,score/250f))) < 1 || main.input.get(KeyEvent.VK_DOWN) == 1){
                     time = 0;
-                    //System.out.println("checking board state");
                     if(!checkBoardState()){
-                        //System.out.println("collision");
                         tetromino t = currentTetromino;
                         for(int i = 0; i < TET_WIDTH; i++){
                             for(int j = 0; j < TET_WIDTH; j++){
@@ -156,7 +151,6 @@ class tetris extends scene {
                     currentTetromino.j = rp;
                 }
             }
-            //if(main.input.get(KeyEvent.VK_DOWN) == 1) currentTetromino.y++;
 
             // draw
             for(int i = 0; i < boardWidth; i++){
@@ -172,9 +166,20 @@ class tetris extends scene {
                     if(tetrominoList[t.i][t.j][i][j] > 0) draw.batchPush(t.t,x*(main.SPR_WIDTH),y*(main.SPR_WIDTH),main.SPR_WIDTH,main.SPR_WIDTH);
                 }
             }
-        }else draw.drawText("GAME OVER",10,20,10);
+            if(state == 1){
+                draw.drawText("PAUSED",10,20,10,8,null);
+                draw.drawText("ESC TO RESUME",10,30,8,6,Color.GRAY);
+            }
+        }else{
+            draw.drawBox(10,40,80,10,7);
+            draw.drawText("MAIN MENU",12,42,8,6,Color.GRAY);
+            if(main.mouseInArea(10,40,80,10) == 1 && main.input.get(-1) == 1) main.currentScene = new splash(main,draw);
 
-        draw.drawText(""+score,10,10,10);
+            draw.drawText("GAME OVER",10,20,10,10,Color.RED);
+        }
+
+        draw.drawText(""+score,10,10,10,10,new Color(155+score%100,155+score%100,155+score%100));
+        draw.drawText(main.keybuffer,10,40,8,6,Color.GRAY);
 
         draw.batchPush(6+main.input.get(-1),(int)main.mousex,(int)main.mousey,6,6);
     }

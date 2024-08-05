@@ -13,6 +13,8 @@ public class Tetris2805 extends JPanel implements ActionListener {
     public final float TPS = 240;
 
     public final Map<Integer,Integer> input = new HashMap<>();
+    public final int keybuffermax = 64;
+    public String keybuffer;
     public double mousex,mousey;
 
     private draw2d draw;
@@ -21,12 +23,20 @@ public class Tetris2805 extends JPanel implements ActionListener {
 
     public scene currentScene;
 
+    private BufferedImage convertToARGB(BufferedImage in) {
+        BufferedImage out = new BufferedImage(in.getWidth(),in.getHeight(),BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2d = out.createGraphics();
+        g2d.drawImage(in,0,0,null);
+        g2d.dispose();
+        return out;
+    }
+
     public BufferedImage loadTexture(String path){
         try {
             URL in = Tetris2805.class.getResource(path);
             if(in != null){
                 BufferedImage out =  ImageIO.read(in);
-                if(out != null) return out;
+                if(out != null) return convertToARGB(out);
             }
         } catch(IOException e){
             System.out.println("failed to load texture atlas");
@@ -48,17 +58,13 @@ public class Tetris2805 extends JPanel implements ActionListener {
     }
 
     private void setInput(){
-        input.put(KeyEvent.VK_RIGHT,0);
-        input.put(KeyEvent.VK_LEFT,0);
-        input.put(KeyEvent.VK_UP,0);
-        input.put(KeyEvent.VK_DOWN,0);
-        input.put(KeyEvent.VK_ESCAPE,0);
-        input.put(-1,0);
+        input.put(-1,0); // mouse left
+        for (int c = KeyEvent.VK_UNDEFINED; c <= KeyEvent.VK_CONTEXT_MENU; c++) input.put(c,0);
+    }
 
-        /*Point mouse = MouseInfo.getPointerInfo().getLocation(),
-        screen = getLocationOnScreen();
-        mousex = ((mouse.x-screen.x)/getWidth())*FRAMEBUFFER_W;
-        mousey = ((mouse.y-screen.y)/getHeight())*FRAMEBUFFER_H;*/
+    public int mouseInArea(int x, int y, int w, int h){
+        if(mousex >= x && mousex <= x+w && mousey >= y && mousey <= y+h) return 1;
+        return 0;
     }
 
     public Tetris2805(){
@@ -78,6 +84,7 @@ public class Tetris2805 extends JPanel implements ActionListener {
         setPreferredSize(new Dimension(VIEWPORT_W, VIEWPORT_H));
         setFocusable(true);
         requestFocusInWindow();
+        keybuffer = "";
         setInput();
 
         addMouseMotionListener(new MouseMotionAdapter() {
@@ -108,6 +115,9 @@ public class Tetris2805 extends JPanel implements ActionListener {
             @Override
             public void keyPressed (KeyEvent e) {
                 input.put(e.getKeyCode(),1);
+                if(e.getKeyCode() == KeyEvent.VK_BACK_SPACE && keybuffer.length() > 0) keybuffer = keybuffer.substring(0,keybuffer.length()-1);
+                char c = (char)e.getKeyCode();
+                if(((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == ' ' || c == '.') && keybuffer.length() < keybuffermax) keybuffer = keybuffer + (char)e.getKeyCode();
             }
 
             @Override
@@ -117,7 +127,6 @@ public class Tetris2805 extends JPanel implements ActionListener {
         });
 
         currentScene = new splash(this,draw);
-
         Thread gameThread = new Thread(() -> {
             long lastTime = System.nanoTime();
             double expectedFrametime = 1000000000 / TPS;
