@@ -33,9 +33,10 @@ class splash extends scene {
 
 class tetris extends scene {
     public final int TET_WIDTH = 4;
-    private int boardWidth,boardHeight,boardx,boardy,time,score,state,cleary,clearflash;
+    private int boardWidth,boardHeight,boardx,boardy,time,score,state,cleary,clearflash,level,lines;
     private double cleardy;
     private final Color[] flash = {new Color(255,255,255), new Color(255,0,68), new Color(99,199,77), new Color(44,232,245), new Color(254,231,97)};
+    private final int scores[] = {40,100,300,1200}; // tetris scores
     private int[][] board;
     private int[][][][] tetrominoList;
     private class tetromino {
@@ -111,19 +112,21 @@ class tetris extends scene {
                 if(board[j][i] == 0) clear = 0;
             }
             if(clear == 1){
-                cleary = i;
-                cleardy = 0;
-                clearflash = (int)(Math.random()*5);
+                if(rows == 0){
+                    cleary = i;
+                    cleardy = 0;
+                    clearflash = (int)(Math.random()*5);
+                }
                 rows++;
                 for(int k = 0; k < 10; k++) draw.particlePush(29,34,0.05+0.05*Math.random(),boardx+(int)(boardWidth*main.SPR_WIDTH*Math.random()),boardy+cleary*main.SPR_WIDTH,-0.1+0.2*Math.random(),-0.1+0.2*Math.random(),flash[(int)(Math.random()*5)]);
-                break;
+                //break;
             }
         }
         return rows;
     }
 
     private tetromino spawnTetromino(){
-        return new tetromino(boardWidth / 2 - TET_WIDTH / 2, 0, (int) (Math.random() * tetrominoList.length), 0, 4+(int)(Math.random()*3));
+        return new tetromino(boardWidth / 2 - TET_WIDTH / 2, 0, (int) (Math.random() * tetrominoList.length), 0, 10*level+4+(int)(Math.random()*3));
     }
 
     public tetris(Tetris2805 m, draw2d d) {
@@ -138,6 +141,8 @@ class tetris extends scene {
         time = 0;
         score = 0;
         state = 0; // state 0 run, state 1 pause, state 2 gameover, state 3 is clearing
+        level = 0;
+        lines = 0;
 
         board = new int[boardWidth][boardHeight];
         for(int i = 0; i < boardWidth; i++){
@@ -156,7 +161,7 @@ class tetris extends scene {
         if(state != 2){
             if(main.input.get(KeyEvent.VK_ESCAPE) == 1) state = 1-state;
             if(state == 0){
-                if((time > (main.TPS/(Math.max(1,score/250f))) || main.input.get(KeyEvent.VK_DOWN) == 1) && Math.abs(currentTetromino.dx-currentTetromino.x*main.SPR_WIDTH) + Math.abs(currentTetromino.dy-currentTetromino.y*main.SPR_WIDTH) < 10){
+                if((time/4f > 60-2*level || main.input.get(KeyEvent.VK_DOWN) == 1) && Math.abs(currentTetromino.dx-currentTetromino.x*main.SPR_WIDTH) + Math.abs(currentTetromino.dy-currentTetromino.y*main.SPR_WIDTH) < 10){
                     time = 0;
                     if(!checkBoardState()){
                         tetromino t = currentTetromino;
@@ -168,7 +173,7 @@ class tetris extends scene {
                         }
                         int rows = checkRows();
                         if(rows > 0){
-                            score += Math.abs(100*rows*(1+Math.log(rows)));
+                            score += scores[rows-1]*(level+1);
                             state = 3;
                         }
                         currentTetromino = spawnTetromino();
@@ -226,7 +231,9 @@ class tetris extends scene {
                     cleardy = 0;
                     cleary = 0;
                     clearRows();
-                    if(checkRows() == 0) state = 0;
+                    lines++;
+                    if(lines > 10*(level+1)) level++;
+                    else if(checkRows() == 0) state = 0;
                 }
             }
 
@@ -248,7 +255,8 @@ class tetris extends scene {
             draw.drawText("GAME OVER",10,20,10,10,Color.RED);
         }
 
-        draw.drawText(""+score,10,10,10,10,new Color(155+score%100,155+score%100,155+score%100));
+        draw.drawText(""+level,10,10,10,8,Color.WHITE);
+        draw.drawText(""+score,10,20,8,6,flash[(score/100)%5]);
         draw.drawText(main.keybuffer,10,40,8,6,Color.GRAY);
     }
 }
