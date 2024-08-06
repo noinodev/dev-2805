@@ -11,8 +11,22 @@ public class draw2d{
     public Graphics2D viewport;
     public Color clearColour;
     public static class quad { public int id,x,y,w,h; Color c;}
-    public ArrayList<quad> batch;
+    public static class ptcl { public int f; double id,animspd,x,y,hsp,vsp; Color c;}
+    private ArrayList<quad> batch;
+    private ArrayList<ptcl> particles;
     public final Map<Character,Integer> textAtlas = new HashMap<>();
+    private Tetris2805 main;
+
+    public draw2d(Tetris2805 m){
+        main = m;
+        batch = new ArrayList<>();
+        particles = new ArrayList<>();
+    }
+
+    public double lerp(double a, double b, double f)
+    {
+        return (a * (1.0 - f)) + (b * f);
+    }
 
     private BufferedImage tintImage(BufferedImage src, Color color) {
         BufferedImage out = new BufferedImage(src.getWidth(), src.getHeight(), BufferedImage.TYPE_INT_ARGB);
@@ -23,15 +37,18 @@ public class draw2d{
         return out;
     }
 
-    public void batchPush(int id,int x,int y,int w,int h){
-        quad q = new quad();
-        q.id = id;
-        q.x = x;
-        q.y = y;
-        q.w = w;
-        q.h = h;
-        q.c = null;
-        batch.add(q);
+    // feels janky ?
+    public void particlePush(double id, int f, double animspd, int x, int y, double hsp, double vsp, Color c){
+        ptcl p = new ptcl();
+        p.id = id;
+        p.f = f;
+        p.x = x;
+        p.y = y;
+        p.animspd = animspd;
+        p.hsp = hsp;
+        p.vsp = vsp;
+        p.c = c;
+        particles.add(p);
     }
 
     public void batchPush(int id,int x,int y,int w,int h, Color c){
@@ -43,6 +60,10 @@ public class draw2d{
         q.h = h;
         q.c = c;
         batch.add(q);
+    }
+
+    public void batchPush(int id,int x,int y,int w,int h){
+        batchPush(id,x,y,w,h,null);
     }
 
     public void drawBox(int x, int y, int w, int h, int size){
@@ -60,6 +81,23 @@ public class draw2d{
     }
 
     public void batchDraw(){
+        // add particles to batch
+        if(particles.size() > 0){
+            for(int i = 0; i < particles.size(); i++) {
+                ptcl j = particles.get(i);
+                if(j != null){
+                    j.x += j.hsp;
+                    j.y += j.vsp;
+                    j.id += j.animspd;
+                    if(j.id > j.f){
+                        particles.remove(i);
+                        i--;
+                        continue;
+                    }else batchPush((int)Math.floor(j.id),(int)j.x,(int)j.y,main.SPR_WIDTH,main.SPR_WIDTH,j.c);
+                }
+            }
+        }
+
         viewport.setColor(clearColour);
         viewport.fillRect(0,0,framebuffer.getWidth(),framebuffer.getHeight());
 
@@ -74,5 +112,16 @@ public class draw2d{
             }
         }
         batch.clear();
+    }
+
+    public int drawButton(String label, int x, int y, int w, int h){
+        int m = main.mouseInArea(x,y,w,h);
+        if(m == 1) main.cursorcontext = m;
+        int c = 255-80*m;
+        batchPush(9,x+m,y+m,w-2*m,h-2*m,new Color(24,20,37));
+        drawBox(x-m,y-m,w+2*m,h+2*m,7-m);
+        drawText(label,x+1+5*m,y+1,8,6,new Color(c,c,c,160+(int) (Math.sin((main.frame/main.TPS) * 2*Math.PI))*80));
+        if(m == 1 && main.input.get(-1) == 1) return 1;
+        return 0;
     }
 }

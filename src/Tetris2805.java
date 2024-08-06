@@ -9,19 +9,28 @@ import java.util.*;
 
 public class Tetris2805 extends JPanel implements ActionListener {
     public final int SPR_WIDTH = 10;
-    public final int FRAMEBUFFER_W = 144, FRAMEBUFFER_H = 256, VIEWPORT_W = 720, VIEWPORT_H = 1280;
+    public final int FRAMEBUFFER_W = 256, FRAMEBUFFER_H = 256, VIEWPORT_W = 1080, VIEWPORT_H = 1080;
     public final float TPS = 240;
 
     public final Map<Integer,Integer> input = new HashMap<>();
     public final int keybuffermax = 64;
     public String keybuffer;
     public double mousex,mousey;
+    public int cursorcontext;
 
     private draw2d draw;
     public float frame;
     public double delta;
 
     public scene currentScene;
+
+    /*public double drand(double i){
+        return Math.random()*i;
+    }
+
+    public int irand(int i){
+        return (int)(Math.random()*i);
+    }*/
 
     private BufferedImage convertToARGB(BufferedImage in) {
         BufferedImage out = new BufferedImage(in.getWidth(),in.getHeight(),BufferedImage.TYPE_INT_ARGB);
@@ -60,6 +69,7 @@ public class Tetris2805 extends JPanel implements ActionListener {
     private void setInput(){
         input.put(-1,0); // mouse left
         for (int c = KeyEvent.VK_UNDEFINED; c <= KeyEvent.VK_CONTEXT_MENU; c++) input.put(c,0);
+        cursorcontext = 0;
     }
 
     public int mouseInArea(int x, int y, int w, int h){
@@ -69,11 +79,10 @@ public class Tetris2805 extends JPanel implements ActionListener {
 
     public Tetris2805(){
         BufferedImage atlas = loadTexture("atlas.png");
-        draw = new draw2d();
+        draw = new draw2d(this);
         draw.framebuffer = new BufferedImage(FRAMEBUFFER_W,FRAMEBUFFER_H,BufferedImage.TYPE_INT_ARGB);
         draw.viewport = draw.framebuffer.createGraphics();
         draw.sprites = getTextureAtlasSquare(atlas,SPR_WIDTH);
-        draw.batch = new ArrayList<draw2d.quad>();
         draw.clearColour = new Color(38,43,68);
 
         for (char c = 'A'; c <= 'Z'; c++) draw.textAtlas.put(c, 74+c - 'A');
@@ -139,6 +148,8 @@ public class Tetris2805 extends JPanel implements ActionListener {
                 lastTime = now;
 
                 currentScene.loop();
+                //draw.drawButton
+                draw.batchPush(20+cursorcontext,(int)mousex-1,(int)mousey,SPR_WIDTH,SPR_WIDTH);
                 repaint();
                 setInput();
 
@@ -175,6 +186,10 @@ public class Tetris2805 extends JPanel implements ActionListener {
 
     public static void main(String[] args){
         JFrame frame = new JFrame("Tetris");
+        frame.setCursor( frame.getToolkit().createCustomCursor(
+                new BufferedImage( 1, 1, BufferedImage.TYPE_INT_ARGB ),
+                new Point(),
+                null ) );
         Tetris2805 game = new Tetris2805();
         frame.add(game);
         frame.setSize(new Dimension(720,1280));
