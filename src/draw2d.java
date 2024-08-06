@@ -16,11 +16,15 @@ public class draw2d{
     private ArrayList<ptcl> particles;
     public final Map<Character,Integer> textAtlas = new HashMap<>();
     private Tetris2805 main;
+    private double buttonanim;
+    private int lastbutton;
 
     public draw2d(Tetris2805 m){
         main = m;
         batch = new ArrayList<>();
         particles = new ArrayList<>();
+        buttonanim = 0;
+        lastbutton = 0;
     }
 
     public double lerp(double a, double b, double f)
@@ -68,9 +72,9 @@ public class draw2d{
 
     public void drawBox(int x, int y, int w, int h, int size){
         batchPush(10,x,y,size,size);
-        batchPush(11,x+w-size,y,size,size);
+        //batchPush(11,x+w-size,y,size,size);
         batchPush(12,x,y+h-size,size,size);
-        batchPush(13,x+w-size,y+h-size,size,size);
+        //batchPush(13,x+w-size,y+h-size,size,size);
     }
 
     public void drawText(String s, int x, int y, int size, int space, Color c){
@@ -92,7 +96,6 @@ public class draw2d{
                     if(j.id > j.f){
                         particles.remove(i);
                         i--;
-                        continue;
                     }else batchPush((int)Math.floor(j.id),(int)j.x,(int)j.y,main.SPR_WIDTH,main.SPR_WIDTH,j.c);
                 }
             }
@@ -116,11 +119,18 @@ public class draw2d{
 
     public int drawButton(String label, int x, int y, int w, int h){
         int m = main.mouseInArea(x,y,w,h);
+        if(m == 1){
+            if(lastbutton != x+y){ // dum dum button hash, say NO to classes !
+                buttonanim = 0;
+                lastbutton = x+y;
+            }else buttonanim = Math.min((buttonanim+(1-buttonanim)*0.2),1);
+        }
+        double mouseanim = m*buttonanim;
         if(m == 1) main.cursorcontext = m;
-        int c = 255-80*m;
+        int c = 255-(int)(80*m);
         batchPush(9,x+m,y+m,w-2*m,h-2*m,new Color(24,20,37));
         drawBox(x-m,y-m,w+2*m,h+2*m,7-m);
-        drawText(label,x+1+5*m,y+1,8,6,new Color(c,c,c,160+(int) (Math.sin((main.frame/main.TPS) * 2*Math.PI))*80));
+        drawText(label,x+1+(int)(5*mouseanim),y+1,8,6,new Color(c,c,c,160+(int) (Math.sin((main.frame/main.TPS) * 2*Math.PI))*80));
         if(m == 1 && main.input.get(-1) == 1) return 1;
         return 0;
     }

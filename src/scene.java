@@ -77,7 +77,7 @@ class tetris extends scene {
                     int x = t.x+i, y = t.y+1+j;
                     if(y < 0 || y >= boardHeight || x < 0 || x >= boardWidth || board[x][y] > 0){
                         collision = false;
-                        if((int)(Math.random()*2) == 0)draw.particlePush(29,34,0.05+0.05*Math.random(),boardx+x*main.SPR_WIDTH,boardy+(y-1)*main.SPR_WIDTH,-0.1+0.2*Math.random(),-0.1+0.2*Math.random(),flash[(int)(Math.random()*5)]);
+                        if((int)(Math.random()*2) == 0)draw.particlePush(29,34,0.05+0.05*Math.random(),boardx+x*main.SPR_WIDTH,boardy+(y-1)*main.SPR_WIDTH,-0.1+0.2*Math.random(),-0.1+0.3*Math.random(),flash[(int)(Math.random()*5)]);
                     }
                 }
             }
@@ -155,7 +155,7 @@ class tetris extends scene {
         time++;
         if(state != 2){
             if(main.input.get(KeyEvent.VK_ESCAPE) == 1) state = 1-state;
-            if(state != 1){
+            if(state == 0){
                 if((time > (main.TPS/(Math.max(1,score/250f))) || main.input.get(KeyEvent.VK_DOWN) == 1) && Math.abs(currentTetromino.dx-currentTetromino.x*main.SPR_WIDTH) + Math.abs(currentTetromino.dy-currentTetromino.y*main.SPR_WIDTH) < 10){
                     time = 0;
                     if(!checkBoardState()){
@@ -170,9 +170,7 @@ class tetris extends scene {
                         if(rows > 0){
                             score += Math.abs(100*rows*(1+Math.log(rows)));
                             state = 3;
-                            //System.out.println("try to clear row..");
                         }
-                        //for(int k = 0; k < (int)(2+3*Math.random()); k++) draw.particlePush(30,33,0.03+0.02*Math.random(),boardx+(int)(t.dx)+main.SPR_WIDTH/2,(int)(boardy+t.dy)+main.SPR_WIDTH/2,-0.1+0.2*Math.random(),-0.1+0.2*Math.random(),flash[(int)(Math.random()*4)]);
                         currentTetromino = spawnTetromino();
                         if(!checkBoardState()) state = 2;
                     }else currentTetromino.y++;
@@ -220,6 +218,7 @@ class tetris extends scene {
             if(state == 3){
                 cleardy += main.SPR_WIDTH/(16*(1+cleardy));
                 double i = cleardy/main.SPR_WIDTH;
+                int j = (int)(Math.random()*5);
                 draw.batchPush(9,boardx,boardy+cleary*main.SPR_WIDTH+(int)cleardy,boardWidth*main.SPR_WIDTH,Math.max(1,1+main.SPR_WIDTH-(int)cleardy),
                     new Color((int)draw.lerp(flash[clearflash].getRed(),24,i),(int)draw.lerp(flash[clearflash].getBlue(),20,i),(int)draw.lerp(flash[clearflash].getGreen(),37,i)));
                 if(cleardy > main.SPR_WIDTH){
