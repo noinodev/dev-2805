@@ -33,7 +33,7 @@ class splash extends scene {
 
 class tetris extends scene {
     public final int TET_WIDTH = 4;
-    private int boardWidth,boardHeight,boardx,boardy,time,score,state,cleary,clearflash,level,lines;
+    private int boardWidth,boardHeight,boardx,boardy,time,score,state,cleary,clearflash,level,lines,nextTetronimo;
     private double cleardy;
     private final Color[] flash = {new Color(255,255,255), new Color(255,0,68), new Color(99,199,77), new Color(44,232,245), new Color(254,231,97)};
     private final int scores[] = {40,100,300,1200}; // tetris scores
@@ -126,7 +126,9 @@ class tetris extends scene {
     }
 
     private tetromino spawnTetromino(){
-        return new tetromino(boardWidth / 2 - TET_WIDTH / 2, 0, (int) (Math.random() * tetrominoList.length), 0, 10*level+4+(int)(Math.random()*3));
+        tetromino out = new tetromino(boardWidth / 2 - TET_WIDTH / 2, 0, nextTetronimo, 0, 10*Math.min(level,9)+4+(int)(Math.random()*3));
+        nextTetronimo = (int) (Math.random() * tetrominoList.length);
+        return out;
     }
 
     public tetris(Tetris2805 m, draw2d d) {
@@ -138,6 +140,7 @@ class tetris extends scene {
         boardx = 80;
         boardy = 20;
         currentTetromino = spawnTetromino();
+        nextTetronimo =
         time = 0;
         score = 0;
         state = 0; // state 0 run, state 1 pause, state 2 gameover, state 3 is clearing
@@ -215,6 +218,7 @@ class tetris extends scene {
                 for(int j = 0; j < TET_WIDTH; j++){
                     int x = (int)t.dx+i*(main.SPR_WIDTH), y = (int)t.dy+j*(main.SPR_WIDTH);
                     if(tetrominoList[t.i][t.j][i][j] > 0) draw.batchPush(t.t,boardx+x,boardy+y,main.SPR_WIDTH,main.SPR_WIDTH);
+                    if(tetrominoList[nextTetronimo][0][i][j] > 0) draw.batchPush(8,boardx+boardWidth*main.SPR_WIDTH+(i+1)*main.SPR_WIDTH,boardy+(j+4)*main.SPR_WIDTH,main.SPR_WIDTH, main.SPR_WIDTH);
                 }
             }
 
