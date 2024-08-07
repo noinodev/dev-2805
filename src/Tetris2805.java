@@ -3,7 +3,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
-import java.io.IOException;
+import java.io.*;
 import java.net.URL;
 import java.util.*;
 
@@ -11,6 +11,9 @@ public class Tetris2805 extends JPanel implements ActionListener {
     public final int SPR_WIDTH = 10;
     public final int FRAMEBUFFER_W = 256, FRAMEBUFFER_H = 256, VIEWPORT_W = 1080, VIEWPORT_H = 1080;
     public final float TPS = 240;
+
+    public Map<String,Integer> scores;
+    public Map<String,Integer> cfg;
 
     public final Map<Integer,Integer> input = new HashMap<>();
     public final int keybuffermax = 64;
@@ -23,14 +26,35 @@ public class Tetris2805 extends JPanel implements ActionListener {
     public double delta;
 
     public scene currentScene;
+    public int gameShouldClose;
 
-    /*public double drand(double i){
-        return Math.random()*i;
+    private void saveData() {
+        try {
+        BufferedWriter a = new BufferedWriter(new FileWriter("src/hscore.txt"));
+            Set<String> keys = scores.keySet();
+            for(String key: keys) {
+                a.write(key+" "+scores.get(key)+'\n');
+            }
+            a.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    public int irand(int i){
-        return (int)(Math.random()*i);
-    }*/
+    private void loadData(){
+        scores = new HashMap<>();
+        try {
+            Scanner scan = new Scanner(new File("src/hscore.txt"));
+            while(scan.hasNextLine()) {
+                String[] entry = scan.nextLine().split(" ");
+                scores.put(entry[0], Integer.parseInt(entry[1]));
+                System.out.println(entry[0]);
+                System.out.println(entry[1]);
+            }
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     private BufferedImage convertToARGB(BufferedImage in) {
         BufferedImage out = new BufferedImage(in.getWidth(),in.getHeight(),BufferedImage.TYPE_INT_ARGB);
@@ -78,6 +102,8 @@ public class Tetris2805 extends JPanel implements ActionListener {
     }
 
     public Tetris2805(){
+        gameShouldClose = 0;
+
         BufferedImage atlas = loadTexture("atlas.png");
         draw = new draw2d(this);
         draw.framebuffer = new BufferedImage(FRAMEBUFFER_W,FRAMEBUFFER_H,BufferedImage.TYPE_INT_ARGB);
@@ -95,6 +121,8 @@ public class Tetris2805 extends JPanel implements ActionListener {
         requestFocusInWindow();
         keybuffer = "";
         setInput();
+
+        loadData();
 
         addMouseMotionListener(new MouseMotionAdapter() {
             @Override
@@ -141,7 +169,7 @@ public class Tetris2805 extends JPanel implements ActionListener {
             double expectedFrametime = 1000000000 / TPS;
             delta = 0;
             frame = 0;
-            while (true) {
+            while (gameShouldClose == 0) {
                 long now = System.nanoTime();
                 delta = (now - lastTime) / expectedFrametime;
                 frame += delta;
@@ -164,6 +192,8 @@ public class Tetris2805 extends JPanel implements ActionListener {
                     }
                 }
             }
+            saveData(); // TODO
+            System.exit(1);
         });
         gameThread.start();
     }

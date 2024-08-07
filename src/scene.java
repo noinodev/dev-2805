@@ -1,6 +1,13 @@
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class scene {
     protected Tetris2805 main;
@@ -33,7 +40,7 @@ class splash extends scene {
 
 class tetris extends scene {
     public final int TET_WIDTH = 4;
-    private int boardWidth,boardHeight,boardx,boardy,time,score,state,cleary,clearflash,level,lines,nextTetronimo;
+    private int boardWidth,boardHeight,posx,posy,boardx,boardy,time,score,state,cleary,clearflash,level,lines,nextTetronimo;
     private double cleardy;
     private final Color[] flash = {new Color(255,255,255), new Color(255,0,68), new Color(99,199,77), new Color(44,232,245), new Color(254,231,97)};
     private final int scores[] = {40,100,300,1200}; // tetris scores
@@ -137,8 +144,10 @@ class tetris extends scene {
         tetrominoList = getTetrominoes(main.loadTexture("tetrominoatlas.png"));
         boardWidth = 10;
         boardHeight = 22;
-        boardx = 80;
-        boardy = 20;
+        posx = 80;
+        posy = 6;
+        boardx = posx;
+        boardy = posy;
         currentTetromino = spawnTetromino();
         nextTetronimo =
         time = 0;
@@ -159,6 +168,8 @@ class tetris extends scene {
     public void loop(){
         //draw.batchPush(6,10,10,10,10);
         double interpolatespeed = 16-12*main.input.get(KeyEvent.VK_DOWN);
+        boardx -= Math.ceil(boardx-posx)*0.2;
+        boardy -= Math.ceil(boardy-posy)*0.2;
 
         time++;
         if(state != 2){
@@ -181,6 +192,8 @@ class tetris extends scene {
                         }
                         currentTetromino = spawnTetromino();
                         if(!checkBoardState()) state = 2;
+                        boardx += 2-(int)(Math.random()*4);
+                        boardy += 2-(int)(Math.random()*4);
                     }else currentTetromino.y++;
                 }
 
@@ -226,6 +239,8 @@ class tetris extends scene {
 
             if(state == 3){
                 cleardy += main.SPR_WIDTH/(16*(1+cleardy));
+                boardx += 2-(int)(Math.random()*4);
+                boardy += 2-(int)(Math.random()*4);
                 double i = cleardy/main.SPR_WIDTH;
                 int j = (int)(Math.random()*5);
                 draw.batchPush(9,boardx,boardy+cleary*main.SPR_WIDTH+(int)cleardy,boardWidth*main.SPR_WIDTH,Math.max(1,1+main.SPR_WIDTH-(int)cleardy),
@@ -257,6 +272,8 @@ class tetris extends scene {
             if(draw.drawButton("QUIT",10,51,80,10) == 1) System.exit(1);
 
             draw.drawText("GAME OVER",10,20,10,10,Color.RED);
+
+            // TODO text field, push highscore
         }
 
         draw.drawText(""+level,10,10,10,8,Color.WHITE);
@@ -282,9 +299,49 @@ class menu extends scene {
 
         int bx = main.FRAMEBUFFER_W/2-100;
         if(a > 0.25 && draw.drawButton("PLAY",bx,40,80,10) == 1) main.currentScene = new tetris(main,draw);
-        if(a > 0.5 && draw.drawButton("CONFIGURE",bx,51,80,10) == 1) main.currentScene = new menu(main,draw); // TODO
-        if(a > 0.75 && draw.drawButton("HIGHSCORE",bx,62,80,10) == 1) main.currentScene = new menu(main,draw); // TODO
-        if(a >= 1 && draw.drawButton("EXIT",bx,73,80,10) == 1) System.exit(1);
+        if(a > 0.5 && draw.drawButton("CONFIGURE",bx,51,80,10) == 1) main.currentScene = new config(main,draw);
+        if(a > 0.75 && draw.drawButton("HIGHSCORE",bx,62,80,10) == 1) main.currentScene = new hscore(main,draw);
+        if(a >= 1 && draw.drawButton("EXIT",bx,73,80,10) == 1) main.gameShouldClose = 1;
+    }
+
+}
+
+class config extends scene {
+    private int time;
+    public config(Tetris2805 m, draw2d d) {
+        super(m, d);
+        time = 0;
+        draw.clearColour = new Color(24,20,37);
+    }
+    @Override
+    public void loop(){
+        if(time < main.TPS) time++;
+        double a = time/main.TPS;
+        draw.drawText("CONFIGURE",20,20,10,8,new Color((int)(255*a),(int)(255*a),(int)(255*a)));
+    }
+
+}
+
+class hscore extends scene {
+    private int time;
+    private ArrayList<Map.Entry<String, Integer>> list;
+    public hscore(Tetris2805 m, draw2d d) {
+        super(m, d);
+        time = 0;
+        draw.clearColour = new Color(24,20,37);
+        list = new ArrayList<>(main.scores.entrySet());
+        list.sort(Map.Entry.<String, Integer>comparingByValue().reversed());
+    }
+    @Override
+    public void loop(){
+        if(time < main.TPS) time++;
+        double a = time/main.TPS;
+        draw.drawText("HIGHSCORES",20,20,10,8,new Color((int)(255*a),(int)(255*a),(int)(255*a)));
+        int i = 0;
+        for(Map.Entry<String, Integer> entry : list){
+            draw.drawText(entry.getKey() + " " + entry.getValue(),20,30+8*i,8,6,new Color((int)(255*(a/2)),(int)(255*(a/2)),(int)(255*(a/2))));
+            i++;
+        }
     }
 
 }
