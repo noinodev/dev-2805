@@ -12,8 +12,8 @@ public class Tetris2805 extends JPanel implements ActionListener {
     public final int FRAMEBUFFER_W = 256, FRAMEBUFFER_H = 256, VIEWPORT_W = 1080, VIEWPORT_H = 1080;
     public final float TPS = 240;
 
-    public HashMap<String,Integer> scores;
-    public HashMap<String,Integer> cfg;
+    public Map<String,Integer> scores;
+    public Map<String,Integer> cfg;
 
     public final HashMap<Integer,Integer> input = new HashMap<>();
     public final int keybuffermax = 10;
@@ -29,7 +29,7 @@ public class Tetris2805 extends JPanel implements ActionListener {
     public scene currentScene;
     public int gameShouldClose;
 
-    public void saveData(HashMap<String,Integer> map, String file) {
+    public void saveData(Map<String,Integer> map, String file) {
         try {
             BufferedWriter a = new BufferedWriter(new FileWriter(file));
             Set<String> keys = map.keySet();
@@ -40,13 +40,14 @@ public class Tetris2805 extends JPanel implements ActionListener {
         }
     }
 
-    public HashMap<String,Integer> loadData(String file){
-        HashMap<String,Integer> out = new HashMap<>();
+    public Map<String,Integer> loadData(String file){
+        Map<String,Integer> out = new HashMap<>();
         try {
-            Scanner scan = new Scanner(new File("src/hscore.txt"));
+            Scanner scan = new Scanner(new File(file));
             while(scan.hasNextLine()) {
                 String[] entry = scan.nextLine().split(" ");
                 out.put(entry[0], Integer.parseInt(entry[1]));
+                System.out.println(entry[0]);
             }
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
