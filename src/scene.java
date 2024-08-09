@@ -175,6 +175,7 @@ class tetris extends scene {
         if(state != 2){
             if(main.input.get(KeyEvent.VK_ESCAPE) == 1) state = 1-state;
             if(state == 0){
+                main.bgtx = score+main.frame*0.2;
                 if((time/4f > 60-2*level || main.input.get(KeyEvent.VK_DOWN) == 1) && Math.abs(currentTetromino.dx-currentTetromino.x*main.SPR_WIDTH) + Math.abs(currentTetromino.dy-currentTetromino.y*main.SPR_WIDTH) < 10){
                     time = 0;
                     if(!checkBoardState()){
@@ -261,24 +262,17 @@ class tetris extends scene {
                 draw.drawText("ESC TO RESUME",10,30,8,6,Color.GRAY);
             }
         }else{
-            /*int m = main.mouseInArea(10,40,80,10);
-            if(m == 1) main.cursorcontext = m;
-            int c = 255-80*m;
-            draw.batchPush(9,10+m,40+m,80-2*m,10-2*m,new Color(24,20,37));
-            draw.drawBox(10-m,40-m,80+2*m,10+2*m,7-m);
-            draw.drawText("MAIN MENU",11+5*m,41,8,6,new Color(c,c,c,160+(int) (Math.sin((main.frame/main.TPS) * 2*Math.PI))*80));
-            if(m == 1 && main.input.get(-1) == 1) main.currentScene = new splash(main,draw);*/
-            if(draw.drawButton("MAIN MENU",10,40,80,10) == 1) main.currentScene = new menu(main,draw);
-            if(draw.drawButton("QUIT",10,51,80,10) == 1) System.exit(1);
-
-            draw.drawText("GAME OVER",10,20,10,10,Color.RED);
-
-            // TODO text field, push highscore
+            main.bgtx = 0;
+            String name = draw.drawTextfield("ENTER NAME",10,60,80,10);
+            if(name != "") main.scores.put(name.replace(" ",""),score);
+            if(draw.drawButton("MAIN MENU",10,40,80,10) == 1 || name != "") main.currentScene = new menu(main,draw);
+            if(draw.drawButton("QUIT",10,51,80,10) == 1) main.gameShouldClose = 1;
+            draw.drawText("GAME OVER",10,30,10,10,Color.RED);
         }
 
-        draw.drawText(""+level,10,10,10,8,Color.WHITE);
+        draw.drawText("LEVEL "+level,10,10,10,8,Color.WHITE);
         draw.drawText(""+score,10,20,8,6,flash[(score/100)%5]);
-        draw.drawText(main.keybuffer,10,40,8,6,Color.GRAY);
+        //draw.drawText(main.keybuffer,10,40,8,6,Color.GRAY);
     }
 }
 
@@ -293,6 +287,7 @@ class menu extends scene {
     public void loop(){
         if(time < main.TPS) time++;
         double a = time/main.TPS;
+        main.bgtx = (main.frame*0.4);
 
         draw.drawText("TETRIS",20,20,10,8,new Color((int)(255*a),(int)(255*a),(int)(255*a)));
         draw.drawText("JAVA GAME",20,30,8,6,new Color((int)(255*(a/2)),(int)(255*(a/2)),(int)(255*(a/2))));
@@ -315,6 +310,7 @@ class config extends scene {
     }
     @Override
     public void loop(){
+        main.bgtx = 400+main.frame*0.1;
         if(time < main.TPS) time++;
         double a = time/main.TPS;
         draw.drawText("CONFIGURE",20,20,10,8,new Color((int)(255*a),(int)(255*a),(int)(255*a)));
@@ -334,12 +330,14 @@ class hscore extends scene {
     }
     @Override
     public void loop(){
+        main.bgtx = 800+main.frame*0.1;
         if(time < main.TPS) time++;
         double a = time/main.TPS;
         draw.drawText("HIGHSCORES",20,20,10,8,new Color((int)(255*a),(int)(255*a),(int)(255*a)));
         int i = 0;
         for(Map.Entry<String, Integer> entry : list){
-            draw.drawText(entry.getKey() + " " + entry.getValue(),20,30+8*i,8,6,new Color((int)(255*(a/2)),(int)(255*(a/2)),(int)(255*(a/2))));
+            int c = (int)(255*(a/(2+i)));
+            draw.drawText(entry.getKey() + " " + entry.getValue(),20,30+8*i,8,6,new Color(c,c,c));
             i++;
         }
     }

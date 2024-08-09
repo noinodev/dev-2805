@@ -1,4 +1,5 @@
 import java.awt.*;
+import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.awt.image.RescaleOp;
 import java.util.ArrayList;
@@ -27,8 +28,7 @@ public class draw2d{
         lastbutton = 0;
     }
 
-    public double lerp(double a, double b, double f)
-    {
+    public double lerp(double a, double b, double f) {
         return (a * (1.0 - f)) + (b * f);
     }
 
@@ -78,9 +78,12 @@ public class draw2d{
     }
 
     public void drawText(String s, int x, int y, int size, int space, Color c){
-        for(int i = 0; i < s.length(); i++){
-            char j = s.charAt(i);
-            batchPush(textAtlas.get(j),x+i*space,y,size,size,c);
+        if(s.length() > 0){
+            for(int i = 0; i < s.length(); i++){
+                char j = s.charAt(i);
+                batchPush(textAtlas.get(j),x+i*space,y+1,size,size,Color.BLACK);
+                batchPush(textAtlas.get(j),x+i*space,y,size,size,c);
+            }
         }
     }
 
@@ -124,14 +127,43 @@ public class draw2d{
                 buttonanim = 0;
                 lastbutton = x+y;
             }else buttonanim = Math.min((buttonanim+(1-buttonanim)*0.2),1);
+            main.cursorcontext = 1;
         }
         double mouseanim = m*buttonanim;
-        if(m == 1) main.cursorcontext = m;
         int c = 255-(int)(80*m);
         batchPush(9,x+m,y+m,w-2*m,h-2*m,new Color(24,20,37));
         drawBox(x-m,y-m,w+2*m,h+2*m,7-m);
         drawText(label,x+1+(int)(5*mouseanim),y+1,8,6,new Color(c,c,c,160+(int) (Math.sin((main.frame/main.TPS) * 2*Math.PI))*80));
         if(m == 1 && main.input.get(-1) == 1) return 1;
         return 0;
+    }
+
+    public String drawTextfield(String label, int x, int y, int w, int h){
+        int m = main.mouseInArea(x,y,w,h);
+        if(m == 1){
+            if(lastbutton != x+y){ // dum dum button hash, say NO to classes !
+                buttonanim = 0;
+            }else buttonanim = Math.min((buttonanim+(1-buttonanim)*0.2),1);
+            main.cursorcontext = 2;
+            if(main.input.get(-1) == 1 && main.keycontext != x+y){
+                main.keycontext = x+y;
+                main.keybuffer = "";
+            }
+        }
+        double mouseanim = m*buttonanim;
+        int c = 255-(80*m);
+        batchPush(9,x+m,y+m,w-2*m,h-2*m,new Color(24,20,37));
+        drawBox(x-m,y-m,w+2*m,h+2*m,7-m);
+        if(main.keycontext == x+y){
+            //System.out.println(main.keybuffer/* + ((main.frame%(main.TPS) < main.TPS/2) ? "|" : "")*/);
+            drawText(main.keybuffer,x+1,y+1,8,6,new Color(c,c,c,255));
+            int a = (int) (Math.sin((main.frame/main.TPS) * 2*Math.PI)*255);
+            batchPush(9,x+main.keybuffer.length()*8+2,y+2,1,4,new Color(255,255,255,Math.abs(a)));
+            if(main.input.get(KeyEvent.VK_ENTER) == 1){
+                main.keycontext = -1;
+                return main.keybuffer;
+            }
+        }else drawText(label,x+1+(int)(2*mouseanim),y+1,8,6,new Color(c,c,c,255));
+        return "";
     }
 }

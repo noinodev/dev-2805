@@ -19,7 +19,8 @@ public class Tetris2805 extends JPanel implements ActionListener {
     public final int keybuffermax = 64;
     public String keybuffer;
     public double mousex,mousey;
-    public int cursorcontext;
+    public int cursorcontext, keycontext;
+    public double bgx,bgtx;
 
     private draw2d draw;
     public float frame;
@@ -109,6 +110,16 @@ public class Tetris2805 extends JPanel implements ActionListener {
         draw.framebuffer = new BufferedImage(FRAMEBUFFER_W,FRAMEBUFFER_H,BufferedImage.TYPE_INT_ARGB);
         draw.viewport = draw.framebuffer.createGraphics();
         draw.sprites = getTextureAtlasSquare(atlas,SPR_WIDTH);
+        draw.sprites[42] = loadTexture("bgtex6.png");
+        draw.sprites[50] = loadTexture("bgtex1.png"); // reserving sprites for background, kinda hacky but whatever its not a real texture atlas
+        draw.sprites[51] = loadTexture("bgtex2.png");
+        draw.sprites[52] = loadTexture("bgtex3.png");
+        draw.sprites[60] = loadTexture("bgtex4.png");
+        draw.sprites[61] = loadTexture("bgtex5.png");
+        //draw.sprites[62] = loadTexture("bgtex6.png");
+        bgx = 0;
+        bgtx = 0;
+
         draw.clearColour = new Color(38,43,68);
 
         for (char c = 'A'; c <= 'Z'; c++) draw.textAtlas.put(c, 74+c - 'A');
@@ -120,6 +131,7 @@ public class Tetris2805 extends JPanel implements ActionListener {
         setFocusable(true);
         requestFocusInWindow();
         keybuffer = "";
+        keycontext = -1;
         setInput();
 
         loadData();
@@ -175,10 +187,27 @@ public class Tetris2805 extends JPanel implements ActionListener {
                 frame += delta;
                 lastTime = now;
 
+                bgx -= (bgx-bgtx)*0.05;
+                draw.batchPush(42,(int)((bgx*0.1)%FRAMEBUFFER_W),0,FRAMEBUFFER_W,FRAMEBUFFER_H);
+                draw.batchPush(42,(int)((bgx*0.1)%FRAMEBUFFER_W-FRAMEBUFFER_W),0,FRAMEBUFFER_W,FRAMEBUFFER_H);
+                draw.batchPush(61,(int)((bgx*0.2)%FRAMEBUFFER_W),0,FRAMEBUFFER_W,FRAMEBUFFER_H);
+                draw.batchPush(61,(int)((bgx*0.2)%FRAMEBUFFER_W-FRAMEBUFFER_W),0,FRAMEBUFFER_W,FRAMEBUFFER_H);
+                draw.batchPush(60,(int)((bgx*0.3)%FRAMEBUFFER_W),0,FRAMEBUFFER_W,FRAMEBUFFER_H);
+                draw.batchPush(60,(int)((bgx*0.3)%FRAMEBUFFER_W-FRAMEBUFFER_W),0,FRAMEBUFFER_W,FRAMEBUFFER_H);
+                draw.batchPush(52,(int)((bgx*0.4)%FRAMEBUFFER_W),0,FRAMEBUFFER_W,FRAMEBUFFER_H);
+                draw.batchPush(52,(int)((bgx*0.4)%FRAMEBUFFER_W-FRAMEBUFFER_W),0,FRAMEBUFFER_W,FRAMEBUFFER_H);
+                draw.batchPush(51,(int)((bgx*0.5)%FRAMEBUFFER_W),0,FRAMEBUFFER_W,FRAMEBUFFER_H);
+                draw.batchPush(51,(int)((bgx*0.5)%FRAMEBUFFER_W-FRAMEBUFFER_W),0,FRAMEBUFFER_W,FRAMEBUFFER_H);
+                draw.batchPush(50,(int)((bgx*0.6)%FRAMEBUFFER_W),0,FRAMEBUFFER_W,FRAMEBUFFER_H);
+                draw.batchPush(50,(int)((bgx*0.6)%FRAMEBUFFER_W-FRAMEBUFFER_W),0,FRAMEBUFFER_W,FRAMEBUFFER_H);
+                // holy hack
+
                 currentScene.loop();
                 //draw.drawButton
+                draw.batchPush(20+cursorcontext,(int)mousex-1,(int)mousey+1,SPR_WIDTH,SPR_WIDTH,Color.BLACK);
                 draw.batchPush(20+cursorcontext,(int)mousex-1,(int)mousey,SPR_WIDTH,SPR_WIDTH);
                 repaint();
+                if(draw.drawButton("BACK",20,FRAMEBUFFER_H-20,80,10) == 1) currentScene = new menu(this,draw);
                 setInput();
 
                 long timeTaken = System.nanoTime() - now,
@@ -192,7 +221,7 @@ public class Tetris2805 extends JPanel implements ActionListener {
                     }
                 }
             }
-            saveData(); // TODO
+            saveData();
             System.exit(1);
         });
         gameThread.start();
