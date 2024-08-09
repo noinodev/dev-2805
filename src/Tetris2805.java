@@ -16,7 +16,7 @@ public class Tetris2805 extends JPanel implements ActionListener {
     public Map<String,Integer> cfg;
 
     public final Map<Integer,Integer> input = new HashMap<>();
-    public final int keybuffermax = 64;
+    public final int keybuffermax = 10;
     public String keybuffer;
     public double mousex,mousey;
     public int cursorcontext, keycontext;
@@ -31,11 +31,18 @@ public class Tetris2805 extends JPanel implements ActionListener {
 
     private void saveData() {
         try {
-        BufferedWriter a = new BufferedWriter(new FileWriter("src/hscore.txt"));
+            BufferedWriter a = new BufferedWriter(new FileWriter("src/hscore.txt"));
             Set<String> keys = scores.keySet();
-            for(String key: keys) {
-                a.write(key+" "+scores.get(key)+'\n');
-            }
+            for(String key: keys) a.write(key+" "+scores.get(key)+'\n');
+            a.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        try {
+            BufferedWriter a = new BufferedWriter(new FileWriter("src/config.txt"));
+            Set<String> keys = cfg.keySet();
+            for(String key: keys) a.write(key+" "+cfg.get(key)+'\n');
             a.close();
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -49,8 +56,18 @@ public class Tetris2805 extends JPanel implements ActionListener {
             while(scan.hasNextLine()) {
                 String[] entry = scan.nextLine().split(" ");
                 scores.put(entry[0], Integer.parseInt(entry[1]));
-                System.out.println(entry[0]);
-                System.out.println(entry[1]);
+            }
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+
+        cfg = new HashMap<>();
+        try {
+            Scanner scan = new Scanner(new File("src/config.txt"));
+            while(scan.hasNextLine()) {
+                String[] entry = scan.nextLine().split(" ");
+                cfg.put(entry[0], Integer.parseInt(entry[1]));
+                //System.out.println(entry[0]);
             }
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
@@ -102,6 +119,14 @@ public class Tetris2805 extends JPanel implements ActionListener {
         return 0;
     }
 
+    public void handleMouse(MouseEvent e){
+        if (isShowing()) {
+            Point mouse = MouseInfo.getPointerInfo().getLocation(), screen = getLocationOnScreen();
+            mousex = ((mouse.getX()-screen.getX())/getWidth())*FRAMEBUFFER_W;
+            mousey = ((mouse.getY()-screen.getY())/getHeight())*FRAMEBUFFER_H;
+        }
+    }
+
     public Tetris2805(){
         gameShouldClose = 0;
 
@@ -139,13 +164,13 @@ public class Tetris2805 extends JPanel implements ActionListener {
         addMouseMotionListener(new MouseMotionAdapter() {
             @Override
             public void mouseMoved(MouseEvent e) {
-                if (isShowing()) {
-                    Point mouse = MouseInfo.getPointerInfo().getLocation(),
-                    screen = getLocationOnScreen();
-                    mousex = ((mouse.getX()-screen.getX())/getWidth())*FRAMEBUFFER_W;
-                    mousey = ((mouse.getY()-screen.getY())/getHeight())*FRAMEBUFFER_H;
-                }
+                handleMouse(e);
             }
+            public void mouseDragged(MouseEvent e) {
+                handleMouse(e);
+                input.put(-1,2);
+            }
+
         });
 
         addMouseListener(new MouseAdapter() {
@@ -200,7 +225,7 @@ public class Tetris2805 extends JPanel implements ActionListener {
                 draw.batchPush(51,(int)((bgx*0.5)%FRAMEBUFFER_W-FRAMEBUFFER_W),0,FRAMEBUFFER_W,FRAMEBUFFER_H);
                 draw.batchPush(50,(int)((bgx*0.6)%FRAMEBUFFER_W),0,FRAMEBUFFER_W,FRAMEBUFFER_H);
                 draw.batchPush(50,(int)((bgx*0.6)%FRAMEBUFFER_W-FRAMEBUFFER_W),0,FRAMEBUFFER_W,FRAMEBUFFER_H);
-                // holy hack
+                // holy yuck
 
                 currentScene.loop();
                 //draw.drawButton

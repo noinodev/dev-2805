@@ -120,15 +120,20 @@ public class draw2d{
         batch.clear();
     }
 
-    public int drawButton(String label, int x, int y, int w, int h){
+    public int getButtonContext(int x, int y, int w, int h, int mousecontext){
         int m = main.mouseInArea(x,y,w,h);
         if(m == 1){
             if(lastbutton != x+y){ // dum dum button hash, say NO to classes !
                 buttonanim = 0;
                 lastbutton = x+y;
             }else buttonanim = Math.min((buttonanim+(1-buttonanim)*0.2),1);
-            main.cursorcontext = 1;
+            main.cursorcontext = mousecontext;
         }
+        return m;
+    }
+
+    public int drawButton(String label, int x, int y, int w, int h){
+        int m = getButtonContext(x,y,w,h,1);
         double mouseanim = m*buttonanim;
         int c = 255-(int)(80*m);
         batchPush(9,x+m,y+m,w-2*m,h-2*m,new Color(24,20,37));
@@ -138,17 +143,43 @@ public class draw2d{
         return 0;
     }
 
+    public int drawSlider(String label, int x, int y, int w, int h, int val, int lb, int ub){
+        int m = getButtonContext(x,y,w,h,1);
+        double mouseanim = m*buttonanim;
+        int c = 255-(int)(80*m);
+        batchPush(9,x+m,y+m,w-2*m,h-2*m,new Color(24,20,37));
+        drawBox(x-m,y-m,w+2*m,h+2*m,7-m);
+        drawText(label,x+1+(int)(5*mouseanim),y+1,8,6,new Color(c,c,c,160+(int) (Math.sin((main.frame/main.TPS) * 2*Math.PI))*80));
+        drawText(""+val,x+w-120,y+1,8,6,Color.WHITE);
+        batchPush(9,x+w-100,y+1,1,8);
+        batchPush(9,x+w-1,y+1,1,8);
+        batchPush(9,x+w-98,y+5,96,1);
+        double sx = ((val-lb)/(double)(ub-lb))*96;
+        batchPush(9,x+w-98+(int)sx,y,1,10);
+        if(m == 1 && main.input.get(-1) == 2) sx = main.mousex-(x+w-98);
+        sx = Math.max(Math.min(96,sx),0);
+        //val = (int)(sx*(double)(ub-lb)*96+lb);
+        val = (int)((sx/96)*(double)(ub-lb))+lb;
+        return val;
+    }
+
+    public int drawToggle(String label, int x, int y, int w, int h, int val){
+        int m = getButtonContext(x,y,w,h,1);
+        double mouseanim = m*buttonanim;
+        int c = 255-(int)(80*m);
+        batchPush(9,x+m,y+m,w-2*m,h-2*m,new Color(24,20,37));
+        drawBox(x-m,y-m,w+2*m,h+2*m,7-m);
+        drawText(label,x+1+(int)(5*mouseanim),y+1,8,6,new Color(c,c,c,160+(int) (Math.sin((main.frame/main.TPS) * 2*Math.PI))*80));
+        batchPush(val == 0 ? 40 : 41, x+w-main.SPR_WIDTH,y,main.SPR_WIDTH,main.SPR_WIDTH);
+        if(m == 1 && main.input.get(-1) == 1) return 1-val;
+        return val;
+    }
+
     public String drawTextfield(String label, int x, int y, int w, int h){
-        int m = main.mouseInArea(x,y,w,h);
-        if(m == 1){
-            if(lastbutton != x+y){ // dum dum button hash, say NO to classes !
-                buttonanim = 0;
-            }else buttonanim = Math.min((buttonanim+(1-buttonanim)*0.2),1);
-            main.cursorcontext = 2;
-            if(main.input.get(-1) == 1 && main.keycontext != x+y){
-                main.keycontext = x+y;
-                main.keybuffer = "";
-            }
+        int m = getButtonContext(x,y,w,h,2);
+        if(m == 1 && main.input.get(-1) == 1 && main.keycontext != x+y){
+            main.keycontext = x+y;
+            main.keybuffer = "";
         }
         double mouseanim = m*buttonanim;
         int c = 255-(80*m);

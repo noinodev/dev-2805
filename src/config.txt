@@ -1,0 +1,7 @@
+width 10
+height 20
+level 4
+music 1
+sound 1
+ai 0
+extend 0

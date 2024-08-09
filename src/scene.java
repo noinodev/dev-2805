@@ -61,6 +61,7 @@ class tetris extends scene {
     }
     private tetromino currentTetromino;
 
+    // get tetromino data from atlas, can add funny shaped ones if i want (??????)
     private int[][][][] getTetrominoes(BufferedImage in){
         int count = in.getHeight()/4;
         int[][][][] out = new int[count][4][TET_WIDTH][TET_WIDTH];
@@ -85,13 +86,16 @@ class tetris extends scene {
                     int x = t.x+i, y = t.y+1+j;
                     if(y < 0 || y >= boardHeight || x < 0 || x >= boardWidth || board[x][y] > 0){
                         collision = false;
-                        if((int)(Math.random()*2) == 0)draw.particlePush(29,34,0.05+0.05*Math.random(),boardx+x*main.SPR_WIDTH,boardy+(y-1)*main.SPR_WIDTH,-0.1+0.2*Math.random(),-0.1+0.3*Math.random(),flash[(int)(Math.random()*5)]);
+                        if((int)(Math.random()*2) == 0) draw.particlePush(29,34,0.05+0.05*Math.random(),boardx+x*main.SPR_WIDTH,boardy+(y-1)*main.SPR_WIDTH,-0.1+0.2*Math.random(),-0.1+0.3*Math.random(),flash[(int)(Math.random()*5)]); // yuck
                     }
                 }
             }
         }
         return collision;
     }
+
+    // 2 functions that pretty much do the same thing
+    // kinda hacky sorry
 
     private int clearRows(){
         int rows = 0;
@@ -125,7 +129,7 @@ class tetris extends scene {
                     clearflash = (int)(Math.random()*5);
                 }
                 rows++;
-                for(int k = 0; k < 10; k++) draw.particlePush(29,34,0.05+0.05*Math.random(),boardx+(int)(boardWidth*main.SPR_WIDTH*Math.random()),boardy+cleary*main.SPR_WIDTH,-0.1+0.2*Math.random(),-0.1+0.2*Math.random(),flash[(int)(Math.random()*5)]);
+                for(int k = 0; k < 10; k++) draw.particlePush(29,34,0.05+0.05*Math.random(),boardx+(int)(boardWidth*main.SPR_WIDTH*Math.random()),boardy+cleary*main.SPR_WIDTH,-0.1+0.2*Math.random(),-0.1+0.2*Math.random(),flash[(int)(Math.random()*5)]); // yuck
                 //break;
             }
         }
@@ -142,8 +146,8 @@ class tetris extends scene {
         super(m, d);
         draw.clearColour = new Color(24,20,37);
         tetrominoList = getTetrominoes(main.loadTexture("tetrominoatlas.png"));
-        boardWidth = 10;
-        boardHeight = 22;
+        boardWidth = main.cfg.get("width");
+        boardHeight = main.cfg.get("height")+2;
         posx = 80;
         posy = 6;
         boardx = posx;
@@ -153,7 +157,7 @@ class tetris extends scene {
         time = 0;
         score = 0;
         state = 0; // state 0 run, state 1 pause, state 2 gameover, state 3 is clearing
-        level = 0;
+        level = main.cfg.get("level");
         lines = 0;
 
         board = new int[boardWidth][boardHeight];
@@ -314,6 +318,15 @@ class config extends scene {
         if(time < main.TPS) time++;
         double a = time/main.TPS;
         draw.drawText("CONFIGURE",20,20,10,8,new Color((int)(255*a),(int)(255*a),(int)(255*a)));
+
+        main.cfg.put("width",draw.drawSlider("BOARD WIDTH",20,30,main.FRAMEBUFFER_W-40,10,main.cfg.get("width"),5,15));
+        main.cfg.put("height",draw.drawSlider("BOARD HEIGHT",20,30+10,main.FRAMEBUFFER_W-40,10,main.cfg.get("height"),15,30));
+        main.cfg.put("level",draw.drawSlider("LEVEL",20,30+10*2,main.FRAMEBUFFER_W-40,10,main.cfg.get("level"),0,10));
+
+        main.cfg.put("music",draw.drawToggle("MUSIC",20,30+10*3,main.FRAMEBUFFER_W-40,10,main.cfg.get("music")));
+        main.cfg.put("sound",draw.drawToggle("SFX",20,30+10*4,main.FRAMEBUFFER_W-40,10,main.cfg.get("sound")));
+        main.cfg.put("ai",draw.drawToggle("AI PLAY",20,30+10*5,main.FRAMEBUFFER_W-40,10,main.cfg.get("ai")));
+        main.cfg.put("extend",draw.drawToggle("EXTEND MODE",20,30+10*6,main.FRAMEBUFFER_W-40,10,main.cfg.get("extend")));
     }
 
 }
