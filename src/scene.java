@@ -41,7 +41,7 @@ class splash extends scene {
 class tetris extends scene {
     public final int TET_WIDTH = 4;
     private int boardWidth,boardHeight,posx,posy,boardx,boardy,time,score,state,cleary,clearflash,level,lines,nextTetronimo;
-    private double cleardy;
+    private double cleardy,illum;
     private final Color[] flash = {new Color(255,255,255), new Color(255,0,68), new Color(99,199,77), new Color(44,232,245), new Color(254,231,97)};
     private final int scores[] = {40,100,300,1200}; // tetris scores
     private int[][] board;
@@ -60,6 +60,24 @@ class tetris extends scene {
         }
     }
     private tetromino currentTetromino;
+
+    private int getLightLevel(int x,int y,double scale){
+        double minDistance = Math.sqrt(Math.pow((currentTetromino.dx/main.SPR_WIDTH)+2 - x, 2) + Math.pow((currentTetromino.dy/main.SPR_WIDTH)+2 - y, 2));
+        int s = (int)scale;
+        /*for (int i = x-4*s; i < x+4*s; i++) {
+            for (int j = y-4*s; j < y+4*s; j++) {
+                if (i >= 0 && i < boardWidth && j >= 0 && j < boardHeight && board[i][j] != 0) {*/
+        for (int i = 0; i < boardWidth; i++) {
+            for (int j = 0; j < boardHeight; j++) {
+                if (board[i][j] != 0) {
+                    double distance = Math.sqrt(Math.pow(i - x, 2) + Math.pow(j - y, 2));
+                    minDistance = Math.min(minDistance, distance);
+                }
+            }
+        }
+        //return (int)Math.max(3*scale-Math.min(Math.max(minDistance/scale, 0),3*scale),10);
+        return (int)(10-Math.min(Math.max(minDistance*scale, 1),10));
+    }
 
     // get tetromino data from atlas, can add funny shaped ones if i want (??????)
     private int[][][][] getTetrominoes(BufferedImage in){
@@ -153,12 +171,13 @@ class tetris extends scene {
         boardx = posx;
         boardy = posy;
         currentTetromino = spawnTetromino();
-        nextTetronimo =
+        nextTetronimo = 0;
         time = 0;
         score = 0;
         state = 0; // state 0 run, state 1 pause, state 2 gameover, state 3 is clearing
         level = main.cfg.get("level");
         lines = 0;
+        illum = 1;
 
         board = new int[boardWidth][boardHeight];
         for(int i = 0; i < boardWidth; i++){
@@ -174,6 +193,7 @@ class tetris extends scene {
         double interpolatespeed = 16-12*main.input.get(KeyEvent.VK_DOWN);
         boardx -= Math.ceil(boardx-posx)*0.2;
         boardy -= Math.ceil(boardy-posy)*0.2;
+        illum -= (illum-3)*0.05;
 
         time++;
         if(state != 2){
@@ -199,6 +219,7 @@ class tetris extends scene {
                         if(!checkBoardState()) state = 2;
                         boardx += 2-(int)(Math.random()*4);
                         boardy += 2-(int)(Math.random()*4);
+                        illum = 0.5;
                     }else currentTetromino.y++;
                 }
 
@@ -218,13 +239,18 @@ class tetris extends scene {
             // draw board
             for(int i = 0; i < boardWidth; i++){
                 for(int j = 2; j < boardHeight; j++){
-                    draw.batchPush((i+j)%4,boardx+i*main.SPR_WIDTH,boardy+j*main.SPR_WIDTH, main.SPR_WIDTH,main.SPR_WIDTH);
+                    // draw.batchPush((i+j)%4,boardx+i*main.SPR_WIDTH,boardy+j*main.SPR_WIDTH, main.SPR_WIDTH,main.SPR_WIDTH);
+                    int light = getLightLevel(i,j,illum);
+                    //int light = j-2;
+                    draw.batchPush((light > 0) ? (18+10*(light%5)+light/5) : (i+j)%4,boardx+i*main.SPR_WIDTH,boardy+j*main.SPR_WIDTH, main.SPR_WIDTH,main.SPR_WIDTH);
+                    //draw.drawText(""+light,boardx+i*main.SPR_WIDTH,boardy+j*main.SPR_WIDTH, main.SPR_WIDTH,main.SPR_WIDTH,Color.WHITE);
+                    if(board[i][j] < 0) board[i][j] = 0;
                 }
             }
 
             for(int i = 0; i < boardWidth; i++){
                 for(int j = 2; j < boardHeight; j++){
-                    if(board[i][j] != 0 && j != cleary) draw.batchPush(board[i][j],boardx+i*main.SPR_WIDTH,boardy+j*main.SPR_WIDTH + (j < cleary ? (int)cleardy : 0), main.SPR_WIDTH,main.SPR_WIDTH);
+                    if(board[i][j] > 0 && j != cleary) draw.batchPush(board[i][j],boardx+i*main.SPR_WIDTH,boardy+j*main.SPR_WIDTH + (j < cleary ? (int)cleardy : 0), main.SPR_WIDTH,main.SPR_WIDTH);
                 }
             }
 
@@ -234,8 +260,14 @@ class tetris extends scene {
             t.dy -= (t.dy-t.y*main.SPR_WIDTH)/interpolatespeed;
             for(int i = 0; i < TET_WIDTH; i++){
                 for(int j = 0; j < TET_WIDTH; j++){
-                    int x = (int)t.dx+i*(main.SPR_WIDTH), y = (int)t.dy+j*(main.SPR_WIDTH);
-                    if(tetrominoList[t.i][t.j][i][j] > 0) draw.batchPush(t.t,boardx+x,boardy+y,main.SPR_WIDTH,main.SPR_WIDTH);
+                    int x = (int)t.dx+i*(main.SPR_WIDTH), y = (int)t.dy+j*(main.SPR_WIDTH), ix = (t.x+i)*main.SPR_WIDTH, iy = (t.y+j)*main.SPR_WIDTH;
+                    if(tetrominoList[t.i][t.j][i][j] > 0){
+                        double da = 1-Math.max(0,1/(Math.sqrt(Math.pow(x-ix,2)+Math.pow(y-iy,2))));
+                        int c = Math.min(255,(int)(da*255));
+                        //if(c > 10) draw.batchPush(9,boardx+ix+1,boardy+iy+1,8,8,new Color((int)draw.lerp(255,24,da),(int)draw.lerp(255,20,da),(int)draw.lerp(255,37,da),c));
+                        draw.batchPush(t.t,boardx+x,boardy+y,main.SPR_WIDTH,main.SPR_WIDTH);
+                        if(t.x+i >= 0 && t.x+i < boardWidth && t.y+j >= 2 && t.y+j < boardHeight && board[t.x+i][t.y+j] == 0) board[t.x+i][t.y+j] = -1;
+                    }
                     if(tetrominoList[nextTetronimo][0][i][j] > 0) draw.batchPush(8,boardx+boardWidth*main.SPR_WIDTH+(i+1)*main.SPR_WIDTH,boardy+(j+4)*main.SPR_WIDTH,main.SPR_WIDTH, main.SPR_WIDTH);
                 }
             }
@@ -243,6 +275,7 @@ class tetris extends scene {
             draw.batchPush(9,boardx,boardy,boardWidth*main.SPR_WIDTH,2*main.SPR_WIDTH-1,new Color(24,20,37));
 
             if(state == 3){
+                illum *= 0.9;
                 cleardy += main.SPR_WIDTH/(16*(1+cleardy));
                 boardx += 2-(int)(Math.random()*4);
                 boardy += 2-(int)(Math.random()*4);
