@@ -81,8 +81,11 @@ public class draw2d{
         if(s.length() > 0){
             for(int i = 0; i < s.length(); i++){
                 char j = s.charAt(i);
-                batchPush(textAtlas.get(j),x+i*space,y+1,size,size,Color.BLACK);
-                batchPush(textAtlas.get(j),x+i*space,y,size,size,c);
+                int chr = textAtlas.get(j);
+                if(chr != -1){
+                    batchPush(textAtlas.get(j),x+i*space,y+1,size,size,Color.BLACK);
+                    batchPush(textAtlas.get(j),x+i*space,y,size,size,c);
+                }
             }
         }
     }

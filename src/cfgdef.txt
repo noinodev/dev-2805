@@ -2,6 +2,6 @@ extend 0
 music 1
 level 0
 sound 1
-width 15
+width 10
 ai 0
-height 24
+height 20

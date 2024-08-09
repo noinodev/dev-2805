@@ -1,13 +1,11 @@
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Scanner;
 
 public class scene {
     protected Tetris2805 main;
@@ -45,6 +43,7 @@ class tetris extends scene {
     private final Color[] flash = {new Color(255,255,255), new Color(255,0,68), new Color(99,199,77), new Color(44,232,245), new Color(254,231,97)};
     private final int scores[] = {40,100,300,1200}; // tetris scores
     private int[][] board;
+    private double[][] light;
     private int[][][][] tetrominoList;
     private class tetromino {
         public int x,y,i,j,t;
@@ -62,11 +61,8 @@ class tetris extends scene {
     private tetromino currentTetromino;
 
     private int getLightLevel(int x,int y,double scale){
-        double minDistance = Math.sqrt(Math.pow((currentTetromino.dx/main.SPR_WIDTH)+2 - x, 2) + Math.pow((currentTetromino.dy/main.SPR_WIDTH)+2 - y, 2));
-        int s = (int)scale;
-        /*for (int i = x-4*s; i < x+4*s; i++) {
-            for (int j = y-4*s; j < y+4*s; j++) {
-                if (i >= 0 && i < boardWidth && j >= 0 && j < boardHeight && board[i][j] != 0) {*/
+        double minDistance = Math.sqrt(Math.pow((currentTetromino.dx/main.SPR_WIDTH)+1 - x, 2) + Math.pow((currentTetromino.dy/main.SPR_WIDTH)+1 - y, 2));
+        //double minDistance = Double.MAX_VALUE;
         for (int i = 0; i < boardWidth; i++) {
             for (int j = 0; j < boardHeight; j++) {
                 if (board[i][j] != 0) {
@@ -75,7 +71,7 @@ class tetris extends scene {
                 }
             }
         }
-        //return (int)Math.max(3*scale-Math.min(Math.max(minDistance/scale, 0),3*scale),10);
+
         return (int)(10-Math.min(Math.max(minDistance*scale, 1),10));
     }
 
@@ -180,9 +176,11 @@ class tetris extends scene {
         illum = 1;
 
         board = new int[boardWidth][boardHeight];
+        light = new double[boardWidth][boardHeight];
         for(int i = 0; i < boardWidth; i++){
             for(int j = 0; j < boardHeight; j++){
                 board[i][j] = 0;
+                light[i][j] = 0;
             }
         }
     }
@@ -193,7 +191,7 @@ class tetris extends scene {
         double interpolatespeed = 16-12*main.input.get(KeyEvent.VK_DOWN);
         boardx -= Math.ceil(boardx-posx)*0.2;
         boardy -= Math.ceil(boardy-posy)*0.2;
-        illum -= (illum-3)*0.05;
+        illum -= (illum-(2+1*(time/main.TPS)/*+Math.sin(9*(main.frame/main.TPS))*0.2*/))*0.05;
 
         time++;
         if(state != 2){
@@ -220,7 +218,10 @@ class tetris extends scene {
                         boardx += 2-(int)(Math.random()*4);
                         boardy += 2-(int)(Math.random()*4);
                         illum = 0.5;
-                    }else currentTetromino.y++;
+                    }else{
+                        currentTetromino.y++;
+                        illum *= 0.8;
+                    }
                 }
 
                 int xp =currentTetromino.x, rp = currentTetromino.j;
@@ -240,9 +241,16 @@ class tetris extends scene {
             for(int i = 0; i < boardWidth; i++){
                 for(int j = 2; j < boardHeight; j++){
                     // draw.batchPush((i+j)%4,boardx+i*main.SPR_WIDTH,boardy+j*main.SPR_WIDTH, main.SPR_WIDTH,main.SPR_WIDTH);
-                    int light = getLightLevel(i,j,illum);
+                    double tl = getLightLevel(i,j,illum)*4;
+                    if(i < boardWidth-1) tl += light[i+1][j];
+                    if(i > 0) tl += light[i-1][j];
+                    if(j < boardHeight-1) tl += light[i][j+1];
+                    if(j > 0) tl += light[i][j-1];
+                    tl /= 8;
+                    light[i][j] -= (light[i][j]-tl)*(0.05/illum);
+                    int li = (int)light[i][j];
                     //int light = j-2;
-                    draw.batchPush((light > 0) ? (18+10*(light%5)+light/5) : (i+j)%4,boardx+i*main.SPR_WIDTH,boardy+j*main.SPR_WIDTH, main.SPR_WIDTH,main.SPR_WIDTH);
+                    draw.batchPush((li > 0) ? (18+10*(li%5)+li/5) : (i+j)%4,boardx+i*main.SPR_WIDTH,boardy+j*main.SPR_WIDTH, main.SPR_WIDTH,main.SPR_WIDTH);
                     //draw.drawText(""+light,boardx+i*main.SPR_WIDTH,boardy+j*main.SPR_WIDTH, main.SPR_WIDTH,main.SPR_WIDTH,Color.WHITE);
                     if(board[i][j] < 0) board[i][j] = 0;
                 }
@@ -303,7 +311,7 @@ class tetris extends scene {
             String name = draw.drawTextfield("ENTER NAME",10,60,80,10);
             if(name != "") main.scores.put(name.replace(" ",""),score);
             if(draw.drawButton("MAIN MENU",10,40,80,10) == 1 || name != "") main.currentScene = new menu(main,draw);
-            if(draw.drawButton("QUIT",10,51,80,10) == 1) main.gameShouldClose = 1;
+            if(draw.drawButton("QUIT",10,51,80,10) == 1) main.displayconfirm = 1;
             draw.drawText("GAME OVER",10,30,10,10,Color.RED);
         }
 
@@ -327,13 +335,13 @@ class menu extends scene {
         main.bgtx = (main.frame*0.4);
 
         draw.drawText("TETRIS",20,20,10,8,new Color((int)(255*a),(int)(255*a),(int)(255*a)));
-        draw.drawText("JAVA GAME",20,30,8,6,new Color((int)(255*(a/2)),(int)(255*(a/2)),(int)(255*(a/2))));
+        draw.drawText("JAVA GAME BY NATHAN BURG",20,30,8,6,new Color((int)(255*(a/2)),(int)(255*(a/2)),(int)(255*(a/2))));
 
         int bx = main.FRAMEBUFFER_W/2-100;
         if(a > 0.25 && draw.drawButton("PLAY",bx,40,80,10) == 1) main.currentScene = new tetris(main,draw);
         if(a > 0.5 && draw.drawButton("CONFIGURE",bx,51,80,10) == 1) main.currentScene = new config(main,draw);
         if(a > 0.75 && draw.drawButton("HIGHSCORE",bx,62,80,10) == 1) main.currentScene = new hscore(main,draw);
-        if(a >= 1 && draw.drawButton("EXIT",bx,73,80,10) == 1) main.gameShouldClose = 1;
+        if(a >= 1 && draw.drawButton("EXIT",bx,73,80,10) == 1) main.displayconfirm = 1;
     }
 
 }
@@ -360,6 +368,9 @@ class config extends scene {
         main.cfg.put("sound",draw.drawToggle("SFX",20,30+10*4,main.FRAMEBUFFER_W-40,10,main.cfg.get("sound")));
         main.cfg.put("ai",draw.drawToggle("AI PLAY",20,30+10*5,main.FRAMEBUFFER_W-40,10,main.cfg.get("ai")));
         main.cfg.put("extend",draw.drawToggle("EXTEND MODE",20,30+10*6,main.FRAMEBUFFER_W-40,10,main.cfg.get("extend")));
+
+        if(draw.drawButton("APPLY",20,30+10*9,80,10) == 1) main.saveData(main.cfg,"src/config.txt");
+        if(draw.drawButton("RESET",20,30+10*8,80,10) == 1) main.cfg = main.loadData("src/cfgdef.txt");
     }
 
 }

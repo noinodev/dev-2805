@@ -12,14 +12,14 @@ public class Tetris2805 extends JPanel implements ActionListener {
     public final int FRAMEBUFFER_W = 256, FRAMEBUFFER_H = 256, VIEWPORT_W = 1080, VIEWPORT_H = 1080;
     public final float TPS = 240;
 
-    public Map<String,Integer> scores;
-    public Map<String,Integer> cfg;
+    public HashMap<String,Integer> scores;
+    public HashMap<String,Integer> cfg;
 
-    public final Map<Integer,Integer> input = new HashMap<>();
+    public final HashMap<Integer,Integer> input = new HashMap<>();
     public final int keybuffermax = 10;
     public String keybuffer;
     public double mousex,mousey;
-    public int cursorcontext, keycontext;
+    public int cursorcontext, keycontext, displayconfirm;
     public double bgx,bgtx;
 
     private draw2d draw;
@@ -29,49 +29,29 @@ public class Tetris2805 extends JPanel implements ActionListener {
     public scene currentScene;
     public int gameShouldClose;
 
-    private void saveData() {
+    public void saveData(HashMap<String,Integer> map, String file) {
         try {
-            BufferedWriter a = new BufferedWriter(new FileWriter("src/hscore.txt"));
-            Set<String> keys = scores.keySet();
-            for(String key: keys) a.write(key+" "+scores.get(key)+'\n');
-            a.close();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        try {
-            BufferedWriter a = new BufferedWriter(new FileWriter("src/config.txt"));
-            Set<String> keys = cfg.keySet();
-            for(String key: keys) a.write(key+" "+cfg.get(key)+'\n');
+            BufferedWriter a = new BufferedWriter(new FileWriter(file));
+            Set<String> keys = map.keySet();
+            for(String key: keys) a.write(key+" "+map.get(key)+'\n');
             a.close();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private void loadData(){
-        scores = new HashMap<>();
+    public HashMap<String,Integer> loadData(String file){
+        HashMap<String,Integer> out = new HashMap<>();
         try {
             Scanner scan = new Scanner(new File("src/hscore.txt"));
             while(scan.hasNextLine()) {
                 String[] entry = scan.nextLine().split(" ");
-                scores.put(entry[0], Integer.parseInt(entry[1]));
+                out.put(entry[0], Integer.parseInt(entry[1]));
             }
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
         }
-
-        cfg = new HashMap<>();
-        try {
-            Scanner scan = new Scanner(new File("src/config.txt"));
-            while(scan.hasNextLine()) {
-                String[] entry = scan.nextLine().split(" ");
-                cfg.put(entry[0], Integer.parseInt(entry[1]));
-                //System.out.println(entry[0]);
-            }
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException(e);
-        }
+        return out;
     }
 
     private BufferedImage convertToARGB(BufferedImage in) {
@@ -150,16 +130,19 @@ public class Tetris2805 extends JPanel implements ActionListener {
         for (char c = 'A'; c <= 'Z'; c++) draw.textAtlas.put(c, 74+c - 'A');
         for (char c = '0'; c <= '9'; c++) draw.textAtlas.put(c, 63 + (c - '0'));
         draw.textAtlas.put('.',73);
-        draw.textAtlas.put(' ',62);
+        draw.textAtlas.put('?',62);
+        draw.textAtlas.put(' ',-1);
 
         setPreferredSize(new Dimension(VIEWPORT_W, VIEWPORT_H));
         setFocusable(true);
         requestFocusInWindow();
         keybuffer = "";
         keycontext = -1;
+        displayconfirm = 0;
         setInput();
 
-        loadData();
+        scores = loadData("src/hscore.txt");
+        cfg = loadData("src/config.txt");
 
         addMouseMotionListener(new MouseMotionAdapter() {
             @Override
@@ -228,11 +211,17 @@ public class Tetris2805 extends JPanel implements ActionListener {
                 // holy yuck
 
                 currentScene.loop();
-                //draw.drawButton
+                if(draw.drawButton("BACK",20,FRAMEBUFFER_H-20,80,10) == 1) currentScene = new menu(this,draw);
+                if(displayconfirm == 1){
+                    int w = 80, h = 80, x = FRAMEBUFFER_W/2-w/2, y = FRAMEBUFFER_W/2-h/2;
+                    draw.batchPush(9,x,y,w,h,new Color(24,20,37));
+                    draw.drawText("EXIT?",x+10,y+4,10,8,Color.WHITE);
+                    gameShouldClose = draw.drawButton("YES",x+10,y+40,60,10);
+                    displayconfirm = 1-draw.drawButton("NO",x+10,y+50,60,10);
+                }
                 draw.batchPush(20+cursorcontext,(int)mousex-1,(int)mousey+1,SPR_WIDTH,SPR_WIDTH,Color.BLACK);
                 draw.batchPush(20+cursorcontext,(int)mousex-1,(int)mousey,SPR_WIDTH,SPR_WIDTH);
                 repaint();
-                if(draw.drawButton("BACK",20,FRAMEBUFFER_H-20,80,10) == 1) currentScene = new menu(this,draw);
                 setInput();
 
                 long timeTaken = System.nanoTime() - now,
@@ -246,7 +235,8 @@ public class Tetris2805 extends JPanel implements ActionListener {
                     }
                 }
             }
-            saveData();
+            saveData(scores,"src/hscore.txt");
+            saveData(cfg,"src/config.txt");
             System.exit(1);
         });
         gameThread.start();
