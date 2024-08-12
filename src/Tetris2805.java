@@ -85,7 +85,6 @@ public class Tetris2805 extends JPanel implements ActionListener {
                 out[i+w*j] = a.getSubimage(i*size,j*size,size,size);
             }
         }
-
         return out;
     }
 

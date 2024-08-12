@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
 
-public class scene {
+abstract class scene {
     protected Tetris2805 main;
     protected draw2d draw;
 
@@ -151,7 +151,7 @@ class tetris extends scene {
     }
 
     private tetromino spawnTetromino(){
-        tetromino out = new tetromino(boardWidth / 2 - TET_WIDTH / 2, 0, nextTetronimo, 0, 10*Math.min(level,9)+4+(int)(Math.random()*3));
+        tetromino out = new tetromino(boardWidth / 2 - TET_WIDTH / 2, 0, nextTetronimo, 0, 10*Math.min(level/3,5)+4+(int)(Math.random()*4));
         nextTetronimo = (int) (Math.random() * tetrominoList.length);
         return out;
     }
@@ -310,7 +310,10 @@ class tetris extends scene {
         }else{
             main.bgtx = 0;
             String name = draw.drawTextfield("ENTER NAME",10,60,80,10);
-            if(name != "") main.scores.put(name.replace(" ",""),score);
+            if(name != ""){
+                main.scores.put(name.replace(" ",""),score);
+                main.saveData(main.scores,"src/hscore.txt");
+            }
             if(draw.drawButton("MAIN MENU",10,40,80,10) == 1 || name != "") main.currentScene = new menu(main,draw);
             if(draw.drawButton("QUIT",10,51,80,10) == 1) main.displayconfirm = 1;
             draw.drawText("GAME OVER",10,30,10,10,Color.RED);
@@ -318,7 +321,6 @@ class tetris extends scene {
 
         draw.drawText("LEVEL "+level,10,10,10,8,Color.WHITE);
         draw.drawText(""+score,10,20,8,6,flash[(score/100)%5]);
-        //draw.drawText(main.keybuffer,10,40,8,6,Color.GRAY);
     }
 }
 
