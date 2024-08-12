@@ -78,10 +78,10 @@ public class Tetris2805 extends JPanel implements ActionListener {
     }
 
     private BufferedImage[] getTextureAtlasSquare(BufferedImage a, int size){
-        BufferedImage[] out = new BufferedImage[size*size];
-        int w = a.getWidth() / size;
+        int w = a.getWidth()/size, h = a.getHeight()/size;
+        BufferedImage[] out = new BufferedImage[w*h];
         for(int i = 0; i < w; i++){
-            for(int j = 0; j < w; j++){
+            for(int j = 0; j < h; j++){
                 out[i+w*j] = a.getSubimage(i*size,j*size,size,size);
             }
         }
@@ -226,6 +226,8 @@ public class Tetris2805 extends JPanel implements ActionListener {
 
                 long timeTaken = System.nanoTime() - now,
                 sleepTime = (long)(expectedFrametime - timeTaken);
+
+                draw.drawText(""+timeTaken/1000000f,20,FRAMEBUFFER_H-60,8,6,Color.WHITE);
 
                 if (sleepTime > 0) {
                     try {
