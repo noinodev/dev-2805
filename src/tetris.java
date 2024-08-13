@@ -6,12 +6,13 @@ import java.util.ArrayList;
 class tetris extends scene {
     public final int TET_WIDTH = 4;
     private int boardWidth,boardHeight,posx,posy,boardx,boardy,time,score,state,clearx,cleary,clearflash,level,lines,nextTetronimo,lives;
-    private double cleardy,illum;
+    private double cleardy,cleardx,illum;
     private final Color[] flash = {new Color(255,255,255), new Color(255,0,68), new Color(99,199,77), new Color(44,232,245), new Color(254,231,97)};
     private final int scores[] = {40,100,300,1200}; // tetris scores
     private int[][] board;
     private double[][] light;
     private int[][][][] tetrominoList;
+    private final String[] taunts = {"YOU SUCK","???","GONNA CRY?","LOL","LOSER","GOBLINS RULE","ANYONE GETTIN FREAKY RN?","IN THE STRIPPED CLUB","STRAIGHT JORKIN IT"};
     private class tetromino {
         public int x,y,i,j,t;
         double dx,dy;
@@ -30,11 +31,14 @@ class tetris extends scene {
     private class enemy {
         double x,y,hsp,vsp;
         int spr,xd;
+        String taunt,txt;
         public enemy(int _spr, double _x, double _y){
             x = _x;
             y = _y;
             spr = _spr;
             xd = 1;
+            taunt = "";
+            txt = "";
         }
     }
     private final ArrayList<enemy> enemylist = new ArrayList<enemy>();
@@ -211,10 +215,11 @@ class tetris extends scene {
         level = main.cfg.get("level");
         lines = 0;
         illum = 1;
-        lives = 3;
+        lives = 1+2*main.cfg.get("extend");
         clearx = 0;
         cleary = 0;
         cleardy = 0;
+        cleardx = 0;
 
         board = new int[boardWidth][boardHeight];
         light = new double[boardWidth][boardHeight];
@@ -238,8 +243,9 @@ class tetris extends scene {
         time++;
         if(state != 2){
             if(main.input.get(KeyEvent.VK_ESCAPE) == 1) state = 1-state;
+            main.bgtx = score+800*level;
             if(state == 0){
-                main.bgtx = score+400*level;// +main.frame*0.2;
+                //main.bgtx = score+800*level;// +main.frame*0.2;
                 if((time/4f > 60-2*level || main.input.get(KeyEvent.VK_DOWN) == 1) && Math.abs(currentTetromino.dx-currentTetromino.x*main.SPR_WIDTH) + Math.abs(currentTetromino.dy-currentTetromino.y*main.SPR_WIDTH) < 10){
                     time = 0;
                     if(!checkBoardState()){
@@ -300,33 +306,16 @@ class tetris extends scene {
                 }
             }
 
-            //update enemies
-            if(main.cfg.get("extend") == 1){
-                if(main.input.get(-1) == 1) spawnEnemy(main.mousex,main.mousey);
-                if(enemylist.size() > 0){
-                    for(int i = 0; i < enemylist.size(); i++){
-                        enemy e = enemylist.get(i);
-                        if(pointCheck(e.x+e.hsp,e.y) == 1) e.hsp = 0;
-                        if(pointCheck(e.x,e.y+e.vsp) == 1) e.vsp = 0;
-                        e.x += e.hsp;
-                        e.y += e.vsp;
-                        e.vsp += 0.02;
-                        if(e.hsp != 0) e.xd = e.hsp > 0 ? 1 : -1;
-                        draw.batchPush(e.spr+(int)(main.frame/(main.TPS/2))%2+(e.hsp != 0 ? 1 : 0),
-                                (int)e.x-e.xd*main.SPR_WIDTH/2,
-                                (int)e.y-main.SPR_WIDTH+(int)Math.abs(Math.sin((main.frame/main.TPS + i*234)*Math.PI)*Math.abs(e.hsp)),
-                                e.xd*main.SPR_WIDTH,main.SPR_WIDTH);
-                        if((int)(Math.random()*main.TPS) == 0) e.hsp = -0.25+0.5*Math.random();
-                        if((int)(Math.random()*main.TPS) == 0) e.hsp = 0;
-                        if(pointCheck(e.x,e.y) == 1){
-                            enemylist.remove(i);
-                            for(int j = 0; j < 4; j++) draw.particlePush(130,134,0.03+0.02*Math.random(),(int)e.x,(int)e.y,-0.1+0.2*Math.random(),-0.1+0.2*Math.random(),Color.WHITE);
-                            i--;
-                        }
-                    }
-                }else{
-                    level++;
-                    loadLevel(level*10,boardWidth,boardHeight);
+            int lo = 0;
+            if(state == 6){
+                lo = (int)cleardx;
+                cleardx -= ((boardWidth+1)*main.SPR_WIDTH-cleardx)*0.01;
+                boardx += (int)(cleardx*0.1)-(int)(Math.random()*(cleardx*0.2));
+                boardy += (int)(cleardx*0.1)-(int)(Math.random()*(cleardx*0.2));
+                illum = 10;
+                if(cleardx <= 0.1){
+                    state = 0;
+                    cleardx = 0;
                 }
             }
 
@@ -336,8 +325,58 @@ class tetris extends scene {
                     if(board[i][j] > 0 && j != cleary){
                         int k = board[i][j];
                         if(k > 100) k = getTileIndex(k,i,j); // the brick tile is the only tile with an index over 100 so
-                        draw.batchPush(k,boardx+i*main.SPR_WIDTH,boardy+j*main.SPR_WIDTH + (j < cleary ? (int)cleardy : 0), main.SPR_WIDTH,main.SPR_WIDTH);
+                        draw.batchPush(k,boardx+i*main.SPR_WIDTH + lo,boardy+j*main.SPR_WIDTH + (j < cleary ? (int)cleardy : 0), main.SPR_WIDTH,main.SPR_WIDTH);
                     }
+                }
+            }
+
+            //update enemies
+            if(main.cfg.get("extend") == 1){
+                // if(main.input.get(-1) == 1) spawnEnemy(main.mousex,main.mousey);
+                if(enemylist.size() > 0){
+                    for(int i = 0; i < enemylist.size(); i++){
+                        enemy e = enemylist.get(i);
+                        if(state == 0){
+                            if(e.hsp != 0) e.xd = e.hsp > 0 ? 1 : -1;
+                            if(pointCheck(e.x+2*e.xd+e.hsp,e.y) == 1) e.hsp = 0;
+                            if(pointCheck(e.x,e.y+e.vsp) == 1) e.vsp = 0;
+                            e.x += e.hsp;
+                            e.y += e.vsp;
+                            e.vsp += 0.02;
+                            if(e.txt.length() == e.taunt.length()){
+                                if(e.txt.length() > 0 && (int)(Math.random()*(main.TPS*2)) == 0){
+                                    e.txt = "";
+                                    e.taunt = "";
+                                }
+                            }
+
+                            if(e.taunt.length() > e.txt.length() && (int)(Math.random()*5) == 0)e.txt = e.taunt.substring(0,e.txt.length()+1);
+                            if(state == 4 || (e.taunt == "" && (int)(Math.random()*(main.TPS*5)) == 0)) e.taunt = taunts[(int)(Math.random()*taunts.length)];
+
+                            if((int)(Math.random()*main.TPS) == 0) e.hsp = -0.25+0.5*Math.random();
+                            if((int)(Math.random()*main.TPS) == 0) e.hsp = 0;
+                            if(pointCheck(e.x,e.y) == 1){
+                                enemylist.remove(i);
+                                for(int j = 0; j < 4; j++) draw.particlePush(130,134,0.03+0.02*Math.random(),(int)e.x,(int)e.y,-0.1+0.2*Math.random(),-0.1+0.2*Math.random(),Color.WHITE);
+                                i--;
+                            }
+                        }
+
+                        draw.batchPush(e.spr+(int)(main.frame/(main.TPS/2))%2+(e.hsp != 0 ? 1 : 0),
+                                (int)e.x-e.xd*main.SPR_WIDTH/2 + lo,
+                                (int)e.y-main.SPR_WIDTH+(int)Math.abs(Math.sin((main.frame/main.TPS + i*234)*Math.PI)*Math.abs(e.hsp)),
+                                e.xd*main.SPR_WIDTH,main.SPR_WIDTH);
+                        // taunts
+                        if(e.txt != ""){
+                            draw.batchPush(9,(int)e.x-10,(int)e.y-18-(int)e.x%2,e.txt.length()*6,8,new Color(24,20,37));
+                            draw.drawText(e.txt,(int)e.x-10,(int)e.y-18-(int)e.x%2,8,6,Color.WHITE);
+                        }
+                    }
+                }else{
+                    level++;
+                    loadLevel(level*10,boardWidth,boardHeight);
+                    state = 6;
+                    cleardx = boardWidth*main.SPR_WIDTH;
                 }
             }
 
@@ -365,10 +404,13 @@ class tetris extends scene {
             //special goblin mode thing
             if(main.cfg.get("extend") == 1){
 
-                for(int i = 0; i < main.FRAMEBUFFER_W; i += main.SPR_WIDTH){
-                    draw.batchPush(100+i%3,i,(int)Math.sin(2345*i*Math.PI)+boardy+boardHeight*main.SPR_WIDTH, main.SPR_WIDTH, main.SPR_WIDTH);
-                    draw.batchPush(110+i%3,i,(int)Math.sin(2345*i*Math.PI)+boardy+(boardHeight+1)*main.SPR_WIDTH, main.SPR_WIDTH, main.SPR_WIDTH);
-                    draw.batchPush(120+i%3,i,(int)Math.sin(2345*i*Math.PI)+boardy+(boardHeight+2)*main.SPR_WIDTH, main.SPR_WIDTH, main.SPR_WIDTH);
+                for(int i = -main.SPR_WIDTH; i < main.FRAMEBUFFER_W; i += main.SPR_WIDTH){
+                    /*draw.batchPush(100+Math.abs(i)%3,i+(int)cleardx%main.SPR_WIDTH,(int)(Math.sin((i/main.SPR_WIDTH)*2*Math.PI))+boardy+boardHeight*main.SPR_WIDTH, main.SPR_WIDTH, main.SPR_WIDTH);
+                    draw.batchPush(110+Math.abs(i)%3,i+(int)cleardx%main.SPR_WIDTH,(int)(Math.sin((i/main.SPR_WIDTH)*2*Math.PI))+boardy+(boardHeight+1)*main.SPR_WIDTH, main.SPR_WIDTH, main.SPR_WIDTH);
+                    draw.batchPush(120+Math.abs(i)%3,i+(int)cleardx%main.SPR_WIDTH,(int)(Math.sin((i/main.SPR_WIDTH)*2*Math.PI))+boardy+(boardHeight+2)*main.SPR_WIDTH, main.SPR_WIDTH, main.SPR_WIDTH);*/
+                    draw.batchPush(100+Math.abs(i)%3,i+(int)cleardx%main.SPR_WIDTH,(i/main.SPR_WIDTH*i)%3-1+boardy+boardHeight*main.SPR_WIDTH, main.SPR_WIDTH, main.SPR_WIDTH);
+                    draw.batchPush(110+Math.abs(i)%3,i+(int)cleardx%main.SPR_WIDTH,(i/main.SPR_WIDTH*i)%3-1+boardy+(boardHeight+1)*main.SPR_WIDTH, main.SPR_WIDTH, main.SPR_WIDTH);
+                    draw.batchPush(120+Math.abs(i)%3,i+(int)cleardx%main.SPR_WIDTH,(i/main.SPR_WIDTH*i)%3-1+boardy+(boardHeight+2)*main.SPR_WIDTH, main.SPR_WIDTH, main.SPR_WIDTH);
                 }
             }
 
@@ -382,7 +424,7 @@ class tetris extends scene {
                 draw.batchPush(9,boardx,boardy+cleary*main.SPR_WIDTH+(int)cleardy,boardWidth*main.SPR_WIDTH,Math.max(1,1+main.SPR_WIDTH-(int)cleardy),
                         new Color((int)draw.lerp(flash[clearflash].getRed(),24,i),(int)draw.lerp(flash[clearflash].getBlue(),20,i),(int)draw.lerp(flash[clearflash].getGreen(),37,i)));
                 if(cleardy > main.SPR_WIDTH){
-                    //for(int k = 0; k < 10; k++) draw.particlePush(30,33,0.03+0.02*Math.random(),boardx+(int)(boardWidth*main.SPR_WIDTH*Math.random()),boardy+cleary*main.SPR_WIDTH,-0.1+0.2*Math.random(),-0.1+0.2*Math.random(),Color.WHITE);
+                    for(int k = 0; k < 10; k++) draw.particlePush(30,33,0.05+0.05*Math.random(),boardx+(int)(boardWidth*main.SPR_WIDTH*Math.random()),boardy+cleary*main.SPR_WIDTH,0,0,Color.WHITE);
                     cleardy = 0;
                     cleary = 0;
                     clearRows();
@@ -392,27 +434,54 @@ class tetris extends scene {
                     }
                     if(checkRows() == 0) state = 0;
                 }
-            }
+            }else cleary = 0;
 
             if(state == 4){
                 int x = clearx%boardWidth, y = clearx/boardWidth;
                 if(board[x][y] > 0 && board[x][y] < 100){
                     board[x][y] = 0;
-                    for(int k = 0; k < 3; k++) draw.particlePush(30,33,0.03+0.02*Math.random(),boardx+(int)(x*main.SPR_WIDTH+main.SPR_WIDTH*Math.random()),boardy+y*main.SPR_WIDTH+(int)(main.SPR_WIDTH*Math.random()),-0.1+0.2*Math.random(),-0.1+0.2*Math.random(),Color.WHITE);
+                    //draw.particlePush(29,34,0.05+0.05*Math.random(),boardx+(int)(boardWidth*main.SPR_WIDTH*Math.random()),boardy+cleary*main.SPR_WIDTH,-0.1+0.2*Math.random(),-0.2+0.4*Math.random(),flash[(int)(Math.random()*5)]);
+                    /*for(int k = 0; k < 3; k++){
+                        draw.particlePush(29,34,0.03+0.02*Math.random(),
+                        boardx+(int)(x*main.SPR_WIDTH+main.SPR_WIDTH*Math.random()),
+                        boardy+y*main.SPR_WIDTH+(int)(main.SPR_WIDTH*Math.random()),
+                        -0.2+0.4*Math.random()+(boardx+(int)(x*main.SPR_WIDTH+main.SPR_WIDTH*Math.random())-(12+main.SPR_WIDTH*lives))*-0.01,
+                        -0.2+0.4*Math.random()+(boardy+y*main.SPR_WIDTH+(int)(main.SPR_WIDTH*Math.random())-30)*-0.01,
+                        flash[(int)(Math.random()*5)]);
+                    }*/
+                    for(int k = 0; k < 3; k++) draw.particlePush(29,34,0.05+0.05*Math.random(),boardx+(int)(x*main.SPR_WIDTH+main.SPR_WIDTH*Math.random()),boardy+y*main.SPR_WIDTH+(int)(main.SPR_WIDTH*Math.random()),-0.3+0.6*Math.random(),0,flash[(int)(Math.random()*5)]);
+                    draw.particlePush(7,10,0.05+0.05*Math.random(),boardx+(x*main.SPR_WIDTH),boardy+y*main.SPR_WIDTH,0,0,Color.WHITE);
+                    illum = Math.random();
+                    boardx += 2-(int)(Math.random()*4);
+                    boardy += 2-(int)(Math.random()*4);
                 }
                 if(clearx >= boardWidth*boardHeight-1){
                     if(lives <= 0) state = 2;
                     else state = 0;
                 }else clearx++;
-            }
+            }else if(clearx > 0) clearx--;
 
             if(state == 1){
                 draw.drawText("PAUSED",10,20,10,8,null);
                 draw.drawText("ESC TO RESUME",10,30,8,6,Color.GRAY);
             }
-            for(int i = 0; i < 3; i++){
-                draw.batchPush(140,12+i*(main.SPR_WIDTH+1),30,main.SPR_WIDTH,main.SPR_WIDTH);
-                if(lives > i) draw.batchPush(141,12+i*(main.SPR_WIDTH+1),30,main.SPR_WIDTH,main.SPR_WIDTH);
+            if(main.cfg.get("extend") == 1){
+                double j = Math.min(1,(clearx*Math.log(1+clearx))/((double)boardWidth*boardHeight));
+                int dx = (int)draw.lerp(12,boardx+(boardWidth/2f)*main.SPR_WIDTH-12,j)+(int)(Math.random()*j*4-2*j),
+                dy = (int)draw.lerp(30,main.FRAMEBUFFER_H/2f,j)+(int)(Math.random()*j*4-2*j);
+                for(int i = 0; i < 3; i++){
+                    draw.batchPush(140,dx+i*(main.SPR_WIDTH+1),dy,main.SPR_WIDTH,main.SPR_WIDTH);
+                    if(lives > i) draw.batchPush(141,dx+i*(main.SPR_WIDTH+1),dy,main.SPR_WIDTH,main.SPR_WIDTH);
+                }
+                if(j == 1){
+                    String txt;
+                    if(lives == 2) txt = "TRY AGAIN";
+                    else if(lives == 1) txt = "CAREFUL NOW";
+                    else txt = "GOODBYE";
+                    int w = (int)((txt.length()*10)/2f);
+                    draw.batchPush(9,dx+12-w,dy+10,2*w,10,new Color(24,20,37));
+                    draw.drawText(txt,dx+12-w,dy+10,10,10,Color.WHITE);
+                }
             }
         }else{
             main.bgtx = 0;
