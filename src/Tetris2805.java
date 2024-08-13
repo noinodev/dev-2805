@@ -227,7 +227,7 @@ public class Tetris2805 extends JPanel implements ActionListener {
                 long timeTaken = System.nanoTime() - now,
                 sleepTime = (long)(expectedFrametime - timeTaken);
 
-                draw.drawText(""+timeTaken/1000000f,20,FRAMEBUFFER_H-60,8,6,Color.WHITE);
+                draw.drawText(""+timeTaken/1000000f,20,FRAMEBUFFER_H-40,8,6,Color.WHITE);
 
                 if (sleepTime > 0) {
                     try {

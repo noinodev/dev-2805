@@ -5,7 +5,7 @@ import java.util.ArrayList;
 
 class tetris extends scene {
     public final int TET_WIDTH = 4;
-    private int boardWidth,boardHeight,posx,posy,boardx,boardy,time,score,state,cleary,clearflash,level,lines,nextTetronimo;
+    private int boardWidth,boardHeight,posx,posy,boardx,boardy,time,score,state,clearx,cleary,clearflash,level,lines,nextTetronimo,lives;
     private double cleardy,illum;
     private final Color[] flash = {new Color(255,255,255), new Color(255,0,68), new Color(99,199,77), new Color(44,232,245), new Color(254,231,97)};
     private final int scores[] = {40,100,300,1200}; // tetris scores
@@ -211,6 +211,10 @@ class tetris extends scene {
         level = main.cfg.get("level");
         lines = 0;
         illum = 1;
+        lives = 3;
+        clearx = 0;
+        cleary = 0;
+        cleardy = 0;
 
         board = new int[boardWidth][boardHeight];
         light = new double[boardWidth][boardHeight];
@@ -252,7 +256,11 @@ class tetris extends scene {
                             state = 3;
                         }
                         currentTetromino = spawnTetromino();
-                        if(!checkBoardState()) state = 2;
+                        if(!checkBoardState()){
+                            lives--;
+                            clearx = 0;
+                            state = 4;
+                        }
                         boardx += 2-(int)(Math.random()*4);
                         boardy += 2-(int)(Math.random()*4);
                         illum = 0.5;
@@ -386,9 +394,25 @@ class tetris extends scene {
                 }
             }
 
+            if(state == 4){
+                int x = clearx%boardWidth, y = clearx/boardWidth;
+                if(board[x][y] > 0 && board[x][y] < 100){
+                    board[x][y] = 0;
+                    for(int k = 0; k < 3; k++) draw.particlePush(30,33,0.03+0.02*Math.random(),boardx+(int)(x*main.SPR_WIDTH+main.SPR_WIDTH*Math.random()),boardy+y*main.SPR_WIDTH+(int)(main.SPR_WIDTH*Math.random()),-0.1+0.2*Math.random(),-0.1+0.2*Math.random(),Color.WHITE);
+                }
+                if(clearx >= boardWidth*boardHeight-1){
+                    if(lives <= 0) state = 2;
+                    else state = 0;
+                }else clearx++;
+            }
+
             if(state == 1){
                 draw.drawText("PAUSED",10,20,10,8,null);
                 draw.drawText("ESC TO RESUME",10,30,8,6,Color.GRAY);
+            }
+            for(int i = 0; i < 3; i++){
+                draw.batchPush(140,12+i*(main.SPR_WIDTH+1),30,main.SPR_WIDTH,main.SPR_WIDTH);
+                if(lives > i) draw.batchPush(141,12+i*(main.SPR_WIDTH+1),30,main.SPR_WIDTH,main.SPR_WIDTH);
             }
         }else{
             main.bgtx = 0;
