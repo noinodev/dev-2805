@@ -82,7 +82,7 @@ class config extends scene {
         main.cfg.put("music",draw.drawToggle("MUSIC",20,30+10*3,main.FRAMEBUFFER_W-40,10,main.cfg.get("music")));
         main.cfg.put("sound",draw.drawToggle("SFX",20,30+10*4,main.FRAMEBUFFER_W-40,10,main.cfg.get("sound")));
         main.cfg.put("ai",draw.drawToggle("AI PLAY",20,30+10*5,main.FRAMEBUFFER_W-40,10,main.cfg.get("ai")));
-        main.cfg.put("extend",draw.drawToggle("EXTEND MODE",20,30+10*6,main.FRAMEBUFFER_W-40,10,main.cfg.get("extend")));
+        main.cfg.put("extend",draw.drawToggle("GOBLIN MODE",20,30+10*6,main.FRAMEBUFFER_W-40,10,main.cfg.get("extend")));
 
         if(draw.drawButton("APPLY",20,30+10*9,80,10) == 1) main.saveData(main.cfg,"src/config.txt");
         if(draw.drawButton("RESET",20,30+10*8,80,10) == 1) main.cfg = main.loadData("src/cfgdef.txt");
