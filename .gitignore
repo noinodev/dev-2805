@@ -2,6 +2,9 @@
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
+atlas.pdn
+levelatlas.pdn
+.idea/uiDesigner.xml
 
 ### Eclipse ###
 .apt_generated

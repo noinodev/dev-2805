@@ -248,7 +248,7 @@ class tetris extends scene {
             main.bgtx = score+800*level;
             if(state == 0){
                 //main.bgtx = score+800*level;// +main.frame*0.2;
-                if((time/4f > 60-2*level || main.input.get(KeyEvent.VK_DOWN) == 1) && Math.abs(currentTetromino.dx-currentTetromino.x*main.SPR_WIDTH) + Math.abs(currentTetromino.dy-currentTetromino.y*main.SPR_WIDTH) < 10){
+                if((time/4f > 60-6*level || main.input.get(KeyEvent.VK_DOWN) == 1) && Math.abs(currentTetromino.dx-currentTetromino.x*main.SPR_WIDTH) + Math.abs(currentTetromino.dy-currentTetromino.y*main.SPR_WIDTH) < 10){
                     time = 0;
                     if(!checkBoardState()){
                         tetromino t = currentTetromino;
