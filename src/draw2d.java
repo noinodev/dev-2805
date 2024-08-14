@@ -28,11 +28,11 @@ public class draw2d{
         lastbutton = 0;
     }
 
-    public double lerp(double a, double b, double f) {
+    public double lerp(double a, double b, double f) { // helper method, java stl doesnt have lerp???
         return (a * (1.0 - f)) + (b * f);
     }
 
-    private BufferedImage tintImage(BufferedImage src, Color color) {
+    private BufferedImage tintImage(BufferedImage src, Color color) { // image colouring, pretty sure this is really slow but i just wanted colours
         BufferedImage out = new BufferedImage(src.getWidth(), src.getHeight(), BufferedImage.TYPE_INT_ARGB);
         float[] scales = { color.getRed() / 255f, color.getGreen() / 255f, color.getBlue() / 255f, 1f };
         float[] offsets = new float[4];
@@ -55,6 +55,7 @@ public class draw2d{
         particles.add(p);
     }
 
+    public void batchPush(int id,int x,int y,int w,int h){ batchPush(id,x,y,w,h,null); }
     public void batchPush(int id,int x,int y,int w,int h, Color c){
         quad q = new quad();
         q.id = id;
@@ -66,11 +67,7 @@ public class draw2d{
         batch.add(q);
     }
 
-    public void batchPush(int id,int x,int y,int w,int h){
-        batchPush(id,x,y,w,h,null);
-    }
-
-    public void drawBox(int x, int y, int w, int h, int size){
+    public void drawBox(int x, int y, int w, int h, int size){ // only really used for ui elements
         batchPush(10,x,y,size,size);
         //batchPush(11,x+w-size,y,size,size);
         batchPush(12,x,y+h-size,size,size);
@@ -118,7 +115,7 @@ public class draw2d{
                 quad j = batch.get(i);
                 if(j != null){
                     BufferedImage finaldraw = sprites[j.id];
-                    if(j.c != null) finaldraw = tintImage(finaldraw,j.c);
+                    if(j.c != null && j.c != Color.WHITE) finaldraw = tintImage(finaldraw,j.c);
                     viewport.drawImage(finaldraw, j.x, j.y, j.w, j.h, null);
                 }
             }
@@ -126,7 +123,9 @@ public class draw2d{
         batch.clear();
     }
 
-    public int getButtonContext(int x, int y, int w, int h, int mousecontext){
+    // ui elements and functions
+
+    public int getButtonContext(int x, int y, int w, int h, int mousecontext){ // get cursor context for buttons, text fields etc, and get the current button to reset the animation
         int m = main.mouseInArea(x,y,w,h);
         if(m == 1){
             if(lastbutton != x+y){ // dum dum button hash, say NO to classes !
@@ -141,7 +140,7 @@ public class draw2d{
     public int drawButton(String label, int x, int y, int w, int h){
         int m = getButtonContext(x,y,w,h,1);
         double mouseanim = m*buttonanim;
-        int c = 255-(int)(80*m);
+        int c = 255-80*m;
         batchPush(9,x+m,y+m,w-2*m,h-2*m,new Color(24,20,37));
         drawBox(x-m,y-m,w+2*m,h+2*m,7-m);
         drawText(label,x+1+(int)(5*mouseanim),y+1,8,6,new Color(c,c,c,160+(int) (Math.sin((main.frame/main.TPS) * 2*Math.PI))*80));
@@ -192,7 +191,6 @@ public class draw2d{
         batchPush(9,x+m,y+m,w-2*m,h-2*m,new Color(24,20,37));
         drawBox(x-m,y-m,w+2*m,h+2*m,7-m);
         if(main.keycontext == x+y){
-            //System.out.println(main.keybuffer/* + ((main.frame%(main.TPS) < main.TPS/2) ? "|" : "")*/);
             drawText(main.keybuffer,x+1,y+1,8,6,new Color(c,c,c,255));
             int a = (int) (Math.sin((main.frame/main.TPS) * 2*Math.PI)*255);
             batchPush(9,x+main.keybuffer.length()*8+2,y+2,1,4,new Color(255,255,255,Math.abs(a)));

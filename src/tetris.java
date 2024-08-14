@@ -3,22 +3,25 @@ import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 
-class tetris extends scene {
+class tetris extends scene { // main gameplay scene, i put it in its own class file because its huge. i couldve separated it into other classes but i dont really care
     public final int TET_WIDTH = 4;
-    private int boardWidth,boardHeight,posx,posy,boardx,boardy,time,score,state,clearx,cleary,clearflash,level,lines,nextTetronimo,lives;
+    private int boardWidth,boardHeight,posx,posy,boardx,boardy,time,score,state,clearx,cleary,clearflash,level,lines,nextTetronimo,lives; // yuck
     private double cleardy,cleardx,illum;
-    private final Color[] flash = {new Color(255,255,255), new Color(255,0,68), new Color(99,199,77), new Color(44,232,245), new Color(254,231,97)};
+    private final Color[] flash = {new Color(255,255,255), new Color(255,0,68), new Color(99,199,77), new Color(44,232,245), new Color(254,231,97)}; // merge particle colours
     private final int scores[] = {40,100,300,1200}; // tetris scores
     private int[][] board;
     private double[][] light;
     private int[][][][] tetrominoList;
-    private final String[] taunts =
-    {"YOU SUCK","???","GONNA CRY?","LOL","LOSER","GOBLINS RULE","BUYING GOBLIN GF","IN THE STRIPPED CLUB","STRAIGHT JORKIN IT",
+    private final BufferedImage levelimage = main.loadTexture("levelatlas.png");
+    private final String[] taunts = {"YOU SUCK","???","GONNA CRY?","LOL","LOSER","GOBLINS RULE","BUYING GOBLIN GF","IN THE STRIPPED CLUB","STRAIGHT JORKIN IT",
     "WOW...","ZZZ","TRY HARDER","IM IN JAVA?","SRS??","GOBLIN4LIFE","..."};
-    private class tetromino {
+    // took me way too long to write these consts, i was just remembering the integers before lol
+    private final int STATE_PLAY = 0, STATE_PAUSE = 1, STATE_GAMEOVER = 2, STATE_CLEAR = 3, STATE_LOSE = 4, STATE_null = 5, STATE_STARTLEVEL = 6, STATE_ENDLEVEL = 7;
+
+    private class Tetromino { // tetromino class
         public int x,y,i,j,t;
         double dx,dy;
-        public tetromino(int _x, int _y, int _i, int _j, int _t){
+        public Tetromino(int _x, int _y, int _i, int _j, int _t){
             x = _x;
             y = _y;
             dx = x*main.SPR_WIDTH;
@@ -28,13 +31,13 @@ class tetris extends scene {
             t = _t;
         }
     }
-    private tetromino currentTetromino;
+    private Tetromino currentTetromino;
 
-    private class enemy {
+    private class Enemy { // goblins
         double x,y,hsp,vsp;
         int spr,xd;
         String taunt,txt;
-        public enemy(int _spr, double _x, double _y){
+        public Enemy(int _spr, double _x, double _y){
             x = _x;
             y = _y;
             spr = _spr;
@@ -43,43 +46,42 @@ class tetris extends scene {
             txt = "";
         }
     }
-    private final ArrayList<enemy> enemylist = new ArrayList<enemy>();
+    private final ArrayList<Enemy> enemylist = new ArrayList<Enemy>();
 
-    private void loadLevel(int offset, int w, int h){
-        BufferedImage in = main.loadTexture("levelatlas.png");
+    private void loadLevel(int offset, int w, int h){ // loads goblin levels from an image, colour data represents what goes where
+        BufferedImage in = levelimage;
         for(int x = 0; x < w; x++){
             for(int y = 0; y < h; y++){
                 int c = in.getRGB(offset+x,y) & 0xFFFFFF;
                 if(c == 0x000000)board[x][y] = 0;
-                else if(c == 0x0000FF) board[x][y] = 114;
-                else if(c == 0x00FF00) board[x][y] = 160;
-                else if(c == 0x00FF80) board[x][y] = 161;
-                else if(c == 0x80FF00) board[x][y] = 162;
-                else if(c == 0xFFFF00) board[x][y] = 163;
-                else if(c == 0xFFFF80) board[x][y] = 173;
-                else if(c == 0xFF0000) spawnEnemy(posx+x*main.SPR_WIDTH,posy+y*main.SPR_WIDTH);
-                else System.out.println("funny colour dattebayo.. " + c);
+                else if(c == 0x0000FF) board[x][y] = 114; // bricks               all sprites arent named and i couldnt be bothered doing so
+                else if(c == 0x00FF00) board[x][y] = 160; // torch up             you kinda just gotta figure it out
+                else if(c == 0x00FF80) board[x][y] = 161; // torch left
+                else if(c == 0x80FF00) board[x][y] = 162; // torch right
+                else if(c == 0xFFFF00) board[x][y] = 163; // scaffold vertical
+                else if(c == 0xFFFF80) board[x][y] = 173; // scaffold horizontal
+                else if(c == 0xFF0000) spawnEnemy(posx+x*main.SPR_WIDTH,posy+y*main.SPR_WIDTH); // goblin
+                else System.out.println("funny colour dattebayo.. " + c); // precision error logging
 
             }
         }
     }
 
     private int getLightLevel(int x,int y,double scale){
+        // starting light distance is distance to current tetromino, as it makes the lighting smoother as it drops between cells
         double minDistance = Math.sqrt(Math.pow((currentTetromino.dx/main.SPR_WIDTH)+1 - x, 2) + Math.pow((currentTetromino.dy/main.SPR_WIDTH)+1 - y, 2));
-        //double minDistance = Double.MAX_VALUE;
         for (int i = 0; i < boardWidth; i++) {
             for (int j = 0; j < boardHeight; j++) {
-                if (board[i][j] != 0 && board[i][j] != 114) {
-                    double distance = Math.sqrt(Math.pow(i - x, 2) + Math.pow(j - y, 2));
-                    minDistance = Math.min(minDistance, distance);
+                if (board[i][j] != 0 && board[i][j] != 114 && board[i][j] != 163 && board[i][j] != 173) { // brick and scaffold tiles specifically are ignored kinda hacky until i add more decorations and fix it
+                    double distance = Math.sqrt(Math.pow(i - x, 2) + Math.pow(j - y, 2)); // euclidean distance to target cell
+                    minDistance = Math.min(minDistance, distance); // self explanatory
                 }
             }
         }
-
-        return (int)(10-Math.min(Math.max(minDistance*scale, 1),10));
+        return (int)(10-Math.min(Math.max(minDistance*scale, 1),10)); // 10 light levels
     }
 
-    private int getTileIndex(int i, int x, int y){
+    private int getTileIndex(int i, int x, int y){ // autotiling helper function, just for bricks. its actually really slow !
         int l=0,r=0,t=0,b=0;
         if(x > 0 && board[x-1][y] == i) l = 1;
         if(x < boardWidth-1 && board[x+1][y] == i) r = 1;
@@ -109,7 +111,7 @@ class tetris extends scene {
         return i-6;
     }
 
-    private int pointCheck(double x, double y){
+    private int pointCheck(double x, double y){ // collision function for enemies, check if out of bounds -> check if inside an occupied cell
         int bx = (int)Math.floor((x-posx)/main.SPR_WIDTH), by = (int)((y-posy)/main.SPR_WIDTH);
         if(bx < 0 || bx >= boardWidth || by < 0 || by >= boardHeight || (board[bx][by] > 0 && board[bx][by] < 160)) return 1;
         return 0;
@@ -123,7 +125,9 @@ class tetris extends scene {
             for(int j = 0; j < 4; j++){
                 for(int x = 0; x < TET_WIDTH; x++){
                     for(int y = 0; y < TET_WIDTH; y++){
-                        out[i][j][x][y] = Math.min(in.getRGB(j*TET_WIDTH+x,i*TET_WIDTH+y) & 0xff,1);
+                        // i=tetromino index, j=rotation index, x=x, y=y
+                        // it was easier to handle rotations this way, as if im gonna do a rotation matrix just for this that would be silly
+                        out[i][j][x][y] = Math.min(in.getRGB(j*TET_WIDTH+x,i*TET_WIDTH+y) & 0xff,1); // set cells of tetromino grid by colour data
                     }
                 }
             }
@@ -131,15 +135,16 @@ class tetris extends scene {
         return out;
     }
 
-    private boolean checkBoardState(){
-        tetromino t = currentTetromino;
+    private boolean checkBoardState(){ // tetromino collision function
+        Tetromino t = currentTetromino;
         boolean collision = true;
         for(int i = 0; i < TET_WIDTH; i++){
             for(int j = 0; j < TET_WIDTH; j++){
                 if(tetrominoList[t.i][t.j][i][j] > 0){
-                    int x = t.x+i, y = t.y+1+j;
+                    int x = t.x+i, y = t.y+1+j; // normalized x and y for tetromino position
                     if(y < 0 || y >= boardHeight || x < 0 || x >= boardWidth || (board[x][y] > 0 && board[x][y] < 160)){ // hack to ignore decorative tiles
-                        collision = false;
+                        collision = false; // this doesnt make sense because if this happens then there is a collision, but 'nocollision' as a variable name seems silly and i didnt want to reverse usages of the function
+                        // create particles even for potential collision because it gives player feedback
                         if((int)(Math.random()*2) == 0) draw.particlePush(29,34,0.05+0.05*Math.random(),boardx+x*main.SPR_WIDTH,boardy+(y-1)*main.SPR_WIDTH,-0.1+0.2*Math.random(),-0.1+0.3*Math.random(),flash[(int)(Math.random()*5)]); // yuck
                     }
                 }
@@ -156,10 +161,10 @@ class tetris extends scene {
         for(int i = boardHeight-1; i > 0; i--){
             int clear = 1;
             for(int j = 0; j < boardWidth; j++){
-                if(board[j][i] == 0 || board[j][i] >= 160) clear = 0;
+                if(board[j][i] == 0 || board[j][i] >= 160) clear = 0; // decorative tiles are all indexed above 160
             }
             if(clear == 1){
-                for(int y = i; y > 1; y--){
+                for(int y = i; y > 1; y--){ // shift rows above row to be cleared
                     for(int x = 0; x < boardWidth; x++) board[x][y] = board[x][y-1];
                 }
                 rows++;
@@ -174,114 +179,117 @@ class tetris extends scene {
         for(int i = boardHeight-1; i > 0; i--){
             int clear = 1;
             for(int j = 0; j < boardWidth; j++){
-                if(board[j][i] == 0 || board[j][i] >= 160) clear = 0;
+                if(board[j][i] == 0 || board[j][i] >= 160) clear = 0; // decorative tiles are all indexed above 160
             }
             if(clear == 1){
-                if(rows == 0){
+                if(rows == 0){ // reset row clear animation for first found row, i would break here but this function also counts how many rows are cleared at once for scoring
                     cleary = i;
                     cleardy = 0;
                     clearflash = (int)(Math.random()*5);
                 }
-                rows++;
+                rows++; // count the number of rows for scoring purposes
                 for(int k = 0; k < 10; k++) draw.particlePush(29,34,0.05+0.05*Math.random(),boardx+(int)(boardWidth*main.SPR_WIDTH*Math.random()),boardy+cleary*main.SPR_WIDTH,-0.1+0.2*Math.random(),-0.1+0.2*Math.random(),flash[(int)(Math.random()*5)]); // yuck
-                //break;
+                // particle effect ^^
             }
         }
         return rows;
     }
 
-    private tetromino spawnTetromino(){
-        tetromino out = new tetromino(boardWidth/2-TET_WIDTH/2,0,nextTetronimo,0,10*Math.min(level/3,5)+4+(int)(Math.random()*4));
+    private Tetromino spawnTetromino(){ // self explanatory
+        Tetromino out = new Tetromino(boardWidth/2-TET_WIDTH/2,0,nextTetronimo,0,10*Math.min(level/3,5)+4+(int)(Math.random()*4));
         nextTetronimo = (int)(Math.random() * tetrominoList.length);
         return out;
     }
 
-    private enemy spawnEnemy(double x, double y){
-        enemy out = new enemy(135+10*(int)(Math.random()*3),x,y);
+    private Enemy spawnEnemy(double x, double y){ // self explanatory
+        Enemy out = new Enemy(135+10*(int)(Math.random()*3),x,y);
         enemylist.add(out);
         return out;
     }
 
-    public tetris(Tetris2805 m, draw2d d) {
+    public tetris(Tetris2805 m, draw2d d) { // this is really gross
         super(m, d);
         draw.clearColour = new Color(24,20,37);
         main.sceneIndex = 4;
         tetrominoList = getTetrominoes(main.loadTexture("tetrominoatlas.png"));
         boardWidth = main.cfg.get("width");
         boardHeight = main.cfg.get("height")+2;
-        posx = 80;
+        posx = 80; // board anchor position
         posy = 6;
         boardx = posx;
         boardy = posy;
         currentTetromino = spawnTetromino();
-        nextTetronimo = (int)(Math.random() * tetrominoList.length);
+        nextTetronimo = (int)(Math.random() * tetrominoList.length); // random tetromino same as in spawnTetromino
         time = 0;
         score = 0;
         state = 0; // state 0 run, state 1 pause, state 2 gameover, state 3 is clearing
-        level = main.cfg.get("level");
+        level = main.cfg.get("level"); // starting level
         lines = 0;
         illum = 1;
-        lives = 1+2*main.cfg.get("extend");
+        lives = 1+2*main.cfg.get("extend"); // only goblin mode has 3 lives
         clearx = 0;
         cleary = 0;
         cleardy = 0;
         cleardx = 0;
 
-        board = new int[boardWidth][boardHeight];
-        light = new double[boardWidth][boardHeight];
+        board = new int[boardWidth][boardHeight]; // board init
+        light = new double[boardWidth][boardHeight]; // light init
         for(int i = 0; i < boardWidth; i++){
             for(int j = 0; j < boardHeight; j++){
                 board[i][j] = 0;
                 light[i][j] = 0;
             }
         }
-        loadLevel(0,boardWidth,boardHeight);
+        if(main.cfg.get("extend") == 1) loadLevel(0,boardWidth,boardHeight); // first goblin level
     }
 
     @Override
     public void loop(){
-        //draw.batchPush(6,10,10,10,10);
+        // animations and interpolations for various states
         double interpolatespeed = 16-12*main.input.get(KeyEvent.VK_DOWN);
         boardx -= Math.ceil(boardx-posx)*0.2;
         boardy -= Math.ceil(boardy-posy)*0.2;
-        illum -= (illum-(2+1*(time/main.TPS)/*+Math.sin(9*(main.frame/main.TPS))*0.2*/))*0.05;
+        illum -= (illum-(2+1*(time/main.TPS)))*0.05;
 
         time++;
-        if(state != 2){
-            if(main.input.get(KeyEvent.VK_ESCAPE) == 1) state = 1-state;
-            main.bgtx = score+800*level;
-            if(state == 0){
-                //main.bgtx = score+800*level;// +main.frame*0.2;
+        if(state != STATE_GAMEOVER){
+            if(main.input.get(KeyEvent.VK_ESCAPE) == 1 || main.input.get(KeyEvent.VK_P) == 1) state = 1-state; // pause input
+            main.bgtx = score+800*level+main.frame*0.1;
+            if(state == STATE_PLAY){
+                // tetromino drop, either with key input or on timer. each level shaves 1/10th of a second off
                 if((time/4f > Math.max(1,60-6*level) || main.input.get(KeyEvent.VK_DOWN) == 1) && Math.abs(currentTetromino.dx-currentTetromino.x*main.SPR_WIDTH) + Math.abs(currentTetromino.dy-currentTetromino.y*main.SPR_WIDTH) < 10){
                     time = 0;
-                    if(!checkBoardState()){
-                        tetromino t = currentTetromino;
+                    if(!checkBoardState()){ // collision on drop
+                        Tetromino t = currentTetromino;
+                        // merge tetromino
                         for(int i = 0; i < TET_WIDTH; i++){
                             for(int j = 0; j < TET_WIDTH; j++){
                                 int x = t.x+i, y = t.y+j;
                                 if(tetrominoList[t.i][t.j][i][j] > 0) board[x][y] = t.t;
                             }
                         }
+                        // add score and set state to clear rows
                         int rows = checkRows();
-                        if(rows > 0){
+                        if(rows > 0){ //
                             score += scores[rows-1]*(level+1);
-                            state = 3;
+                            state = STATE_CLEAR;
                         }
+                        // spawn new tetromino
                         currentTetromino = spawnTetromino();
-                        if(!checkBoardState()){
+                        if(!checkBoardState()){ // fail state, if tetromino spawns fouled then state is set to lose
                             lives--;
                             clearx = 0;
-                            state = 4;
+                            state = STATE_LOSE;
                         }
-                        boardx += 2-(int)(Math.random()*4);
+                        boardx += 2-(int)(Math.random()*4); // shake the board
                         boardy += 2-(int)(Math.random()*4);
-                        illum = 0.5;
+                        illum = 0.5; // light up the board
                     }else{
-                        currentTetromino.y++;
+                        currentTetromino.y++; // drop tetromino
                         illum *= 0.8;
                     }
                 }
-
+                // all other tetromino inputs
                 int xp =currentTetromino.x, rp = currentTetromino.j;
                 if(main.input.get(KeyEvent.VK_RIGHT) == 1) currentTetromino.x++;
                 if(main.input.get(KeyEvent.VK_LEFT) == 1) currentTetromino.x--;
@@ -291,7 +299,7 @@ class tetris extends scene {
                     currentTetromino.j = rp;
                 }
             }
-
+            // board borders
             draw.batchPush(9,boardx-1,boardy-1+2*main.SPR_WIDTH,boardWidth*main.SPR_WIDTH+1,(boardHeight-2)*main.SPR_WIDTH+1,new Color(38,43,68));
             draw.batchPush(9,boardx,boardy+2*main.SPR_WIDTH,boardWidth*main.SPR_WIDTH+1,(boardHeight-2)*main.SPR_WIDTH+1,new Color(139,155,180));
 
@@ -305,22 +313,22 @@ class tetris extends scene {
                     if(j < boardHeight-1) tl += light[i][j+1];
                     if(j > 0) tl += light[i][j-1];
                     tl /= 8;
-                    light[i][j] -= (light[i][j]-tl)*(0.05/illum);
-                    int li = (int)light[i][j];
+                    light[i][j] -= (light[i][j]-tl)*(0.05/illum); // this didnt need to look so hacky but i wanted the lights to be smoother and take the average of adjacent cells
+                    int li = (int)light[i][j]; // VVV that hack is for the sprite indexes for different light levels
                     draw.batchPush((li > 0) ? (18+10*(li%5)+li/5) : (i+j)%4,boardx+i*main.SPR_WIDTH,boardy+j*main.SPR_WIDTH, main.SPR_WIDTH,main.SPR_WIDTH);
-                    if(board[i][j] < 0) board[i][j] = 0;
+                    if(board[i][j] < 0) board[i][j] = 0; // moving tetromino sets board cells to negative values, reset this
                 }
             }
 
             int lo = 0;
-            if(state == 6){
+            if(state == STATE_STARTLEVEL){ // level clear animation
                 lo = (int)cleardx;
-                cleardx -= ((boardWidth+1)*main.SPR_WIDTH-cleardx)*0.01;
+                cleardx -= ((boardWidth+1)*main.SPR_WIDTH-cleardx)*0.01; // cleardx is the horizontal scrolling of the board between levels
                 boardx += (int)(cleardx*0.1)-(int)(Math.random()*(cleardx*0.2));
                 boardy += (int)(cleardx*0.1)-(int)(Math.random()*(cleardx*0.2));
                 illum = 10;
                 if(cleardx <= 0.1){
-                    state = 0;
+                    state = STATE_PLAY;
                     cleardx = 0;
                 }
             }
@@ -330,127 +338,121 @@ class tetris extends scene {
                 for(int j = 2; j < boardHeight; j++){
                     if(board[i][j] > 0 && j != cleary){
                         int k = board[i][j];
-                        if(k == 114) k = getTileIndex(k,i,j); // the brick tile is the only tile with an index over 100 so
-                        else if(k >= 160 && k <= 162) k += ((int)(main.frame/(main.TPS/4))%2)*10;
-                        draw.batchPush(k,boardx+i*main.SPR_WIDTH + lo,boardy+j*main.SPR_WIDTH + (j < cleary ? (int)cleardy : 0), main.SPR_WIDTH,main.SPR_WIDTH);
+                        if(k == 114) k = getTileIndex(k,i,j); // the brick tile is the only tile with autotiling
+                        else if(k >= 160 && k <= 162) k += ((int)(main.frame/(main.TPS/4))%2)*10; // torch animation
+                        draw.batchPush(k,boardx+i*main.SPR_WIDTH + lo,boardy+j*main.SPR_WIDTH + (j < cleary ? (int)cleardy : 0), main.SPR_WIDTH,main.SPR_WIDTH); // ternary operator to only draw rows above cleardy in animated state for row clear
                     }
                 }
             }
 
-            //update enemies
+            //update enemies in goblin mode
             if(main.cfg.get("extend") == 1){
                 // if(main.input.get(-1) == 1) spawnEnemy(main.mousex,main.mousey);
                 if(enemylist.size() > 0){
                     for(int i = 0; i < enemylist.size(); i++){
-                        enemy e = enemylist.get(i);
-                        if(state == 0){
-                            if(e.hsp != 0) e.xd = e.hsp > 0 ? 1 : -1;
-                            if(pointCheck(e.x+2*e.xd+e.hsp,e.y) == 1) e.hsp = 0;
+                        Enemy e = enemylist.get(i);
+                        if(state == STATE_PLAY){
+                            if(e.hsp != 0) e.xd = e.hsp > 0 ? 1 : -1; // set facing direction
+                            if(pointCheck(e.x+2*e.xd+e.hsp,e.y) == 1) e.hsp = 0; // collisions
                             if(pointCheck(e.x,e.y+e.vsp) == 1) e.vsp = 0;
                             e.x += e.hsp;
                             e.y += e.vsp;
-                            e.vsp += 0.02;
-                            if(e.txt.length() == e.taunt.length()){
+                            e.vsp += 0.02; // gravity
+                            if(e.txt.length() == e.taunt.length()){ // taunt reset
                                 if(e.txt.length() > 0 && (int)(Math.random()*(main.TPS*2)) == 0){
                                     e.txt = "";
                                     e.taunt = "";
                                 }
                             }
 
-                            if(e.taunt.length() > e.txt.length() && (int)(Math.random()*5) == 0)e.txt = e.taunt.substring(0,e.txt.length()+1);
-                            if(state == 4 || (e.taunt == "" && (int)(Math.random()*(main.TPS*5)) == 0)) e.taunt = taunts[(int)(Math.random()*taunts.length)];
+                            if(e.taunt.length() > e.txt.length() && (int)(Math.random()*5) == 0)e.txt = e.taunt.substring(0,e.txt.length()+1); // taunt animation
+                            if(state == STATE_LOSE || (e.taunt == "" && (int)(Math.random()*(main.TPS*5)) == 0)) e.taunt = taunts[(int)(Math.random()*taunts.length)]; // new taunt
 
+                            // run away from current tetromino
                             if(Math.abs(currentTetromino.dx+boardx+2*main.SPR_WIDTH-e.x) < 2*main.SPR_WIDTH) e.hsp = -(currentTetromino.dx+boardx+2*main.SPR_WIDTH-e.x)*0.01;
-                            else if((int)(Math.random()*main.TPS) == 0) e.hsp = -0.25+0.5*Math.random();
+                            else if((int)(Math.random()*main.TPS) == 0) e.hsp = -0.25+0.5*Math.random(); // wander
                             if((int)(Math.random()*main.TPS) == 0) e.hsp = 0;
                         }
 
-                        if(pointCheck(e.x,e.y) == 1/* || main.input.get(-1) == 1*/){
+                        if(pointCheck(e.x,e.y) == 1){ // die from being crushed
                             enemylist.remove(i);
                             for(int j = 0; j < 4; j++) draw.particlePush(130,134,0.03+0.02*Math.random(),(int)e.x,(int)e.y,-0.1+0.2*Math.random(),-0.1+0.2*Math.random(),Color.WHITE);
                             draw.particlePush(150,154,0.09+0.01*Math.random(),(int)e.x-main.SPR_WIDTH/2,(int)e.y-main.SPR_WIDTH,-0.01+0.02*Math.random(),-0.08,Color.WHITE);
                             i--;
                         }
 
+                        // draw self
                         draw.batchPush(e.spr+(int)(main.frame/(main.TPS/2))%2+(e.hsp != 0 ? 1 : 0),
                                 (int)e.x-e.xd*main.SPR_WIDTH/2 + lo,
                                 (int)e.y-main.SPR_WIDTH+(int)Math.abs(Math.sin((main.frame/main.TPS + i*234)*Math.PI)*Math.abs(e.hsp)),
                                 e.xd*main.SPR_WIDTH,main.SPR_WIDTH);
-                        // taunts
+                        // draw taunt
                         if(e.txt != ""){
                             draw.batchPush(9,(int)e.x-10,(int)e.y-18-(int)e.x%2,e.txt.length()*6,8,new Color(24,20,37));
                             draw.drawText(e.txt,(int)e.x-10,(int)e.y-18-(int)e.x%2,8,6,Color.WHITE);
                         }
                     }
-                }else if(state == 0){
+                }else if(state == STATE_PLAY){ // next level if no active enemies
                     //level++;
                     //loadLevel(level*10,boardWidth,boardHeight);
-                    state = 7;
+                    state = STATE_ENDLEVEL;
                     clearx = 0;
                     //cleardx = boardWidth*main.SPR_WIDTH;
                 }
             }
 
             //draw tetromino
-            tetromino t = currentTetromino;
-            t.dx -= (t.dx-t.x*main.SPR_WIDTH)/interpolatespeed;
+            Tetromino t = currentTetromino;
+            t.dx -= (t.dx-t.x*main.SPR_WIDTH)/interpolatespeed; // interpolate tetronimo position
             t.dy -= (t.dy-t.y*main.SPR_WIDTH)/interpolatespeed;
             for(int i = 0; i < TET_WIDTH; i++){
                 for(int j = 0; j < TET_WIDTH; j++){
-                    int x = (int)t.dx+i*(main.SPR_WIDTH), y = (int)t.dy+j*(main.SPR_WIDTH), ix = (t.x+i)*main.SPR_WIDTH, iy = (t.y+j)*main.SPR_WIDTH;
+                    int x = (int)t.dx+i*(main.SPR_WIDTH), y = (int)t.dy+j*(main.SPR_WIDTH); // normalized coordinates
                     if(tetrominoList[t.i][t.j][i][j] > 0){
-                        /*double da = 1-Math.max(0,1/(Math.sqrt(Math.pow(x-ix,2)+Math.pow(y-iy,2))));
-                        int c = Math.min(255,(int)(da*255));
-                        if(c > 10) draw.batchPush(9,boardx+ix+1,boardy+iy+1,8,8,new Color((int)draw.lerp(255,24,da),(int)draw.lerp(255,20,da),(int)draw.lerp(255,37,da),c));*/
-                        draw.batchPush(t.t,boardx+x,boardy+y,main.SPR_WIDTH,main.SPR_WIDTH);
-                        if(t.x+i >= 0 && t.x+i < boardWidth && t.y+j >= 2 && t.y+j < boardHeight && board[t.x+i][t.y+j] == 0) board[t.x+i][t.y+j] = -1;
+                        draw.batchPush(t.t,boardx+x,boardy+y,main.SPR_WIDTH,main.SPR_WIDTH); // draw tetromino
+                        if(t.x+i >= 0 && t.x+i < boardWidth && t.y+j >= 2 && t.y+j < boardHeight && board[t.x+i][t.y+j] == 0) light[t.x+i][t.y+j] = 10; // illuminate current spot
                     }
-                    // if(tetrominoList[nextTetronimo][0][i][j] > 0) draw.batchPush(8,boardx+boardWidth*main.SPR_WIDTH+(i+1)*main.SPR_WIDTH,boardy+(j+4)*main.SPR_WIDTH,main.SPR_WIDTH, main.SPR_WIDTH);
-                    if(tetrominoList[nextTetronimo][0][i][j] > 0) draw.batchPush(8,20+(i+1)*main.SPR_WIDTH,boardy+(j+4)*main.SPR_WIDTH,main.SPR_WIDTH, main.SPR_WIDTH);
+                    if(tetrominoList[nextTetronimo][0][i][j] > 0) draw.batchPush(8,20+(i+1)*main.SPR_WIDTH,boardy+(j+4)*main.SPR_WIDTH,main.SPR_WIDTH, main.SPR_WIDTH); // show next tetromino in hud
                 }
             }
 
-            draw.batchPush(9,boardx,boardy,boardWidth*main.SPR_WIDTH,2*main.SPR_WIDTH-1,new Color(24,20,37));
+            draw.batchPush(9,boardx,boardy,boardWidth*main.SPR_WIDTH,2*main.SPR_WIDTH-1,new Color(24,20,37)); // cover top of board TODO: get rid of this hack
 
-            //special goblin mode thing
+            // draw ground in goblin mode
             if(main.cfg.get("extend") == 1){
-
                 for(int i = -main.SPR_WIDTH; i < main.FRAMEBUFFER_W; i += main.SPR_WIDTH){
-                    /*draw.batchPush(100+Math.abs(i)%3,i+(int)cleardx%main.SPR_WIDTH,(int)(Math.sin((i/main.SPR_WIDTH)*2*Math.PI))+boardy+boardHeight*main.SPR_WIDTH, main.SPR_WIDTH, main.SPR_WIDTH);
-                    draw.batchPush(110+Math.abs(i)%3,i+(int)cleardx%main.SPR_WIDTH,(int)(Math.sin((i/main.SPR_WIDTH)*2*Math.PI))+boardy+(boardHeight+1)*main.SPR_WIDTH, main.SPR_WIDTH, main.SPR_WIDTH);
-                    draw.batchPush(120+Math.abs(i)%3,i+(int)cleardx%main.SPR_WIDTH,(int)(Math.sin((i/main.SPR_WIDTH)*2*Math.PI))+boardy+(boardHeight+2)*main.SPR_WIDTH, main.SPR_WIDTH, main.SPR_WIDTH);*/
                     draw.batchPush(100+Math.abs(i)%3,i+(int)cleardx%main.SPR_WIDTH,(i/main.SPR_WIDTH*i)%3-1+boardy+boardHeight*main.SPR_WIDTH, main.SPR_WIDTH, main.SPR_WIDTH);
                     draw.batchPush(110+Math.abs(i)%3,i+(int)cleardx%main.SPR_WIDTH,(i/main.SPR_WIDTH*i)%3-1+boardy+(boardHeight+1)*main.SPR_WIDTH, main.SPR_WIDTH, main.SPR_WIDTH);
                     draw.batchPush(120+Math.abs(i)%3,i+(int)cleardx%main.SPR_WIDTH,(i/main.SPR_WIDTH*i)%3-1+boardy+(boardHeight+2)*main.SPR_WIDTH, main.SPR_WIDTH, main.SPR_WIDTH);
                 }
             }
 
-            if(state == 3){
-                illum *= 0.9;
-                cleardy += main.SPR_WIDTH/(16*(1+cleardy));
+            if(state == STATE_CLEAR){
+                illum *= 0.9; // illuminate the board
+                cleardy += main.SPR_WIDTH/(16*(1+cleardy)); // cleardy animation for clearing a row
                 boardx += 2-(int)(Math.random()*4);
-                boardy += 2-(int)(Math.random()*4);
+                boardy += 2-(int)(Math.random()*4); // shake the board
                 double i = cleardy/main.SPR_WIDTH;
-                int j = (int)(Math.random()*5);
+                //int j = (int)(Math.random()*5);
+                // coloured rectangle that squishes as the board clears a row
                 draw.batchPush(9,boardx,boardy+cleary*main.SPR_WIDTH+(int)cleardy,boardWidth*main.SPR_WIDTH,Math.max(1,1+main.SPR_WIDTH-(int)cleardy),
                         new Color((int)draw.lerp(flash[clearflash].getRed(),24,i),(int)draw.lerp(flash[clearflash].getBlue(),20,i),(int)draw.lerp(flash[clearflash].getGreen(),37,i)));
                 if(cleardy > main.SPR_WIDTH){
+                    // anim reset, check if more rows need to be cleared
                     for(int k = 0; k < 10; k++) draw.particlePush(30,33,0.05+0.05*Math.random(),boardx+(int)(boardWidth*main.SPR_WIDTH*Math.random()),boardy+cleary*main.SPR_WIDTH,0,0,Color.WHITE);
                     cleardy = 0;
                     cleary = 0;
                     clearRows();
                     lines++;
-                    if(lines > 10*(level+1) && main.cfg.get("extend") == 0){
-                        level++;
-                    }
-                    if(checkRows() == 0) state = 0;
+                    if(lines > 10*(level+1) && main.cfg.get("extend") == 0) level++; // next level if cleared 10+ rows on current level
+                    if(checkRows() == 0) state = STATE_PLAY;
                 }
-            }else cleary = 0;
+            }else cleary = 0; // reset animation
 
-            if(state == 4 || state == 7){
-                while(board[clearx%boardWidth][clearx/boardWidth] == 0 && clearx < boardWidth*boardHeight-1) clearx++;
-                int x = clearx%boardWidth, y = clearx/boardWidth;
-                if(board[x][y] > 0 && board[x][y] < 100){
+            if(state == STATE_LOSE || state == STATE_ENDLEVEL){ // lose / level transition board clear animation
+                while(board[clearx%boardWidth][clearx/boardWidth] == 0 && clearx < boardWidth*boardHeight-1) clearx++; // skip to next player-placed tile, speeds up the animation
+                int x = clearx%boardWidth, y = clearx/boardWidth; // x y coords from animation state clearx
+                if(board[x][y] > 0 && board[x][y] < 100){ // only clear tetromino sprites
                     board[x][y] = 0;
                     //draw.particlePush(29,34,0.05+0.05*Math.random(),boardx+(int)(boardWidth*main.SPR_WIDTH*Math.random()),boardy+cleary*main.SPR_WIDTH,-0.1+0.2*Math.random(),-0.2+0.4*Math.random(),flash[(int)(Math.random()*5)]);
                     /*for(int k = 0; k < 3; k++){
@@ -465,47 +467,51 @@ class tetris extends scene {
                     draw.particlePush(7,10,0.05+0.05*Math.random(),boardx+(x*main.SPR_WIDTH),boardy+y*main.SPR_WIDTH,0,0,Color.WHITE);
                     illum = Math.random();
                     boardx += 2-(int)(Math.random()*4);
-                    boardy += 2-(int)(Math.random()*4);
-                }else draw.particlePush(30,31,0.01+0.01*Math.random(),boardx+(x*main.SPR_WIDTH),boardy+y*main.SPR_WIDTH,0,0,Color.WHITE);
+                    boardy += 2-(int)(Math.random()*4); // lighting, board shake, particle effects
+                }//else draw.particlePush(30,31,0.01+0.01*Math.random(),boardx+(x*main.SPR_WIDTH),boardy+y*main.SPR_WIDTH,0,0,Color.WHITE);
 
                 if(clearx >= boardWidth*boardHeight-1){
-                    if(state == 7){
+                    if(state == STATE_ENDLEVEL){ // if animation is for end of level, load next level and start level clear animation
                         level++;
                         loadLevel(level*10,boardWidth,boardHeight);
                         state = 6;
                         cleardx = boardWidth*main.SPR_WIDTH;
                         clearx = 0;
-                    }else if(state == 4 && lives <= 0) state = 2;
-                    else state = 0;
+                    }else if(state == STATE_LOSE && lives <= 0) state = 2; // otherwise kill the player
+                    else state = STATE_PLAY;
                 }else clearx++;
-                // draw.drawText(""+clearx+". "+state,80,80,8,6); // debug
-            }else if(clearx > 0) clearx--;
+            }else if(clearx > 0) clearx--; // gradually reset animation
 
-            if(state == 1){
+            if(state == STATE_PAUSE){ // 'pause menu'
                 draw.drawText("PAUSED",main.FRAMEBUFFER_W/2,main.FRAMEBUFFER_H/2,10,8,null,1);
                 draw.drawText("ESC TO RESUME",main.FRAMEBUFFER_W/2,main.FRAMEBUFFER_H/2+10,8,6,Color.GRAY,1);
             }
-            if(main.cfg.get("extend") == 1){
-                double j = Math.min(1,(clearx*Math.log(1+clearx))/((double)boardWidth*boardHeight));
-                if(state == 7) j = 0; //hack
+
+            if(main.cfg.get("extend") == 1){ // goblin-specific ui
+                double j = Math.min(1,(clearx*Math.log(1+clearx))/((double)boardWidth*boardHeight)); // animation curve
+                if(state == STATE_ENDLEVEL) j = 0; // hack to not move the hearts during the level clear animation
+                //animation to move 'lives' display to center of screen anytime the player loses a life
                 int dx = (int)draw.lerp(12,boardx+(boardWidth/2f)*main.SPR_WIDTH-12,j)+(int)(Math.random()*j*4-2*j),
                 dy = (int)draw.lerp(30,main.FRAMEBUFFER_H/2f,j)+(int)(Math.random()*j*4-2*j);
-                for(int i = 0; i < 3; i++){
+                for(int i = 0; i < 3; i++){ // 'healthbar'
                     draw.batchPush(140,dx+i*(main.SPR_WIDTH+1),dy,main.SPR_WIDTH,main.SPR_WIDTH);
                     if(lives > i) draw.batchPush(141,dx+i*(main.SPR_WIDTH+1),dy,main.SPR_WIDTH,main.SPR_WIDTH);
                 }
-                if(j == 1){
+                if(j == 1){ // scary little message when you lose a life
                     String txt;
                     if(lives == 2) txt = "TRY AGAIN";
                     else if(lives == 1) txt = "CAREFUL NOW";
                     else txt = "GOODBYE";
+                    int k = (int)(Math.random()*(txt.length()-1));
+                    txt = txt.replace(txt.substring(k,k+1),""+('A'+(int)(Math.random()*('Z'-'A'))) ); // pretty unnecessary but this obfuscates the text
                     int w = (int)((txt.length()*10)/2f);
                     draw.batchPush(9,dx+12-w,dy+10,2*w,10,new Color(24,20,37));
                     draw.drawText(txt,dx+12-w,dy+10,10,10,null);
                 }
-                if(state == 6) draw.drawText("LEVEL CLEARED".substring(0,(int)(13*Math.min(1,((boardWidth*main.SPR_WIDTH-cleardx)*3)/(boardWidth*main.SPR_WIDTH)))),main.FRAMEBUFFER_W/2-65,main.FRAMEBUFFER_H/2,10,10,null);
+                // level clear message
+                if(state == STATE_STARTLEVEL) draw.drawText("LEVEL CLEARED".substring(0,(int)(13*Math.min(1,((boardWidth*main.SPR_WIDTH-cleardx)*3)/(boardWidth*main.SPR_WIDTH)))),main.FRAMEBUFFER_W/2-65,main.FRAMEBUFFER_H/2,10,10,null);
             }
-        }else{
+        }else{ // gameover screen
             main.bgtx = 0;
             String name = draw.drawTextfield("ENTER NAME",10,60,80,10);
             if(name != ""){
@@ -516,7 +522,7 @@ class tetris extends scene {
             if(draw.drawButton("QUIT",10,51,80,10) == 1) main.displayconfirm = 1;
             draw.drawText("GAME OVER",10,30,10,10,Color.RED);
         }
-
+        // context independent ui for level and score
         draw.drawText("LEVEL "+level,10,10,10,8,Color.WHITE);
         draw.drawText(""+score,10,20,8,6,flash[(score/100)%5]);
     }

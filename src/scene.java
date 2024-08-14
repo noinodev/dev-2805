@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
 
-abstract class scene {
+abstract class scene { // scene base class
     protected Tetris2805 main;
     protected draw2d draw;
 
@@ -19,7 +19,7 @@ abstract class scene {
     public void loop(){}
 }
 
-class splash extends scene {
+class splash extends scene { // splash screen
     private int time;
     public splash(Tetris2805 m, draw2d d) {
         super(m, d);
@@ -38,7 +38,7 @@ class splash extends scene {
     }
 }
 
-class menu extends scene {
+class menu extends scene { // main menu
     private int time;
     public menu(Tetris2805 m, draw2d d) {
         super(m, d);
@@ -64,7 +64,7 @@ class menu extends scene {
 
 }
 
-class config extends scene {
+class config extends scene { // config menu
     private int time;
     public config(Tetris2805 m, draw2d d) {
         super(m, d);
@@ -94,13 +94,14 @@ class config extends scene {
 
 }
 
-class hscore extends scene {
+class hscore extends scene { // leaderboard menu
     private int time;
     private ArrayList<Map.Entry<String, Integer>> list;
     public hscore(Tetris2805 m, draw2d d) {
         super(m, d);
         time = 0;
         draw.clearColour = new Color(24,20,37);
+        // sorted score list
         list = new ArrayList<>(main.scores.entrySet());
         list.sort(Map.Entry.<String, Integer>comparingByValue().reversed());
         main.sceneIndex = 3;
@@ -111,6 +112,7 @@ class hscore extends scene {
         if(time < main.TPS) time++;
         double a = time/main.TPS;
         draw.drawText("HIGHSCORES",20,20,10,8,new Color((int)(255*a),(int)(255*a),(int)(255*a)));
+        // draw leaderboard
         int i = 0;
         for(Map.Entry<String, Integer> entry : list){
             int c = (int)(255*(a/(2+i)));

@@ -5,3 +5,4 @@ sound 1
 width 10
 ai 0
 height 20
+diag 0

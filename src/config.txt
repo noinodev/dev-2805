@@ -1,5 +1,6 @@
 extend 1
 music 1
+diag 0
 level 0
 sound 1
 width 10
