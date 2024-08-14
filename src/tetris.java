@@ -55,6 +55,8 @@ class tetris extends scene {
                 else if(c == 0x00FF00) board[x][y] = 160;
                 else if(c == 0x00FF80) board[x][y] = 161;
                 else if(c == 0x80FF00) board[x][y] = 162;
+                else if(c == 0xFFFF00) board[x][y] = 163;
+                else if(c == 0xFFFF80) board[x][y] = 173;
                 else if(c == 0xFF0000) spawnEnemy(posx+x*main.SPR_WIDTH,posy+y*main.SPR_WIDTH);
                 else System.out.println("funny colour dattebayo.. " + c);
 
@@ -109,7 +111,7 @@ class tetris extends scene {
 
     private int pointCheck(double x, double y){
         int bx = (int)Math.floor((x-posx)/main.SPR_WIDTH), by = (int)((y-posy)/main.SPR_WIDTH);
-        if(bx < 0 || bx >= boardWidth || by < 0 || by >= boardHeight || board[bx][by] > 0) return 1;
+        if(bx < 0 || bx >= boardWidth || by < 0 || by >= boardHeight || (board[bx][by] > 0 && board[bx][by] < 160)) return 1;
         return 0;
     }
 
@@ -154,7 +156,7 @@ class tetris extends scene {
         for(int i = boardHeight-1; i > 0; i--){
             int clear = 1;
             for(int j = 0; j < boardWidth; j++){
-                if(board[j][i] == 0) clear = 0;
+                if(board[j][i] == 0 || board[j][i] >= 160) clear = 0;
             }
             if(clear == 1){
                 for(int y = i; y > 1; y--){
@@ -172,7 +174,7 @@ class tetris extends scene {
         for(int i = boardHeight-1; i > 0; i--){
             int clear = 1;
             for(int j = 0; j < boardWidth; j++){
-                if(board[j][i] == 0) clear = 0;
+                if(board[j][i] == 0 || board[j][i] >= 160) clear = 0;
             }
             if(clear == 1){
                 if(rows == 0){
@@ -329,7 +331,7 @@ class tetris extends scene {
                     if(board[i][j] > 0 && j != cleary){
                         int k = board[i][j];
                         if(k == 114) k = getTileIndex(k,i,j); // the brick tile is the only tile with an index over 100 so
-                        else if(k >= 160) k += ((int)(main.frame/(main.TPS/4))%2)*10;
+                        else if(k >= 160 && k <= 162) k += ((int)(main.frame/(main.TPS/4))%2)*10;
                         draw.batchPush(k,boardx+i*main.SPR_WIDTH + lo,boardy+j*main.SPR_WIDTH + (j < cleary ? (int)cleardy : 0), main.SPR_WIDTH,main.SPR_WIDTH);
                     }
                 }
@@ -363,7 +365,7 @@ class tetris extends scene {
                             if((int)(Math.random()*main.TPS) == 0) e.hsp = 0;
                         }
 
-                        if(pointCheck(e.x,e.y) == 1){
+                        if(pointCheck(e.x,e.y) == 1/* || main.input.get(-1) == 1*/){
                             enemylist.remove(i);
                             for(int j = 0; j < 4; j++) draw.particlePush(130,134,0.03+0.02*Math.random(),(int)e.x,(int)e.y,-0.1+0.2*Math.random(),-0.1+0.2*Math.random(),Color.WHITE);
                             draw.particlePush(150,154,0.09+0.01*Math.random(),(int)e.x-main.SPR_WIDTH/2,(int)e.y-main.SPR_WIDTH,-0.01+0.02*Math.random(),-0.08,Color.WHITE);
