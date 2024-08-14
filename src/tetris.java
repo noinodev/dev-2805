@@ -194,7 +194,7 @@ class tetris extends scene {
     }
 
     private enemy spawnEnemy(double x, double y){
-        enemy out = new enemy(135,x,y);
+        enemy out = new enemy(135+10*(int)(Math.random()*3),x,y);
         enemylist.add(out);
         return out;
     }
