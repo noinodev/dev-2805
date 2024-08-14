@@ -9,7 +9,7 @@ class tetris extends scene { // main gameplay scene, i put it in its own class f
     private double cleardy,cleardx,illum;
     private final Color[] flash = {new Color(255,255,255), new Color(255,0,68), new Color(99,199,77), new Color(44,232,245), new Color(254,231,97)}; // merge particle colours
     private final int scores[] = {40,100,300,1200}; // tetris scores
-    private int[][] board;
+    private int[][] board, outboard;
     private double[][] light;
     private int[][][][] tetrominoList;
     private final BufferedImage levelimage = main.loadTexture("levelatlas.png");
@@ -50,19 +50,26 @@ class tetris extends scene { // main gameplay scene, i put it in its own class f
 
     private void loadLevel(int offset, int w, int h){ // loads goblin levels from an image, colour data represents what goes where
         BufferedImage in = levelimage;
-        for(int x = 0; x < w; x++){
+        for(int x = -w; x < 2*w; x++){
             for(int y = 0; y < h; y++){
-                int c = in.getRGB(offset+x,y) & 0xFFFFFF;
-                if(c == 0x000000)board[x][y] = 0;
-                else if(c == 0x0000FF) board[x][y] = 114; // bricks               all sprites arent named and i couldnt be bothered doing so
-                else if(c == 0x00FF00) board[x][y] = 160; // torch up             you kinda just gotta figure it out
-                else if(c == 0x00FF80) board[x][y] = 161; // torch left
-                else if(c == 0x80FF00) board[x][y] = 162; // torch right
-                else if(c == 0xFFFF00) board[x][y] = 163; // scaffold vertical
-                else if(c == 0xFFFF80) board[x][y] = 173; // scaffold horizontal
-                else if(c == 0xFF0000) spawnEnemy(posx+x*main.SPR_WIDTH,posy+y*main.SPR_WIDTH); // goblin
-                else System.out.println("funny colour dattebayo.. " + c); // precision error logging
-
+                if(offset+x >= 0 && offset+x < in.getWidth()){
+                    int[][] b = board;
+                    int ox = x;
+                    if(x < 0 || x >= w){
+                        ox = x+w;
+                        b = outboard;
+                    }
+                    int c = in.getRGB(offset+x,y) & 0xFFFFFF;
+                    b[ox][y] = 0;
+                    if(c == 0x0000FF) b[ox][y] = 114; // bricks               all sprites arent named and i couldnt be bothered doing so
+                    else if(c == 0x00FF00) b[ox][y] = 160; // torch up             you kinda just gotta figure it out
+                    else if(c == 0x00FF80) b[ox][y] = 161; // torch left
+                    else if(c == 0x80FF00) b[ox][y] = 162; // torch right
+                    else if(c == 0xFFFF00) b[ox][y] = 163; // scaffold vertical
+                    else if(c == 0xFFFF80) b[ox][y] = 173; // scaffold horizontal
+                    if(c == 0xFF0000 && b == board) spawnEnemy(posx+x*main.SPR_WIDTH,posy+y*main.SPR_WIDTH); // goblin only spawn in board area
+                    //else System.out.println("funny colour dattebayo.. " + c); // precision error logging
+                }
             }
         }
     }
@@ -81,12 +88,12 @@ class tetris extends scene { // main gameplay scene, i put it in its own class f
         return (int)(10-Math.min(Math.max(minDistance*scale, 1),10)); // 10 light levels
     }
 
-    private int getTileIndex(int i, int x, int y){ // autotiling helper function, just for bricks. its actually really slow !
+    private int getTileIndex(int i, int x, int y, int[][] tboard){ // autotiling helper function, just for bricks. its actually really slow !
         int l=0,r=0,t=0,b=0;
-        if(x > 0 && board[x-1][y] == i) l = 1;
-        if(x < boardWidth-1 && board[x+1][y] == i) r = 1;
-        if(y > 0 && board[x][y-1] == i) t = 1;
-        if(y < boardHeight-1 && board[x][y+1] == i) b = 1;
+        if(x > 0 && tboard[x-1][y] == i) l = 1;
+        if(x < tboard.length-1 && tboard[x+1][y] == i) r = 1;
+        if(y > 0 && tboard[x][y-1] == i) t = 1;
+        if(y < tboard[0].length-1 && tboard[x][y+1] == i) b = 1;
         int a = l+r+t+b;
 
         if(a == 4) return i;
@@ -196,7 +203,7 @@ class tetris extends scene { // main gameplay scene, i put it in its own class f
     }
 
     private Tetromino spawnTetromino(){ // self explanatory
-        Tetromino out = new Tetromino(boardWidth/2-TET_WIDTH/2,0,nextTetronimo,0,10*Math.min(level/3,5)+4+(int)(Math.random()*4));
+        Tetromino out = new Tetromino(boardWidth/2-TET_WIDTH/2,0,nextTetronimo,0,10*Math.min(level/2,5)+4+(int)(Math.random()*4));
         nextTetronimo = (int)(Math.random() * tetrominoList.length);
         return out;
     }
@@ -238,6 +245,12 @@ class tetris extends scene { // main gameplay scene, i put it in its own class f
             for(int j = 0; j < boardHeight; j++){
                 board[i][j] = 0;
                 light[i][j] = 0;
+            }
+        }
+        outboard = new int[3*boardWidth][boardHeight];
+        for(int x = 0; x < 3*boardWidth; x++){
+            for(int y = 0; y < boardHeight; y++){
+                outboard[x][y] = 0;
             }
         }
         if(main.cfg.get("extend") == 1) loadLevel(0,boardWidth,boardHeight); // first goblin level
@@ -324,8 +337,8 @@ class tetris extends scene { // main gameplay scene, i put it in its own class f
             if(state == STATE_STARTLEVEL){ // level clear animation
                 lo = (int)cleardx;
                 cleardx -= ((boardWidth+1)*main.SPR_WIDTH-cleardx)*0.01; // cleardx is the horizontal scrolling of the board between levels
-                boardx += (int)(cleardx*0.1)-(int)(Math.random()*(cleardx*0.2));
-                boardy += (int)(cleardx*0.1)-(int)(Math.random()*(cleardx*0.2));
+                boardx += (int)(cleardx*0.01)-(int)(Math.random()*(cleardx*0.02));
+                boardy += (int)(cleardx*0.01)-(int)(Math.random()*(cleardx*0.02));
                 illum = 10;
                 if(cleardx <= 0.1){
                     state = STATE_PLAY;
@@ -338,15 +351,32 @@ class tetris extends scene { // main gameplay scene, i put it in its own class f
                 for(int j = 2; j < boardHeight; j++){
                     if(board[i][j] > 0 && j != cleary){
                         int k = board[i][j];
-                        if(k == 114) k = getTileIndex(k,i,j); // the brick tile is the only tile with autotiling
+                        if(k == 114) k = getTileIndex(k,i,j,board); // the brick tile is the only tile with autotiling
                         else if(k >= 160 && k <= 162) k += ((int)(main.frame/(main.TPS/4))%2)*10; // torch animation
-                        draw.batchPush(k,boardx+i*main.SPR_WIDTH + lo,boardy+j*main.SPR_WIDTH + (j < cleary ? (int)cleardy : 0), main.SPR_WIDTH,main.SPR_WIDTH); // ternary operator to only draw rows above cleardy in animated state for row clear
+                        double l = Math.max(0,1-(4+light[i][j])/10f);
+                        draw.batchPush(k,boardx+i*main.SPR_WIDTH + lo,boardy+j*main.SPR_WIDTH + (j < cleary ? (int)cleardy : 0), main.SPR_WIDTH,main.SPR_WIDTH,
+                            new Color((int)draw.lerp(255,24,l),(int)draw.lerp(255,20,l),(int)draw.lerp(255,37,l))); // ternary operator to only draw rows above cleardy in animated state for row clear
                     }
                 }
             }
 
             //update enemies in goblin mode
             if(main.cfg.get("extend") == 1){
+
+                // outer board for decoration
+                for(int x = 0; x < 3*boardWidth; x++){
+                    for(int y = 2; y < boardHeight; y++){
+                        int i = outboard[x][y];
+                        if(i != 0){
+                            if(i == 114) i = getTileIndex(i,x,y,outboard);
+                            else if(i >= 160 && i <= 162) i += ((int)(main.frame/(main.TPS/4))%2)*10;
+                            double w = (boardWidth),
+                            l = Math.min(1,3*Math.abs(x-boardWidth*1.5)/(boardWidth*3f));
+                            draw.batchPush(i,boardx+(x-boardWidth)*main.SPR_WIDTH+lo,boardy+y*main.SPR_WIDTH, main.SPR_WIDTH,main.SPR_WIDTH,new Color((int)draw.lerp(255,24,l),(int)draw.lerp(255,20,l),(int)draw.lerp(255,37,l)));
+                        }
+                    }
+                }
+
                 // if(main.input.get(-1) == 1) spawnEnemy(main.mousex,main.mousey);
                 if(enemylist.size() > 0){
                     for(int i = 0; i < enemylist.size(); i++){
@@ -374,7 +404,7 @@ class tetris extends scene { // main gameplay scene, i put it in its own class f
                             if((int)(Math.random()*main.TPS) == 0) e.hsp = 0;
                         }
 
-                        if(pointCheck(e.x,e.y) == 1){ // die from being crushed
+                        if(pointCheck(e.x,e.y) == 1 || main.input.get(-1) == 1){ // die from being crushed
                             enemylist.remove(i);
                             for(int j = 0; j < 4; j++) draw.particlePush(130,134,0.03+0.02*Math.random(),(int)e.x,(int)e.y,-0.1+0.2*Math.random(),-0.1+0.2*Math.random(),Color.WHITE);
                             draw.particlePush(150,154,0.09+0.01*Math.random(),(int)e.x-main.SPR_WIDTH/2,(int)e.y-main.SPR_WIDTH,-0.01+0.02*Math.random(),-0.08,Color.WHITE);
@@ -388,8 +418,8 @@ class tetris extends scene { // main gameplay scene, i put it in its own class f
                                 e.xd*main.SPR_WIDTH,main.SPR_WIDTH);
                         // draw taunt
                         if(e.txt != ""){
-                            draw.batchPush(9,(int)e.x-10,(int)e.y-18-(int)e.x%2,e.txt.length()*6,8,new Color(24,20,37));
-                            draw.drawText(e.txt,(int)e.x-10,(int)e.y-18-(int)e.x%2,8,6,Color.WHITE);
+                            //draw.batchPush(9,(int)e.x-10,(int)e.y-18-(int)e.x%2,e.txt.length()*6,8,new Color(24,20,37));
+                            draw.drawText(e.txt,(int)e.x-10,(int)e.y-18-(int)e.x%2,8,6,new Color(139,155,180));
                         }
                     }
                 }else if(state == STATE_PLAY){ // next level if no active enemies
@@ -421,9 +451,11 @@ class tetris extends scene { // main gameplay scene, i put it in its own class f
             // draw ground in goblin mode
             if(main.cfg.get("extend") == 1){
                 for(int i = -main.SPR_WIDTH; i < main.FRAMEBUFFER_W; i += main.SPR_WIDTH){
-                    draw.batchPush(100+Math.abs(i)%3,i+(int)cleardx%main.SPR_WIDTH,(i/main.SPR_WIDTH*i)%3-1+boardy+boardHeight*main.SPR_WIDTH, main.SPR_WIDTH, main.SPR_WIDTH);
-                    draw.batchPush(110+Math.abs(i)%3,i+(int)cleardx%main.SPR_WIDTH,(i/main.SPR_WIDTH*i)%3-1+boardy+(boardHeight+1)*main.SPR_WIDTH, main.SPR_WIDTH, main.SPR_WIDTH);
-                    draw.batchPush(120+Math.abs(i)%3,i+(int)cleardx%main.SPR_WIDTH,(i/main.SPR_WIDTH*i)%3-1+boardy+(boardHeight+2)*main.SPR_WIDTH, main.SPR_WIDTH, main.SPR_WIDTH);
+                    double l = Math.min(1,2*Math.abs(i/((double)main.SPR_WIDTH)-boardWidth*1.5f)/(boardWidth*3f));
+                    Color c = new Color((int)draw.lerp(255,24,l),(int)draw.lerp(255,20,l),(int)draw.lerp(255,37,l));
+                    draw.batchPush(100+Math.abs(i)%3,i+(int)cleardx%main.SPR_WIDTH,(i/main.SPR_WIDTH*i)%3-1+boardy+boardHeight*main.SPR_WIDTH, main.SPR_WIDTH, main.SPR_WIDTH,c);
+                    draw.batchPush(110+Math.abs(i)%3,i+(int)cleardx%main.SPR_WIDTH,(i/main.SPR_WIDTH*i)%3-1+boardy+(boardHeight+1)*main.SPR_WIDTH, main.SPR_WIDTH, main.SPR_WIDTH,c);
+                    draw.batchPush(120+Math.abs(i)%3,i+(int)cleardx%main.SPR_WIDTH,(i/main.SPR_WIDTH*i)%3-1+boardy+(boardHeight+2)*main.SPR_WIDTH, main.SPR_WIDTH, main.SPR_WIDTH,c);
                 }
             }
 
@@ -473,6 +505,7 @@ class tetris extends scene { // main gameplay scene, i put it in its own class f
                 if(clearx >= boardWidth*boardHeight-1){
                     if(state == STATE_ENDLEVEL){ // if animation is for end of level, load next level and start level clear animation
                         level++;
+                        currentTetromino = spawnTetromino();
                         loadLevel(level*10,boardWidth,boardHeight);
                         state = 6;
                         cleardx = boardWidth*main.SPR_WIDTH;
