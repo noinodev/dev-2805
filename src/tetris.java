@@ -66,7 +66,7 @@ class tetris extends scene {
         //double minDistance = Double.MAX_VALUE;
         for (int i = 0; i < boardWidth; i++) {
             for (int j = 0; j < boardHeight; j++) {
-                if (board[i][j] != 0) {
+                if (board[i][j] != 0 && board[i][j] < 100) {
                     double distance = Math.sqrt(Math.pow(i - x, 2) + Math.pow(j - y, 2));
                     minDistance = Math.min(minDistance, distance);
                 }
@@ -248,7 +248,7 @@ class tetris extends scene {
             main.bgtx = score+800*level;
             if(state == 0){
                 //main.bgtx = score+800*level;// +main.frame*0.2;
-                if((time/4f > 60-6*level || main.input.get(KeyEvent.VK_DOWN) == 1) && Math.abs(currentTetromino.dx-currentTetromino.x*main.SPR_WIDTH) + Math.abs(currentTetromino.dy-currentTetromino.y*main.SPR_WIDTH) < 10){
+                if((time/4f > Math.max(1,60-10*level) || main.input.get(KeyEvent.VK_DOWN) == 1) && Math.abs(currentTetromino.dx-currentTetromino.x*main.SPR_WIDTH) + Math.abs(currentTetromino.dy-currentTetromino.y*main.SPR_WIDTH) < 10){
                     time = 0;
                     if(!checkBoardState()){
                         tetromino t = currentTetromino;
@@ -363,6 +363,7 @@ class tetris extends scene {
                         if(pointCheck(e.x,e.y) == 1){
                             enemylist.remove(i);
                             for(int j = 0; j < 4; j++) draw.particlePush(130,134,0.03+0.02*Math.random(),(int)e.x,(int)e.y,-0.1+0.2*Math.random(),-0.1+0.2*Math.random(),Color.WHITE);
+                            draw.particlePush(150,154,0.09+0.01*Math.random(),(int)e.x-main.SPR_WIDTH/2,(int)e.y-main.SPR_WIDTH,-0.01+0.02*Math.random(),-0.08,Color.WHITE);
                             i--;
                         }
 
@@ -466,8 +467,8 @@ class tetris extends scene {
             }else if(clearx > 0) clearx--;
 
             if(state == 1){
-                draw.drawText("PAUSED",10,20,10,8,null);
-                draw.drawText("ESC TO RESUME",10,30,8,6,Color.GRAY);
+                draw.drawText("PAUSED",main.FRAMEBUFFER_W/2,main.FRAMEBUFFER_H/2,10,8,null,1);
+                draw.drawText("ESC TO RESUME",main.FRAMEBUFFER_W/2,main.FRAMEBUFFER_H/2+10,8,6,Color.GRAY,1);
             }
             if(main.cfg.get("extend") == 1){
                 double j = Math.min(1,(clearx*Math.log(1+clearx))/((double)boardWidth*boardHeight));
@@ -484,9 +485,9 @@ class tetris extends scene {
                     else txt = "GOODBYE";
                     int w = (int)((txt.length()*10)/2f);
                     draw.batchPush(9,dx+12-w,dy+10,2*w,10,new Color(24,20,37));
-                    draw.drawText(txt,dx+12-w,dy+10,10,10,Color.WHITE);
+                    draw.drawText(txt,dx+12-w,dy+10,10,10,null);
                 }
-                if(state == 6) draw.drawText("LEVEL CLEARED".substring(0,(int)(13*Math.min(1,((boardWidth*main.SPR_WIDTH-cleardx)*3)/(boardWidth*main.SPR_WIDTH)))),main.FRAMEBUFFER_W/2-65,main.FRAMEBUFFER_H/2,10,10,Color.white);
+                if(state == 6) draw.drawText("LEVEL CLEARED".substring(0,(int)(13*Math.min(1,((boardWidth*main.SPR_WIDTH-cleardx)*3)/(boardWidth*main.SPR_WIDTH)))),main.FRAMEBUFFER_W/2-65,main.FRAMEBUFFER_H/2,10,10,null);
             }
         }else{
             main.bgtx = 0;

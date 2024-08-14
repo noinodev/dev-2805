@@ -77,8 +77,11 @@ public class draw2d{
         //batchPush(13,x+w-size,y+h-size,size,size);
     }
 
-    public void drawText(String s, int x, int y, int size, int space, Color c){
+    public void drawText(String s, int x, int y, int size, int space) { drawText(s,x,y,size,space,null,0); }
+    public void drawText(String s, int x, int y, int size, int space, Color c) { drawText(s,x,y,size,space,c,0); }
+    public void drawText(String s, int x, int y, int size, int space, Color c, int alignment){
         if(s.length() > 0){
+            if(alignment == 1) x -= (s.length()*space)/2;
             for(int i = 0; i < s.length(); i++){
                 char j = s.charAt(i);
                 int chr = textAtlas.get(j);
