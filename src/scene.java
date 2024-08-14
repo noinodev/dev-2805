@@ -25,14 +25,16 @@ class splash extends scene {
         super(m, d);
         time = 0;
         draw.clearColour = new Color(24,20,37);
+        main.sceneIndex = 0;
     }
     @Override
     public void loop(){
         time++;
         if(time > main.TPS) main.currentScene = new menu(main,draw);
 
-        draw.drawText("TETRIS",20,20,10,8,new Color(time,time,time));
-        draw.drawText("JAVA GAME",20,30,8,6,new Color(time/2,time/2,time/2));
+        draw.batchPush(9,0,0,main.FRAMEBUFFER_W,main.FRAMEBUFFER_H,new Color(24,20,37));
+        draw.drawText("TETRIS",main.FRAMEBUFFER_W/2,main.FRAMEBUFFER_H/2-20,10,10,new Color(time,time,time),1);
+        draw.drawText("JAVA GAME",main.FRAMEBUFFER_W/2,main.FRAMEBUFFER_H/2-10,8,6,new Color(time/2,time/2,time/2),1);
     }
 }
 
@@ -42,6 +44,7 @@ class menu extends scene {
         super(m, d);
         time = 0;
         draw.clearColour = new Color(24,20,37);
+        main.sceneIndex = 1;
     }
     @Override
     public void loop(){
@@ -67,6 +70,7 @@ class config extends scene {
         super(m, d);
         time = 0;
         draw.clearColour = new Color(24,20,37);
+        main.sceneIndex = 2;
     }
     @Override
     public void loop(){
@@ -99,6 +103,7 @@ class hscore extends scene {
         draw.clearColour = new Color(24,20,37);
         list = new ArrayList<>(main.scores.entrySet());
         list.sort(Map.Entry.<String, Integer>comparingByValue().reversed());
+        main.sceneIndex = 3;
     }
     @Override
     public void loop(){

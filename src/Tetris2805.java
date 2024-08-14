@@ -27,6 +27,7 @@ public class Tetris2805 extends JPanel implements ActionListener {
     public double delta;
 
     public scene currentScene;
+    public int sceneIndex;
     public int gameShouldClose;
 
     public void saveData(Map<String,Integer> map, String file) {
@@ -183,6 +184,7 @@ public class Tetris2805 extends JPanel implements ActionListener {
             }
         });
 
+        sceneIndex = -1;
         currentScene = new splash(this,draw);
         Thread gameThread = new Thread(() -> {
             long lastTime = System.nanoTime();
@@ -211,7 +213,7 @@ public class Tetris2805 extends JPanel implements ActionListener {
                 // holy yuck
 
                 currentScene.loop();
-                if(draw.drawButton("BACK",20,FRAMEBUFFER_H-20,80,10) == 1) currentScene = new menu(this,draw);
+                if(sceneIndex >= 2 && draw.drawButton("BACK",20,FRAMEBUFFER_H-20,80,10) == 1) currentScene = new menu(this,draw);
                 if(displayconfirm == 1){
                     int w = 80, h = 80, x = FRAMEBUFFER_W/2-w/2, y = FRAMEBUFFER_W/2-h/2;
                     draw.batchPush(9,x,y,w,h,new Color(24,20,37));
@@ -227,7 +229,7 @@ public class Tetris2805 extends JPanel implements ActionListener {
                 long timeTaken = System.nanoTime() - now,
                 sleepTime = (long)(expectedFrametime - timeTaken);
 
-                draw.drawText(""+timeTaken/1000000f,20,FRAMEBUFFER_H-40,8,6,Color.WHITE);
+                //draw.drawText(""+timeTaken/1000000f,20,FRAMEBUFFER_H-40,8,6,Color.WHITE);
 
                 if (sleepTime > 0) {
                     try {

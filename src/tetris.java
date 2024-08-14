@@ -49,16 +49,17 @@ class tetris extends scene {
         BufferedImage in = main.loadTexture("levelatlas.png");
         for(int x = 0; x < w; x++){
             for(int y = 0; y < h; y++){
-                int c = in.getRGB(offset+x,y);
-                board[x][y] = 114*Math.min(c & 0xff,1);
-                if((c & 0x00ff0000) >> 16 > 0) spawnEnemy(posx+x*main.SPR_WIDTH,posy+y*main.SPR_WIDTH);
+                int c = in.getRGB(offset+x,y) & 0xFFFFFF;
+                if(c == 0x000000)board[x][y] = 0;
+                else if(c == 0x0000FF) board[x][y] = 114;
+                else if(c == 0x00FF00) board[x][y] = 160;
+                else if(c == 0x00FF80) board[x][y] = 161;
+                else if(c == 0x80FF00) board[x][y] = 162;
+                else if(c == 0xFF0000) spawnEnemy(posx+x*main.SPR_WIDTH,posy+y*main.SPR_WIDTH);
+                else System.out.println("funny colour dattebayo.. " + c);
+
             }
         }
-        /*for(int x = 0; x < boardWidth; x++){
-            for(int y = 0; y < boardHeight; y++){
-                if(board[x][y] > 100) board[x][y] = getTileIndex(114,x,y);
-            }
-        }*/
     }
 
     private int getLightLevel(int x,int y,double scale){
@@ -66,7 +67,7 @@ class tetris extends scene {
         //double minDistance = Double.MAX_VALUE;
         for (int i = 0; i < boardWidth; i++) {
             for (int j = 0; j < boardHeight; j++) {
-                if (board[i][j] != 0 && board[i][j] < 100) {
+                if (board[i][j] != 0 && board[i][j] != 114) {
                     double distance = Math.sqrt(Math.pow(i - x, 2) + Math.pow(j - y, 2));
                     minDistance = Math.min(minDistance, distance);
                 }
@@ -107,7 +108,7 @@ class tetris extends scene {
     }
 
     private int pointCheck(double x, double y){
-        int bx = (int)((x-posx)/main.SPR_WIDTH), by = (int)((y-posy)/main.SPR_WIDTH);
+        int bx = (int)Math.floor((x-posx)/main.SPR_WIDTH), by = (int)((y-posy)/main.SPR_WIDTH);
         if(bx < 0 || bx >= boardWidth || by < 0 || by >= boardHeight || board[bx][by] > 0) return 1;
         return 0;
     }
@@ -135,7 +136,7 @@ class tetris extends scene {
             for(int j = 0; j < TET_WIDTH; j++){
                 if(tetrominoList[t.i][t.j][i][j] > 0){
                     int x = t.x+i, y = t.y+1+j;
-                    if(y < 0 || y >= boardHeight || x < 0 || x >= boardWidth || board[x][y] > 0){
+                    if(y < 0 || y >= boardHeight || x < 0 || x >= boardWidth || (board[x][y] > 0 && board[x][y] < 160)){ // hack to ignore decorative tiles
                         collision = false;
                         if((int)(Math.random()*2) == 0) draw.particlePush(29,34,0.05+0.05*Math.random(),boardx+x*main.SPR_WIDTH,boardy+(y-1)*main.SPR_WIDTH,-0.1+0.2*Math.random(),-0.1+0.3*Math.random(),flash[(int)(Math.random()*5)]); // yuck
                     }
@@ -188,8 +189,8 @@ class tetris extends scene {
     }
 
     private tetromino spawnTetromino(){
-        tetromino out = new tetromino(boardWidth / 2 - TET_WIDTH / 2, 0, nextTetronimo, 0, 10*Math.min(level/3,5)+4+(int)(Math.random()*4));
-        nextTetronimo = (int) (Math.random() * tetrominoList.length);
+        tetromino out = new tetromino(boardWidth/2-TET_WIDTH/2,0,nextTetronimo,0,10*Math.min(level/3,5)+4+(int)(Math.random()*4));
+        nextTetronimo = (int)(Math.random() * tetrominoList.length);
         return out;
     }
 
@@ -202,6 +203,7 @@ class tetris extends scene {
     public tetris(Tetris2805 m, draw2d d) {
         super(m, d);
         draw.clearColour = new Color(24,20,37);
+        main.sceneIndex = 4;
         tetrominoList = getTetrominoes(main.loadTexture("tetrominoatlas.png"));
         boardWidth = main.cfg.get("width");
         boardHeight = main.cfg.get("height")+2;
@@ -210,7 +212,7 @@ class tetris extends scene {
         boardx = posx;
         boardy = posy;
         currentTetromino = spawnTetromino();
-        nextTetronimo = 0;
+        nextTetronimo = (int)(Math.random() * tetrominoList.length);
         time = 0;
         score = 0;
         state = 0; // state 0 run, state 1 pause, state 2 gameover, state 3 is clearing
@@ -248,7 +250,7 @@ class tetris extends scene {
             main.bgtx = score+800*level;
             if(state == 0){
                 //main.bgtx = score+800*level;// +main.frame*0.2;
-                if((time/4f > Math.max(1,60-10*level) || main.input.get(KeyEvent.VK_DOWN) == 1) && Math.abs(currentTetromino.dx-currentTetromino.x*main.SPR_WIDTH) + Math.abs(currentTetromino.dy-currentTetromino.y*main.SPR_WIDTH) < 10){
+                if((time/4f > Math.max(1,60-6*level) || main.input.get(KeyEvent.VK_DOWN) == 1) && Math.abs(currentTetromino.dx-currentTetromino.x*main.SPR_WIDTH) + Math.abs(currentTetromino.dy-currentTetromino.y*main.SPR_WIDTH) < 10){
                     time = 0;
                     if(!checkBoardState()){
                         tetromino t = currentTetromino;
@@ -326,7 +328,8 @@ class tetris extends scene {
                 for(int j = 2; j < boardHeight; j++){
                     if(board[i][j] > 0 && j != cleary){
                         int k = board[i][j];
-                        if(k > 100) k = getTileIndex(k,i,j); // the brick tile is the only tile with an index over 100 so
+                        if(k == 114) k = getTileIndex(k,i,j); // the brick tile is the only tile with an index over 100 so
+                        else if(k >= 160) k += ((int)(main.frame/(main.TPS/4))%2)*10;
                         draw.batchPush(k,boardx+i*main.SPR_WIDTH + lo,boardy+j*main.SPR_WIDTH + (j < cleary ? (int)cleardy : 0), main.SPR_WIDTH,main.SPR_WIDTH);
                     }
                 }
@@ -377,11 +380,12 @@ class tetris extends scene {
                             draw.drawText(e.txt,(int)e.x-10,(int)e.y-18-(int)e.x%2,8,6,Color.WHITE);
                         }
                     }
-                }else{
-                    level++;
-                    loadLevel(level*10,boardWidth,boardHeight);
-                    state = 6;
-                    cleardx = boardWidth*main.SPR_WIDTH;
+                }else if(state == 0){
+                    //level++;
+                    //loadLevel(level*10,boardWidth,boardHeight);
+                    state = 7;
+                    clearx = 0;
+                    //cleardx = boardWidth*main.SPR_WIDTH;
                 }
             }
 
@@ -441,7 +445,8 @@ class tetris extends scene {
                 }
             }else cleary = 0;
 
-            if(state == 4){
+            if(state == 4 || state == 7){
+                while(board[clearx%boardWidth][clearx/boardWidth] == 0 && clearx < boardWidth*boardHeight-1) clearx++;
                 int x = clearx%boardWidth, y = clearx/boardWidth;
                 if(board[x][y] > 0 && board[x][y] < 100){
                     board[x][y] = 0;
@@ -459,11 +464,19 @@ class tetris extends scene {
                     illum = Math.random();
                     boardx += 2-(int)(Math.random()*4);
                     boardy += 2-(int)(Math.random()*4);
-                }
+                }else draw.particlePush(30,31,0.01+0.01*Math.random(),boardx+(x*main.SPR_WIDTH),boardy+y*main.SPR_WIDTH,0,0,Color.WHITE);
+
                 if(clearx >= boardWidth*boardHeight-1){
-                    if(lives <= 0) state = 2;
+                    if(state == 7){
+                        level++;
+                        loadLevel(level*10,boardWidth,boardHeight);
+                        state = 6;
+                        cleardx = boardWidth*main.SPR_WIDTH;
+                        clearx = 0;
+                    }else if(state == 4 && lives <= 0) state = 2;
                     else state = 0;
                 }else clearx++;
+                // draw.drawText(""+clearx+". "+state,80,80,8,6); // debug
             }else if(clearx > 0) clearx--;
 
             if(state == 1){
@@ -472,6 +485,7 @@ class tetris extends scene {
             }
             if(main.cfg.get("extend") == 1){
                 double j = Math.min(1,(clearx*Math.log(1+clearx))/((double)boardWidth*boardHeight));
+                if(state == 7) j = 0; //hack
                 int dx = (int)draw.lerp(12,boardx+(boardWidth/2f)*main.SPR_WIDTH-12,j)+(int)(Math.random()*j*4-2*j),
                 dy = (int)draw.lerp(30,main.FRAMEBUFFER_H/2f,j)+(int)(Math.random()*j*4-2*j);
                 for(int i = 0; i < 3; i++){
