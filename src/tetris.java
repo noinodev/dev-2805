@@ -13,10 +13,11 @@ class tetris extends scene { // main gameplay scene, i put it in its own class f
     private double[][] light;
     private int[][][][] tetrominoList;
     private final BufferedImage levelimage = main.loadTexture("levelatlas.png");
-    private final String[] taunts = {"YOU SUCK","???","GONNA CRY?","LOL","LOSER","GOBLINS RULE","BUYING GOBLIN GF","IN THE STRIPPED CLUB","STRAIGHT JORKIN IT",
-    "WOW...","ZZZ","TRY HARDER","IM IN JAVA?","SRS??","GOBLIN4LIFE","..."};
-    // took me way too long to write these consts, i was just remembering the integers before lol
-    private final int STATE_PLAY = 0, STATE_PAUSE = 1, STATE_GAMEOVER = 2, STATE_CLEAR = 3, STATE_LOSE = 4, STATE_null = 5, STATE_STARTLEVEL = 6, STATE_ENDLEVEL = 7;
+    private final String[] taunts = {"YOU SUCK","???","GONNA CRY?","LOL","AINT MEAN IF U AINT GREEN","GOBLINZ RULE","BUYING GOBLIN GF","SO GOBLINCORE","GOBLINMAXXING RN",
+    "WOW...","ZZZ","STOP TRYING","IM IN JAVA?","GOBLINPILLED","GOBLIN4LIFE","...","THEY NOT LIKE US","I LOVE GRIMES"};
+    private final Color[] tauntcolours = {new Color(104,46,108), new Color(38,92,66), new Color(25,60,62), new Color(58,68,102), new Color(38,43,68), new Color(62,39,49)};
+    // took me way too long to write these consts, i was just remembering the integers before lol (notice how i missed 5 ????)
+    private final int STATE_PLAY = 0, STATE_PAUSE = 1, STATE_GAMEOVER = 2, STATE_CLEAR = 3, STATE_LOSE = 4, STATE_oops = 5, STATE_STARTLEVEL = 6, STATE_ENDLEVEL = 7;
 
     private class Tetromino { // tetromino class
         public int x,y,i,j,t;
@@ -37,6 +38,7 @@ class tetris extends scene { // main gameplay scene, i put it in its own class f
         double x,y,hsp,vsp;
         int spr,xd;
         String taunt,txt;
+        Color c;
         public Enemy(int _spr, double _x, double _y){
             x = _x;
             y = _y;
@@ -44,6 +46,7 @@ class tetris extends scene { // main gameplay scene, i put it in its own class f
             xd = 1;
             taunt = "";
             txt = "";
+            c = tauntcolours[(int)(Math.random()*tauntcolours.length)];
         }
     }
     private final ArrayList<Enemy> enemylist = new ArrayList<Enemy>();
@@ -65,8 +68,10 @@ class tetris extends scene { // main gameplay scene, i put it in its own class f
                     else if(c == 0x00FF00) b[ox][y] = 160; // torch up             you kinda just gotta figure it out
                     else if(c == 0x00FF80) b[ox][y] = 161; // torch left
                     else if(c == 0x80FF00) b[ox][y] = 162; // torch right
-                    else if(c == 0xFFFF00) b[ox][y] = 163; // scaffold vertical
-                    else if(c == 0xFFFF80) b[ox][y] = 173; // scaffold horizontal
+                    else if(c == 0xFFFF00) b[ox][y] = 190; // scaffold vertical
+                    else if(c == 0xFFFF80) b[ox][y] = 191; // scaffold horizontal
+                    else if(c == 0xFF00FF) b[ox][y] = 192; // pole
+                    else if(c == 0xFF80FF) b[ox][y] = 163; // flag
                     if(c == 0xFF0000 && b == board) spawnEnemy(posx+x*main.SPR_WIDTH,posy+y*main.SPR_WIDTH); // goblin only spawn in board area
                     //else System.out.println("funny colour dattebayo.. " + c); // precision error logging
                 }
@@ -79,7 +84,7 @@ class tetris extends scene { // main gameplay scene, i put it in its own class f
         double minDistance = Math.sqrt(Math.pow((currentTetromino.dx/main.SPR_WIDTH)+1 - x, 2) + Math.pow((currentTetromino.dy/main.SPR_WIDTH)+1 - y, 2));
         for (int i = 0; i < boardWidth; i++) {
             for (int j = 0; j < boardHeight; j++) {
-                if (board[i][j] != 0 && board[i][j] != 114 && board[i][j] != 163 && board[i][j] != 173) { // brick and scaffold tiles specifically are ignored kinda hacky until i add more decorations and fix it
+                if (board[i][j] != 0 && (board[i][j] < 100 || (board[i][j] >= 160 && board[i][j] <= 162))) { // brick and scaffold tiles specifically are ignored kinda hacky until i add more decorations and fix it
                     double distance = Math.sqrt(Math.pow(i - x, 2) + Math.pow(j - y, 2)); // euclidean distance to target cell
                     minDistance = Math.min(minDistance, distance); // self explanatory
                 }
@@ -209,7 +214,7 @@ class tetris extends scene { // main gameplay scene, i put it in its own class f
     }
 
     private Enemy spawnEnemy(double x, double y){ // self explanatory
-        Enemy out = new Enemy(135+10*(int)(Math.random()*3),x,y);
+        Enemy out = new Enemy(137+10*(int)(Math.random()*3),x,y);
         enemylist.add(out);
         return out;
     }
@@ -327,7 +332,7 @@ class tetris extends scene { // main gameplay scene, i put it in its own class f
                     if(j > 0) tl += light[i][j-1];
                     tl /= 8;
                     light[i][j] -= (light[i][j]-tl)*(0.05/illum); // this didnt need to look so hacky but i wanted the lights to be smoother and take the average of adjacent cells
-                    int li = (int)light[i][j]; // VVV that hack is for the sprite indexes for different light levels
+                    int li = (int)light[i][j]; // VVV that hack is for the sprite indexes for different light levels since theyre in funny parts of the sprite sheet
                     draw.batchPush((li > 0) ? (18+10*(li%5)+li/5) : (i+j)%4,boardx+i*main.SPR_WIDTH,boardy+j*main.SPR_WIDTH, main.SPR_WIDTH,main.SPR_WIDTH);
                     if(board[i][j] < 0) board[i][j] = 0; // moving tetromino sets board cells to negative values, reset this
                 }
@@ -352,26 +357,25 @@ class tetris extends scene { // main gameplay scene, i put it in its own class f
                     if(board[i][j] > 0 && j != cleary){
                         int k = board[i][j];
                         if(k == 114) k = getTileIndex(k,i,j,board); // the brick tile is the only tile with autotiling
-                        else if(k >= 160 && k <= 162) k += ((int)(main.frame/(main.TPS/4))%2)*10; // torch animation
+                        else if(k >= 160 && k < 170) k += ((int)(main.frame/(main.TPS/6))%3)*10; // torch animation
                         double l = Math.max(0,1-(4+light[i][j])/10f);
                         draw.batchPush(k,boardx+i*main.SPR_WIDTH + lo,boardy+j*main.SPR_WIDTH + (j < cleary ? (int)cleardy : 0), main.SPR_WIDTH,main.SPR_WIDTH,
-                            new Color((int)draw.lerp(255,24,l),(int)draw.lerp(255,20,l),(int)draw.lerp(255,37,l))); // ternary operator to only draw rows above cleardy in animated state for row clear
+                            new Color((int)draw.lerp(255,24,l),(int)draw.lerp(255,20,l),(int)draw.lerp(255,37,l))); // ternary operator to only draw rows above cleardy in animated state for row clear, also lerp for light level
                     }
                 }
             }
 
             //update enemies in goblin mode
             if(main.cfg.get("extend") == 1){
-
+                int killscore = 0;
                 // outer board for decoration
                 for(int x = 0; x < 3*boardWidth; x++){
                     for(int y = 2; y < boardHeight; y++){
                         int i = outboard[x][y];
                         if(i != 0){
                             if(i == 114) i = getTileIndex(i,x,y,outboard);
-                            else if(i >= 160 && i <= 162) i += ((int)(main.frame/(main.TPS/4))%2)*10;
-                            double w = (boardWidth),
-                            l = Math.min(1,3*Math.abs(x-boardWidth*1.5)/(boardWidth*3f));
+                            else if(i >= 160 && i < 170) i += ((int)(main.frame/(main.TPS/4))%2)*10;
+                            double l = Math.min(1,3*Math.abs(x-boardWidth*1.5)/(boardWidth*3f));
                             draw.batchPush(i,boardx+(x-boardWidth)*main.SPR_WIDTH+lo,boardy+y*main.SPR_WIDTH, main.SPR_WIDTH,main.SPR_WIDTH,new Color((int)draw.lerp(255,24,l),(int)draw.lerp(255,20,l),(int)draw.lerp(255,37,l)));
                         }
                     }
@@ -409,6 +413,7 @@ class tetris extends scene { // main gameplay scene, i put it in its own class f
                             for(int j = 0; j < 4; j++) draw.particlePush(130,134,0.03+0.02*Math.random(),(int)e.x,(int)e.y,-0.1+0.2*Math.random(),-0.1+0.2*Math.random(),Color.WHITE);
                             draw.particlePush(150,154,0.09+0.01*Math.random(),(int)e.x-main.SPR_WIDTH/2,(int)e.y-main.SPR_WIDTH,-0.01+0.02*Math.random(),-0.08,Color.WHITE);
                             i--;
+                            killscore++;
                         }
 
                         // draw self
@@ -418,8 +423,8 @@ class tetris extends scene { // main gameplay scene, i put it in its own class f
                                 e.xd*main.SPR_WIDTH,main.SPR_WIDTH);
                         // draw taunt
                         if(e.txt != ""){
-                            //draw.batchPush(9,(int)e.x-10,(int)e.y-18-(int)e.x%2,e.txt.length()*6,8,new Color(24,20,37));
-                            draw.drawText(e.txt,(int)e.x-10,(int)e.y-18-(int)e.x%2,8,6,new Color(139,155,180));
+                            draw.batchPush(9,(int)e.x-10,(int)e.y-18-(int)e.x%2,e.txt.length()*6,8,new Color(24,20,37));
+                            draw.drawText(e.txt,(int)e.x-10,(int)e.y-18-(int)e.x%2,8,6,e.c);
                         }
                     }
                 }else if(state == STATE_PLAY){ // next level if no active enemies
@@ -429,6 +434,7 @@ class tetris extends scene { // main gameplay scene, i put it in its own class f
                     clearx = 0;
                     //cleardx = boardWidth*main.SPR_WIDTH;
                 }
+                if(killscore > 0) score += scores[Math.min(killscore,3)]*(level+Math.max(1,killscore-4));
             }
 
             //draw tetromino
