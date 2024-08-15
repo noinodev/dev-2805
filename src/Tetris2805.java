@@ -9,8 +9,10 @@ import java.util.*;
 
 public class Tetris2805 extends JPanel implements ActionListener {
     public final int SPR_WIDTH = 10;
-    public final int FRAMEBUFFER_W = 256, FRAMEBUFFER_H = 256, VIEWPORT_W = 1080, VIEWPORT_H = 1080;
+    public int FRAMEBUFFER_W = 256, FRAMEBUFFER_H = 256;
+    public int VIEWPORT_W = 1080, VIEWPORT_H = 1080;
     public final float TPS = 240;
+    public final int DIALOG_CONTEXT_EXIT = 1, DIALOG_CONTEXT_MENU = 2;
 
     public Map<String,Integer> scores;
     public Map<String,Integer> cfg;
@@ -108,16 +110,21 @@ public class Tetris2805 extends JPanel implements ActionListener {
         }
     }
 
+    public void initGraphics(){
+        draw.framebuffer = new BufferedImage(FRAMEBUFFER_W,FRAMEBUFFER_H,BufferedImage.TYPE_INT_ARGB);
+        draw.viewport = draw.framebuffer.createGraphics();
+    }
+
     public Tetris2805(){
         gameShouldClose = 0;
 
         // draw init
         BufferedImage atlas = loadTexture("atlas.png");
         draw = new draw2d(this);
-        draw.framebuffer = new BufferedImage(FRAMEBUFFER_W,FRAMEBUFFER_H,BufferedImage.TYPE_INT_ARGB);
-        draw.viewport = draw.framebuffer.createGraphics();
+        initGraphics();
         draw.clearColour = new Color(38,43,68);
         draw.sprites = getTextureAtlasSquare(atlas,SPR_WIDTH);
+        draw.sprites[43] = loadTexture("splashtex.png");
         draw.sprites[42] = loadTexture("bgtex6.png");
         draw.sprites[50] = loadTexture("bgtex1.png"); // reserving sprites for background, kinda hacky but whatever its not a real texture atlas
         draw.sprites[51] = loadTexture("bgtex2.png");
@@ -213,15 +220,18 @@ public class Tetris2805 extends JPanel implements ActionListener {
 
                 // scene loop
                 currentScene.loop();
-                if(sceneIndex >= 2 && draw.drawButton("BACK",20,FRAMEBUFFER_H-20,80,10) == 1) currentScene = new menu(this,draw);
+                //if(sceneIndex >= 2 && draw.drawButton("BACK",20,FRAMEBUFFER_H-20,80,10) == 1) currentScene = new menu(this,draw);
 
                 // confirm exit dialog
-                if(displayconfirm == 1){
-                    int w = 80, h = 80, x = FRAMEBUFFER_W/2-w/2, y = FRAMEBUFFER_W/2-h/2;
+                if(displayconfirm > 0){
+                    int w = 80, h = 80, x = FRAMEBUFFER_W/2-w/2, y = FRAMEBUFFER_H/2-h/2;
                     draw.batchPush(9,x,y,w,h,new Color(24,20,37));
-                    draw.drawText("EXIT?",x+10,y+4,10,8,Color.WHITE);
-                    gameShouldClose = draw.drawButton("YES",x+10,y+40,60,10);
-                    displayconfirm = 1-draw.drawButton("NO",x+10,y+50,60,10);
+                    draw.drawText(displayconfirm == DIALOG_CONTEXT_EXIT ? "EXIT?" : "TO MENU?",x+w/2,y+4,10,8,Color.WHITE,1);
+                    int act = draw.drawButton("YES",x+10,y+40,60,10);
+                    if(displayconfirm == DIALOG_CONTEXT_EXIT && act == 1) gameShouldClose = 1;
+                    else if(displayconfirm == DIALOG_CONTEXT_MENU && act == 1) currentScene = new menu(this,draw);
+                    if(act == 1) displayconfirm = 0;
+                    else displayconfirm = displayconfirm*(1-draw.drawButton("NO",x+10,y+50,60,10));
                 }
 
                 // cursor
@@ -258,10 +268,21 @@ public class Tetris2805 extends JPanel implements ActionListener {
         draw.batchDraw();
 
         // draw framebuffer
-        int w = Math.min(VIEWPORT_W,getWidth()), h = Math.min(VIEWPORT_H,getHeight());
+        VIEWPORT_W = getWidth();
+        VIEWPORT_H = getHeight();
+
+        int w = getWidth(), h = getHeight();
         g.setColor(new Color(24,20,37));
         g.clearRect(0,0,getWidth(),getHeight());
-        g.drawImage(draw.framebuffer,(getWidth()-w)/2,(getHeight()-h)/2, w, h,null);
+        g.drawImage(draw.framebuffer,0,0, w, h,null);
+
+        double ratio = VIEWPORT_W/(double)VIEWPORT_H;
+        int nfw = (int)(FRAMEBUFFER_H*ratio);
+        if(FRAMEBUFFER_W != nfw){
+            FRAMEBUFFER_W = nfw;
+            initGraphics();
+        }
+
     }
 
     @Override

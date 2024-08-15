@@ -5,7 +5,7 @@ import java.util.ArrayList;
 
 class tetris extends scene { // main gameplay scene, i put it in its own class file because its huge. i couldve separated it into other classes but i dont really care
     public final int TET_WIDTH = 4;
-    private int boardWidth,boardHeight,posx,posy,boardx,boardy,time,score,state,clearx,cleary,clearflash,level,lines,nextTetronimo,lives; // yuck
+    private int boardWidth,boardHeight,posx,posy,boardx,boardy,time,score,state,oldstate,clearx,cleary,clearflash,level,lines,nextTetronimo,lives; // yuck
     private double cleardy,cleardx,illum;
     private final Color[] flash = {new Color(255,255,255), new Color(255,0,68), new Color(99,199,77), new Color(44,232,245), new Color(254,231,97)}; // merge particle colours
     private final int scores[] = {40,100,300,1200}; // tetris scores
@@ -234,7 +234,8 @@ class tetris extends scene { // main gameplay scene, i put it in its own class f
         nextTetronimo = (int)(Math.random() * tetrominoList.length); // random tetromino same as in spawnTetromino
         time = 0;
         score = 0;
-        state = 0; // state 0 run, state 1 pause, state 2 gameover, state 3 is clearing
+        state = 0;
+        oldstate = state;
         level = main.cfg.get("level"); // starting level
         lines = 0;
         illum = 1;
@@ -408,7 +409,7 @@ class tetris extends scene { // main gameplay scene, i put it in its own class f
                             if((int)(Math.random()*main.TPS) == 0) e.hsp = 0;
                         }
 
-                        if(pointCheck(e.x,e.y) == 1 || main.input.get(-1) == 1){ // die from being crushed
+                        if(pointCheck(e.x,e.y) == 1/* || main.input.get(-1) == 1*/){ // die from being crushed
                             enemylist.remove(i);
                             for(int j = 0; j < 4; j++) draw.particlePush(130,134,0.03+0.02*Math.random(),(int)e.x,(int)e.y,-0.1+0.2*Math.random(),-0.1+0.2*Math.random(),Color.WHITE);
                             draw.particlePush(150,154,0.09+0.01*Math.random(),(int)e.x-main.SPR_WIDTH/2,(int)e.y-main.SPR_WIDTH,-0.01+0.02*Math.random(),-0.08,Color.WHITE);
@@ -564,5 +565,15 @@ class tetris extends scene { // main gameplay scene, i put it in its own class f
         // context independent ui for level and score
         draw.drawText("LEVEL "+level,10,10,10,8,Color.WHITE);
         draw.drawText(""+score,10,20,8,6,flash[(score/100)%5]);
+
+        if(state == STATE_oops){
+            if(main.displayconfirm != main.DIALOG_CONTEXT_MENU) state = oldstate;
+        }else if(draw.drawButton("BACK",20,main.FRAMEBUFFER_H-20,80,10) == 1){
+            if(state != STATE_GAMEOVER){
+                oldstate = state;
+                state = STATE_oops;
+                main.displayconfirm = main.DIALOG_CONTEXT_MENU;
+            }else main.currentScene = new menu(main,draw);
+        }
     }
 }
