@@ -64,7 +64,7 @@ class tetris extends scene { // main gameplay scene, i put it in its own class f
                     }
                     int c = in.getRGB(offset+x,y) & 0xFFFFFF;
                     b[ox][y] = 0;
-                    if(c == 0x0000FF) b[ox][y] = 114; // bricks               all sprites arent named and i couldnt be bothered doing so
+                    if(c == 0x0000FF) b[ox][y] = 114; // bricks                    all sprites arent named and i couldnt be bothered
                     else if(c == 0x00FF00) b[ox][y] = 160; // torch up             you kinda just gotta figure it out
                     else if(c == 0x00FF80) b[ox][y] = 161; // torch left
                     else if(c == 0x80FF00) b[ox][y] = 162; // torch right

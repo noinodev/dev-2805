@@ -34,7 +34,7 @@ public class draw2d{
 
     private BufferedImage tintImage(BufferedImage src, Color color) { // image colouring, pretty sure this is really slow but i just wanted colours
         BufferedImage out = new BufferedImage(src.getWidth(), src.getHeight(), BufferedImage.TYPE_INT_ARGB);
-        float[] scales = { color.getRed() / 255f, color.getGreen() / 255f, color.getBlue() / 255f, 1f };
+        float[] scales = { color.getRed()/255f, color.getGreen()/255f, color.getBlue()/255f, 1f };
         float[] offsets = new float[4];
         RescaleOp op = new RescaleOp(scales, offsets, null);
         op.filter(src, out);
@@ -107,8 +107,8 @@ public class draw2d{
             }
         }
 
-        viewport.setColor(clearColour);
-        viewport.fillRect(0,0,framebuffer.getWidth(),framebuffer.getHeight());
+        //viewport.setColor(Color.white);
+        //viewport.fillRect(0,0,framebuffer.getWidth(),framebuffer.getHeight());
 
         if(batch.size() > 0){
             for(int i = 0; i < batch.size(); i++) {

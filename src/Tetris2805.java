@@ -250,7 +250,7 @@ public class Tetris2805 extends JPanel implements ActionListener {
                     try {
                         Thread.sleep(sleepTime / 1000000, (int)(sleepTime % 1000000));
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
+                        // e.printStackTrace(); // shouldnt happen anyway
                     }
                 }
             }
