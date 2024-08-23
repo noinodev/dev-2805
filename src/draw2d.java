@@ -151,7 +151,7 @@ public class draw2d{
     public int drawSlider(String label, int x, int y, int w, int h, int val, int lb, int ub){
         int m = getButtonContext(x,y,w,h,1);
         double mouseanim = m*buttonanim;
-        int c = 255-(int)(80*m);
+        int c = 255-(int)(80*mouseanim);
         batchPush(9,x+m,y+m,w-2*m,h-2*m,new Color(24,20,37));
         drawBox(x-m,y-m,w+2*m,h+2*m,7-m);
         drawText(label,x+1+(int)(5*mouseanim),y+1,8,6,new Color(c,c,c,160+(int) (Math.sin((main.frame/main.TPS) * 2*Math.PI))*80));
@@ -164,14 +164,14 @@ public class draw2d{
         if(m == 1 && main.input.get(-1) == 2) sx = main.mousex-(x+w-98);
         sx = Math.max(Math.min(96,sx),0);
         //val = (int)(sx*(double)(ub-lb)*96+lb);
-        val = (int)((sx/96)*(double)(ub-lb))+lb;
+        val = (int)Math.round((sx/96)*(double)(ub-lb))+lb;
         return val;
     }
 
     public int drawToggle(String label, int x, int y, int w, int h, int val){
         int m = getButtonContext(x,y,w,h,1);
         double mouseanim = m*buttonanim;
-        int c = 255-(int)(80*m);
+        int c = 255-(int)(80*mouseanim);
         batchPush(9,x+m,y+m,w-2*m,h-2*m,new Color(24,20,37));
         drawBox(x-m,y-m,w+2*m,h+2*m,7-m);
         drawText(label,x+1+(int)(5*mouseanim),y+1,8,6,new Color(c,c,c,160+(int) (Math.sin((main.frame/main.TPS) * 2*Math.PI))*80));
@@ -187,7 +187,7 @@ public class draw2d{
             main.keybuffer = "";
         }
         double mouseanim = m*buttonanim;
-        int c = 255-(80*m);
+        int c = 255-(int)(80*mouseanim);
         batchPush(9,x+m,y+m,w-2*m,h-2*m,new Color(24,20,37));
         drawBox(x-m,y-m,w+2*m,h+2*m,7-m);
         if(main.keycontext == x+y){
