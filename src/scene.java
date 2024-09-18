@@ -9,9 +9,9 @@ import java.util.Scanner;
 
 abstract class scene { // scene base class
     protected Tetris2805 main;
-    protected draw2d draw;
+    protected D2D draw;
 
-    public scene(Tetris2805 m, draw2d d){
+    public scene(Tetris2805 m, D2D d){
         main = m;
         draw = d;
     }
@@ -21,10 +21,10 @@ abstract class scene { // scene base class
 
 class splash extends scene { // splash screen
     private int time;
-    public splash(Tetris2805 m, draw2d d) {
+    public splash(Tetris2805 m, D2D d) {
         super(m, d);
         time = 0;
-        draw.clearColour = new Color(24,20,37);
+        D2D.clearColour = new Color(24,20,37);
         main.sceneIndex = 0;
     }
     @Override
@@ -41,10 +41,10 @@ class splash extends scene { // splash screen
 
 class menu extends scene { // main menu
     private int time;
-    public menu(Tetris2805 m, draw2d d) {
+    public menu(Tetris2805 m, D2D d) {
         super(m, d);
         time = 0;
-        draw.clearColour = new Color(24,20,37);
+        D2D.clearColour = new Color(24,20,37);
         main.sceneIndex = 1;
     }
     @Override
@@ -57,7 +57,7 @@ class menu extends scene { // main menu
         draw.drawText("JAVA GAME BY NATHAN BURG",20,30,8,6,new Color((int)(255*(a/2)),(int)(255*(a/2)),(int)(255*(a/2))));
 
         int bx = 20;//main.FRAMEBUFFER_W/2-100;
-        if(a > 0.25 && draw.drawButton("PLAY",bx,40,80,10) == 1) main.currentScene = new tetris(main,draw);
+        if(a > 0.25 && draw.drawButton("PLAY",bx,40,80,10) == 1) main.currentScene = new Game(main,draw);
         if(a > 0.5 && draw.drawButton("CONFIGURE",bx,51,80,10) == 1) main.currentScene = new config(main,draw);
         if(a > 0.75 && draw.drawButton("HIGHSCORE",bx,62,80,10) == 1) main.currentScene = new hscore(main,draw);
         if(a >= 1 && draw.drawButton("EXIT",bx,73,80,10) == 1) main.displayconfirm = main.DIALOG_CONTEXT_EXIT;
@@ -67,10 +67,10 @@ class menu extends scene { // main menu
 
 class config extends scene { // config menu
     private int time;
-    public config(Tetris2805 m, draw2d d) {
+    public config(Tetris2805 m, D2D d) {
         super(m, d);
         time = 0;
-        draw.clearColour = new Color(24,20,37);
+        D2D.clearColour = new Color(24,20,37);
         main.sceneIndex = 2;
     }
     @Override
@@ -89,8 +89,8 @@ class config extends scene { // config menu
         main.cfg.put("ai",draw.drawToggle("AI PLAY",20,30+10*5,main.FRAMEBUFFER_W-40,10,main.cfg.get("ai")));
         main.cfg.put("extend",draw.drawToggle("GOBLIN MODE",20,30+10*6,main.FRAMEBUFFER_W-40,10,main.cfg.get("extend")));
 
-        if(draw.drawButton("APPLY",20,30+10*9,80,10) == 1) main.saveData(main.cfg,"src/config.txt");
-        if(draw.drawButton("RESET",20,30+10*8,80,10) == 1) main.cfg = main.loadData("src/cfgdef.txt");
+        if(draw.drawButton("APPLY",20,30+10*9,80,10) == 1) main.saveData(main.cfg,"src/data/config.txt");
+        if(draw.drawButton("RESET",20,30+10*8,80,10) == 1) main.cfg = main.loadData("src/data/cfgdef.txt");
 
         if(draw.drawButton("BACK",20,main.FRAMEBUFFER_H-20,80,10) == 1) main.currentScene = new menu(main,draw);
     }
@@ -100,10 +100,10 @@ class config extends scene { // config menu
 class hscore extends scene { // leaderboard menu
     private int time;
     private ArrayList<Map.Entry<String, Integer>> list;
-    public hscore(Tetris2805 m, draw2d d) {
+    public hscore(Tetris2805 m, D2D d) {
         super(m, d);
         time = 0;
-        draw.clearColour = new Color(24,20,37);
+        D2D.clearColour = new Color(24,20,37);
         // sorted score list
         list = new ArrayList<>(main.scores.entrySet());
         list.sort(Map.Entry.<String, Integer>comparingByValue().reversed());
