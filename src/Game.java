@@ -22,6 +22,9 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
     // took me way too long to write these consts, i was just remembering the integers before lol (notice how i missed 5 ????)
     public final int STATE_PLAY = 0, STATE_PAUSE = 1, STATE_GAMEOVER = 2, STATE_CLEAR = 3, STATE_LOSE = 4, STATE_oops = 5, STATE_STARTLEVEL = 6, STATE_ENDLEVEL = 7;
 
+    private final BufferedImage water = new BufferedImage(main.FRAMEBUFFER_W,main.FRAMEBUFFER_H,BufferedImage.TYPE_INT_ARGB);
+    private final Graphics2D water2d = water.createGraphics();
+
     /*public final ArrayList<Object> objects = new ArrayList<Object>();
 
     public Object CreateObject(Object object){
@@ -297,67 +300,14 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
             //draw.batchPush(bgtex[i],(int)((bgx*(0.1+0.1*i))%FRAMEBUFFER_W-FRAMEBUFFER_W),(int)((bgy*(0.1+0.1*i))%FRAMEBUFFER_H),FRAMEBUFFER_W,FRAMEBUFFER_H);
         }
 
+        //if(main.input.get(-1) == 1) Object.CreateObject(new ObjectCharacter(this,PlayerControlScheme.PCS_AI,137,(int)main.mousex,(int)main.mousey));
+
         time++;
         if(state != STATE_GAMEOVER){
             if(main.input.get(KeyEvent.VK_ESCAPE) == 1 || main.input.get(KeyEvent.VK_P) == 1) state = 1-state; // pause input
             main.bgtx = score+800*level+main.frame*0.1;
-            if(state == STATE_PLAY){
-                // tetromino drop, either with key input or on timer. each level shaves 1/10th of a second off
-                /*if((time/4f > Math.max(1,60-6*level) || main.input.get(KeyEvent.VK_DOWN)%12 == 1) && Math.abs(currentTetromino.dx-currentTetromino.x*main.SPR_WIDTH) + Math.abs(currentTetromino.dy-currentTetromino.y*main.SPR_WIDTH) < 10){
-                    time = 0;
-                    if(!checkBoardState()){ // collision on drop
-                        Tetromino t = currentTetromino;
-                        // merge tetromino
-                        for(int i = 0; i < TET_WIDTH; i++){
-                            for(int j = 0; j < TET_WIDTH; j++){
-                                int x = t.x+i, y = t.y+j;
-                                if(tetrominoList[t.i][t.j][i][j] > 0) board[x][y] = t.t;
-                            }
-                        }
-                        // add score and set state to clear rows
-                        int rows = checkRows();
-                        if(rows > 0){ //
-                            score += scores[rows-1]*(level+1);
-                            state = STATE_CLEAR;
-                        }
-                        // spawn new tetromino
-                        currentTetromino = spawnTetromino();
-                        if(!checkBoardState()){ // fail state, if tetromino spawns fouled then state is set to lose
-                            lives--;
-                            clearx = 0;
-                            state = STATE_LOSE;
-                        }
-                        boardx += 2-(int)(Math.random()*4); // shake the board
-                        boardy += 2-(int)(Math.random()*4);
-                        illum = 0.5; // light up the board
-                    }else{
-                        currentTetromino.y++; // drop tetromino
-                        illum *= 0.8;
-                    }
-                }
-                // all other tetromino inputs
-                int xp =currentTetromino.x, rp = currentTetromino.j;
-                if(main.input.get(KeyEvent.VK_RIGHT) == 1 || main.input.get(KeyEvent.VK_RIGHT) > main.TPS/8) currentTetromino.x++;
-                if(main.input.get(KeyEvent.VK_LEFT) == 1 || main.input.get(KeyEvent.VK_LEFT) > main.TPS/8) currentTetromino.x--;
-                if(main.input.get(KeyEvent.VK_UP) == 1 || main.input.get(KeyEvent.VK_UP) > main.TPS/8) currentTetromino.j = (currentTetromino.j+1)%4;
-                /*if(main.input.get(KeyEvent.VK_A) == 1){
-                    board_bound_x -= 1;
-                    currentTetromino.x -= 1;
-                }
-                if(main.input.get(KeyEvent.VK_D) == 1){
-                    board_bound_x += 1;
-                    currentTetromino.x += 1;
-                }
-                board_bound_x = (Math.min(boardWidth-board_bound_w,Math.max(0,currentTetromino.x-board_bound_w/2))/board_bound_w)*board_bound_w;
-                draw.view_x -= (draw.view_x-(currentTetromino.dx-main.FRAMEBUFFER_W/4.))*0.1;
-                draw.view_y -= (draw.view_y-(currentTetromino.dy-main.FRAMEBUFFER_H/4.)*.2)*0.1;
-                if(!checkBoardState()){
-                    currentTetromino.x = xp;
-                    currentTetromino.j = rp;
-                }*/
-            }
-            // board borders
-            //draw.batchPush(9,boardx-1,boardy-1+2*main.SPR_WIDTH,boardWidth*main.SPR_WIDTH+1,(boardHeight-2)*main.SPR_WIDTH+1,new Color(38,43,68));
+
+            //play area borders
             draw.batchPush(9,boardx+board_bound_x*main.SPR_WIDTH,boardy+2*main.SPR_WIDTH,1,(boardHeight-2)*main.SPR_WIDTH+1,new Color(139,155,180));
             draw.batchPush(9,boardx+(board_bound_x+board_bound_w)*main.SPR_WIDTH,boardy+2*main.SPR_WIDTH,1,(boardHeight-2)*main.SPR_WIDTH+1,new Color(139,155,180));
 
@@ -402,7 +352,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
 
                         double disttocenter = Math.abs(boardx+i*main.SPR_WIDTH - (draw.view_x+draw.view_w/2))/(draw.view_w*0.5);
 
-                        double l = Math.min(1,Math.max(0,Math.max(1-(4+light[i][j])/10f,disttocenter)));
+                        double l = Math.min(1,Math.max(0,Math.min(1-(4+light[i][j])/10f,disttocenter)));
                         draw.batchPush(k,boardx+i*main.SPR_WIDTH + lo,boardy+j*main.SPR_WIDTH + (j < cleary ? (int)cleardy : 0), main.SPR_WIDTH,main.SPR_WIDTH,
                                 new Color((int)draw.lerp(255,24,l),(int)draw.lerp(255,20,l),(int)draw.lerp(255,37,l))); // ternary operator to only draw rows above cleardy in animated state for row clear, also lerp for light level
                     }
@@ -421,139 +371,53 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                 }
             }
 
-            // silly water??
-            BufferedImage water;
-            if(boardy+(boardHeight+3)*main.SPR_WIDTH < draw.view_y+draw.view_h) water = new BufferedImage(main.FRAMEBUFFER_W,main.FRAMEBUFFER_H,BufferedImage.TYPE_INT_ARGB);
-            else water = null;
-
-            if(water != null){
-                Graphics2D g = water.createGraphics();
-
-                //g.setComposite(AlphaComposite.Clear);  // Set composite to clear
-                g.fillRect(0, 0, water.getWidth(), water.getHeight());
-
-                // Flip framebuffer vertically
-                AffineTransform flip = AffineTransform.getScaleInstance(1, -1);
-                flip.translate(0, -draw.framebuffer.getHeight());
-                g.drawImage(draw.framebuffer, flip, null);
-
-                // Apply a ripple effect
-                for (int y = 0; y < water.getHeight(); y++) {
-                    int offsetX = (int)(Math.sin(y / 10.0) * 1);  // Simple sine wave for ripple
-                    for (int x = 0; x < water.getWidth(); x++) {
-                        int sourceX = x + offsetX;
-                        if (sourceX >= 0 && sourceX < water.getWidth()) {
-                            int rgb = water.getRGB(sourceX, y);
-                            water.setRGB(x, y, rgb);  // Apply offset to create ripple effect
-                        }
-                    }
-                }
-                draw.batchPush(water,draw.view_x,draw.view_y,draw.view_w,draw.view_h);
-                g.dispose();
-            }
-
             //update enemies in goblin mode
             if(main.cfg.get("extend") == 1){
                 int killscore = 0;
-                // outer board for decoration
-                /*for(int x = 0; x < 3*boardWidth; x++){
-                    for(int y = 2; y < boardHeight; y++){
-                        int i = outboard[x][y];
-                        if(i != 0){
-                            if(i == 114) i = getTileIndex(i,x,y,outboard);
-                            else if(i >= 160 && i < 170) i += ((int)(main.frame/(main.TPS/4))%2)*10;
-                            double l = Math.min(1,3*Math.abs(x-boardWidth*1.5)/(boardWidth*3f));
-                            draw.batchPush(i,boardx+(x-boardWidth)*main.SPR_WIDTH+lo,boardy+y*main.SPR_WIDTH, main.SPR_WIDTH,main.SPR_WIDTH,new Color((int)draw.lerp(255,24,l),(int)draw.lerp(255,20,l),(int)draw.lerp(255,37,l)));
-                        }
-                    }
-                }*/
-
-                //TODO: Make my objects all into their own Object classes so this method isnt so fucking long
-
-                // if(main.input.get(-1) == 1) spawnEnemy(main.mousex,main.mousey);
-                /*if(enemylist.size() > 0){
-                    for(int i = 0; i < enemylist.size(); i++){
-                        Enemy e = enemylist.get(i);
-                        if(state == STATE_PLAY){
-                            if(e.hsp != 0) e.xd = e.hsp > 0 ? 1 : -1; // set facing direction
-                            if(pointCheck(e.x+2*e.xd+e.hsp,e.y) == 1) e.hsp = 0; // collisions
-                            if(pointCheck(e.x,e.y+e.vsp) == 1) e.vsp = 0;
-                            e.x += e.hsp;
-                            e.y += e.vsp;
-                            e.vsp += 0.02; // gravity
-                            if(e.txt.length() == e.taunt.length()){ // taunt reset
-                                if(e.txt.length() > 0 && (int)(Math.random()*(main.TPS*2)) == 0){
-                                    e.txt = "";
-                                    e.taunt = "";
-                                }
-                            }
-
-                            if(e.taunt.length() > e.txt.length() && (int)(Math.random()*5) == 0)e.txt = e.taunt.substring(0,e.txt.length()+1); // taunt animation
-                            if(state == STATE_LOSE || (e.taunt == "" && (int)(Math.random()*(main.TPS*5)) == 0)) e.taunt = taunts[(int)(Math.random()*taunts.length)]; // new taunt
-
-                            // run away from current tetromino
-                            if(Math.abs(currentTetromino.dx+boardx+2*main.SPR_WIDTH-e.x) < 2*main.SPR_WIDTH) e.hsp = -(currentTetromino.dx+boardx+2*main.SPR_WIDTH-e.x)*0.01;
-                            else if((int)(Math.random()*main.TPS) == 0) e.hsp = -0.25+0.5*Math.random(); // wander
-                            if((int)(Math.random()*main.TPS) == 0) e.hsp = 0;
-                        }
-
-                        if(pointCheck(e.x,e.y) == 1){ // die from being crushed
-                            enemylist.remove(i);
-                            for(int j = 0; j < 4; j++) draw.particlePush(130,134,0.03+0.02*Math.random(),(int)e.x,(int)e.y,-0.1+0.2*Math.random(),-0.1+0.2*Math.random(),Color.WHITE);
-                            draw.particlePush(150,154,0.09+0.01*Math.random(),(int)e.x-main.SPR_WIDTH/2,(int)e.y-main.SPR_WIDTH,-0.01+0.02*Math.random(),-0.08,Color.WHITE);
-                            i--;
-                            killscore++;
-                        }
-
-                        // draw self
-                        draw.batchPush(e.spr+(int)(main.frame/(main.TPS/2))%2+(e.hsp != 0 ? 1 : 0),
-                                (int)e.x-e.xd*main.SPR_WIDTH/2 + lo,
-                                (int)e.y-main.SPR_WIDTH+(int)Math.abs(Math.sin((main.frame/main.TPS + i*234)*Math.PI)*Math.abs(e.hsp)),
-                                e.xd*main.SPR_WIDTH,main.SPR_WIDTH);
-                        // draw taunt
-                        if(e.txt != ""){
-                            draw.batchPush(9,(int)e.x-10,(int)e.y-18-(int)e.x%2,e.txt.length()*6,8,new Color(24,20,37));
-                            draw.drawText(e.txt,(int)e.x-10,(int)e.y-18-(int)e.x%2,8,6,e.c);
-                        }
-                    }
-                }else if(state == STATE_PLAY){ // next level if no active enemies
-                    //level++;
-                    //loadLevel(level*10,boardWidth,boardHeight);
-                    state = STATE_ENDLEVEL;
-                    clearx = 0;
-                    //cleardx = boardWidth*main.SPR_WIDTH;
-                }
-                if(killscore > 0) score += scores[Math.min(killscore,3)]*(level+Math.max(1,killscore-4));*/
             }
 
-            //draw tetromino
-            /*Tetromino t = currentTetromino;
-            t.dx -= (t.dx-t.x*main.SPR_WIDTH)/interpolatespeed; // interpolate tetronimo position
-            t.dy -= (t.dy-t.y*main.SPR_WIDTH)/interpolatespeed;
-            for(int i = 0; i < TET_WIDTH; i++){
-                for(int j = 0; j < TET_WIDTH; j++){
-                    int x = (int)t.dx+i*(main.SPR_WIDTH), y = (int)t.dy+j*(main.SPR_WIDTH); // normalized coordinates
-                    if(tetrominoList[t.i][t.j][i][j] > 0){
-                        draw.batchPush(t.t,boardx+x,boardy+y,main.SPR_WIDTH,main.SPR_WIDTH); // draw tetromino
-                        if(t.x+i >= 0 && t.x+i < boardWidth && t.y+j >= 2 && t.y+j < boardHeight && board[t.x+i][t.y+j] == 0) light[t.x+i][t.y+j] = 10; // illuminate current spot
-                    }
-                    if(tetrominoList[nextTetronimo][0][i][j] > 0) draw.batchPush(8,20+(i+1)*main.SPR_WIDTH,boardy+(j+4)*main.SPR_WIDTH,main.SPR_WIDTH, main.SPR_WIDTH); // show next tetromino in hud
+            // draw ground
+            for(int i = boardvisx; i <= boardvisx+boardvisw; i += 1){
+                double disttocenter = Math.abs(boardx+i*main.SPR_WIDTH - (draw.view_x+draw.view_w/2))/(draw.view_w*0.5);
+                //double l = Math.min(1,Math.max(0,1-(4+light[i][boardHeight-1])/10f + disttocenter));
+                double l = Math.min(1,Math.max(0,Math.min(1-(4+light[i][boardHeight-1])/10f,disttocenter)));
+                //double l = Math.min(1,2*Math.abs(i/((double)main.SPR_WIDTH)-boardWidth*1.5f)/(boardWidth*3f));
+                Color c = new Color((int)draw.lerp(255,24,l),(int)draw.lerp(255,20,l),(int)draw.lerp(255,37,l));
+                draw.batchPush(100+Math.abs(i)%3,boardx+i*main.SPR_WIDTH+(int)cleardx%main.SPR_WIDTH,(i/main.SPR_WIDTH*i)%3-1+boardy+boardHeight*main.SPR_WIDTH, main.SPR_WIDTH, main.SPR_WIDTH,c);
+                draw.batchPush(110+Math.abs(i)%3,boardx+i*main.SPR_WIDTH+(int)cleardx%main.SPR_WIDTH,(i/main.SPR_WIDTH*i)%3-1+boardy+(boardHeight+1)*main.SPR_WIDTH, main.SPR_WIDTH, main.SPR_WIDTH,c);
+                draw.batchPush(120+Math.abs(i)%3,boardx+i*main.SPR_WIDTH+(int)cleardx%main.SPR_WIDTH,(i/main.SPR_WIDTH*i)%3-1+boardy+(boardHeight+2)*main.SPR_WIDTH, main.SPR_WIDTH, main.SPR_WIDTH,c);
+            }
+
+            int waterY = (int)(boardy+(boardHeight+3)*main.SPR_WIDTH-draw.view_y);
+            if(time%2==0){
+                int waterHeight = main.FRAMEBUFFER_H-waterY;
+
+                water2d.setComposite(AlphaComposite.Clear);
+                water2d.fillRect(0, 0, water.getWidth(), water.getHeight());
+                water2d.setComposite(AlphaComposite.SrcOver);
+                water2d.setClip(0, waterY, water.getWidth(), waterHeight);
+
+                AffineTransform flip = new AffineTransform();
+                flip.scale(1, -0.5);
+                flip.translate(0, -3*waterY);
+
+                water2d.drawImage(draw.framebuffer, flip, null);
+            }
+
+            draw.batchPush(water,draw.view_x,draw.view_y,draw.view_w,draw.view_h);
+
+            for(int i = 1; i <= 12; i += 2){
+                int s = 118, h = 1;
+                for(int j = 0; j <= (boardWidth*main.SPR_WIDTH)/main.FRAMEBUFFER_W; j += 1){
+                    draw.batchPush(s,(int)(((boardWidth*main.SPR_WIDTH*0.5-bgx)*(1.+0.02*i)+(Math.sin(i*234)*0.06)*main.frame+25*i)%main.FRAMEBUFFER_W+main.FRAMEBUFFER_W*j),(int)(waterY+(draw.view_y)*(1+0.01*i))+2*i,main.FRAMEBUFFER_W,h);
                 }
-            }*/
+            }
 
-            //////////draw.batchPush(9,boardx,boardy,boardWidth*main.SPR_WIDTH,2*main.SPR_WIDTH-1,new Color(24,20,37)); // cover top of board TODO: get rid of this hack
-
-            // draw ground in goblin mode
-            if(main.cfg.get("extend") == 1){
-                for(int i = boardvisx; i <= boardvisx+boardvisw; i += 1){
-                    double disttocenter = Math.abs(boardx+i*main.SPR_WIDTH - (draw.view_x+draw.view_w/2))/(draw.view_w*0.5);
-                    //double l = Math.min(1,Math.max(0,1-(4+light[i][boardHeight-1])/10f + disttocenter));
-                    double l = Math.min(1,Math.max(0,Math.max(1-(4+light[i][boardHeight-1])/10f,disttocenter)));
-                    //double l = Math.min(1,2*Math.abs(i/((double)main.SPR_WIDTH)-boardWidth*1.5f)/(boardWidth*3f));
-                    Color c = new Color((int)draw.lerp(255,24,l),(int)draw.lerp(255,20,l),(int)draw.lerp(255,37,l));
-                    draw.batchPush(100+Math.abs(i)%3,boardx+i*main.SPR_WIDTH+(int)cleardx%main.SPR_WIDTH,(i/main.SPR_WIDTH*i)%3-1+boardy+boardHeight*main.SPR_WIDTH, main.SPR_WIDTH, main.SPR_WIDTH,c);
-                    draw.batchPush(110+Math.abs(i)%3,boardx+i*main.SPR_WIDTH+(int)cleardx%main.SPR_WIDTH,(i/main.SPR_WIDTH*i)%3-1+boardy+(boardHeight+1)*main.SPR_WIDTH, main.SPR_WIDTH, main.SPR_WIDTH,c);
-                    draw.batchPush(120+Math.abs(i)%3,boardx+i*main.SPR_WIDTH+(int)cleardx%main.SPR_WIDTH,(i/main.SPR_WIDTH*i)%3-1+boardy+(boardHeight+2)*main.SPR_WIDTH, main.SPR_WIDTH, main.SPR_WIDTH,c);
+            int[] fgtex = {129,128,135,136};
+            for(int i = 0; i < fgtex.length; i++){
+                for(int j = 0; j <= (boardWidth*main.SPR_WIDTH)/main.FRAMEBUFFER_W; j += 1){
+                    //System.out.println(""+i+": "+D2D.sprites[fgtex[i]]);
+                    draw.batchPush(fgtex[i],(int)((-bgx*(0.4+0.5*i))%main.FRAMEBUFFER_W+main.FRAMEBUFFER_W*j-main.FRAMEBUFFER_W),(int)(waterY+(draw.view_y)*(1.1+0.02*i))-10*i,main.FRAMEBUFFER_W,128/*,new Color(24,20,37)*/);
                 }
             }
 

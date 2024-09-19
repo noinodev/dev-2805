@@ -296,6 +296,7 @@ public class D2D{
         //viewport.setColor(Color.white);
         //viewport.fillRect(0,0,framebuffer.getWidth(),framebuffer.getHeight());
         double vw = (framebuffer.getWidth()/view_w), vh = (framebuffer.getHeight()/view_h);
+        //int s=0,ns=0;
 
         if(batch.size() > 0){
             for(int i = 0; i < batch.size(); i++) {

@@ -151,6 +151,11 @@ public class Tetris2805 extends JPanel implements ActionListener {
         D2D.sprites[61] = loadTexture("resources/assets/bgtex5.png");
         D2D.sprites[109] = loadTexture("resources/assets/spr_tree.png");
         D2D.sprites[119] = loadTexture("resources/assets/spr_rock.png");
+        D2D.sprites[118] = loadTexture("resources/assets/spr_waterhighlights.png");
+        D2D.sprites[129] = loadTexture("resources/assets/fgtex1.png");
+        D2D.sprites[128] = loadTexture("resources/assets/fgtex2.png");
+        D2D.sprites[135] = loadTexture("resources/assets/fgtex3.png");
+        D2D.sprites[136] = loadTexture("resources/assets/fgtex4.png");
         bgx = 0;
         bgy = 0;
         bgtx = 0;

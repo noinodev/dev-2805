@@ -87,7 +87,7 @@ class ObjectResource extends Object {
 
         if(hp <= 0) destroy = 1;
         double disttocenter = Math.abs(x - (draw.view_x+draw.view_w/2))/(draw.view_w*0.5);
-        double l = Math.min(1,Math.max(0,Math.max(1-(4+game.light[bx][by])/10f,disttocenter)+dmg));
+        double l = Math.min(1,Math.max(0,Math.min(1-(4+game.light[bx][by])/10f,disttocenter)+dmg));
         Color c = new Color((int)D2D.lerp(255,24,l),(int)D2D.lerp(255,20,l),(int)D2D.lerp(255,37,l));
         draw.batchPush((int)sprite,x-w/2+hsp,y-h+vsp,w,h,c);
     }
@@ -206,7 +206,7 @@ class ObjectCharacter extends PlayerObject {
         int by = Math.max(Math.min((int)(Math.floor(y-game.boardy)/main.SPR_WIDTH),game.boardHeight-1),0);
 
         double disttocenter = Math.abs(x - (draw.view_x+draw.view_w/2))/(draw.view_w*0.5);
-        double l = Math.min(1,Math.max(0,Math.max(1-(4+game.light[bx][by])/10f,disttocenter)));
+        double l = Math.min(1,Math.max(0,Math.min(1-(4+game.light[bx][by])/10f,disttocenter)));
         Color c = new Color((int)D2D.lerp(255,24,l),(int)D2D.lerp(255,20,l),(int)D2D.lerp(255,37,l));
 
         draw.batchPush((int)sprite+(int)(main.frame/(main.TPS/2))%2+(hsp != 0 ? 1 : 0),
