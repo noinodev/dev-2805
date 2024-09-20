@@ -1,5 +1,6 @@
 import java.awt.*;
 import java.awt.event.KeyEvent;
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.UUID;
 
@@ -222,7 +223,24 @@ class ObjectCharacter extends PlayerObject {
 }
 
 class ObjectTetromino extends PlayerObject {
-    public static int[][][][] tetrominoList;
+    private static int[][][][] getTetrominoes(BufferedImage in){
+        int count = in.getHeight()/4;
+        int[][][][] out = new int[count][4][4][4];
+        for(int i = 0; i < count; i++){
+            for(int j = 0; j < 4; j++){
+                for(int x = 0; x < 4; x++){
+                    for(int y = 0; y < 4; y++){
+                        // i=tetromino index, j=rotation index, x=x, y=y
+                        // it was easier to handle rotations this way, as if im gonna do a rotation matrix just for this that would be silly
+                        out[i][j][x][y] = Math.min(in.getRGB(j*4+x,i*4+y) & 0xff,1); // set cells of tetromino grid by colour data
+                    }
+                }
+            }
+        }
+        return out;
+    }
+
+    public static int[][][][] tetrominoList = getTetrominoes(Tetris2805.loadTexture("resources/load/tetrominoatlas5.png"));
 
     public int index,rotation,t;
     int dx,dy;

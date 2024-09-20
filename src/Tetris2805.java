@@ -8,6 +8,12 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.util.*;
 
+enum GM {
+    GM_OFFLINE,
+    GM_HOST,
+    GM_JOIN
+}
+
 public class Tetris2805 extends JPanel implements ActionListener {
     public final int SPR_WIDTH = 10;
     public int FRAMEBUFFER_W = 256, FRAMEBUFFER_H = 256;
@@ -32,6 +38,7 @@ public class Tetris2805 extends JPanel implements ActionListener {
     public scene currentScene;
     public int sceneIndex;
     public int gameShouldClose;
+    public GM gamemode;
 
     public Path working_directory;
 
@@ -53,7 +60,7 @@ public class Tetris2805 extends JPanel implements ActionListener {
             while(scan.hasNextLine()) {
                 String[] entry = scan.nextLine().split(" ");
                 out.put(entry[0], Integer.parseInt(entry[1]));
-                System.out.println(entry[0]);
+                //System.out.println(entry[0]);
             }
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
@@ -61,7 +68,7 @@ public class Tetris2805 extends JPanel implements ActionListener {
         return out;
     }
 
-    private BufferedImage convertToARGB(BufferedImage in) {
+    private static BufferedImage convertToARGB(BufferedImage in) {
         BufferedImage out = new BufferedImage(in.getWidth(),in.getHeight(),BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2d = out.createGraphics();
         g2d.drawImage(in,0,0,null);
@@ -69,7 +76,7 @@ public class Tetris2805 extends JPanel implements ActionListener {
         return out;
     }
 
-    public BufferedImage loadTexture(String path){
+    public static BufferedImage loadTexture(String path){
         try {
             URL in = Tetris2805.class.getResource(path);
             if(in != null){
@@ -129,9 +136,12 @@ public class Tetris2805 extends JPanel implements ActionListener {
 
     public Tetris2805(){
         gameShouldClose = 0;
+        gamemode = GM.GM_OFFLINE;
         working_directory = Path.of("").toAbsolutePath();
         //String cwd = working_directory.toString();
         //System.out.println(cwd+"src/resources/atlas.png");
+
+        NetworkHandler.startNetworkThread();
 
         // draw init
         BufferedImage atlas = loadTexture("resources/assets/atlas.png");

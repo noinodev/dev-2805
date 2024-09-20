@@ -57,10 +57,14 @@ class menu extends scene { // main menu
         draw.drawText("JAVA GAME BY NATHAN BURG",20,30,8,6,new Color((int)(255*(a/2)),(int)(255*(a/2)),(int)(255*(a/2))));
 
         int bx = 20;//main.FRAMEBUFFER_W/2-100;
-        if(a > 0.25 && draw.drawButton("PLAY",bx,40,80,10) == 1) main.currentScene = new Game(main,draw);
-        if(a > 0.5 && draw.drawButton("CONFIGURE",bx,51,80,10) == 1) main.currentScene = new config(main,draw);
-        if(a > 0.75 && draw.drawButton("HIGHSCORE",bx,62,80,10) == 1) main.currentScene = new hscore(main,draw);
-        if(a >= 1 && draw.drawButton("EXIT",bx,73,80,10) == 1) main.displayconfirm = main.DIALOG_CONTEXT_EXIT;
+        if(a > 0.2 && draw.drawButton("SINGLEPLAYER",bx,40,80,10) == 1){
+            main.gamemode = GM.GM_OFFLINE;
+            main.currentScene = new Game(main,draw);
+        }
+        if(a > 0.4 && draw.drawButton("MULTIPLAYER",bx,51,80,10) == 1) main.currentScene = new lobby(main,draw);
+        if(a > 0.6 && draw.drawButton("CONFIGURE",bx,62,80,10) == 1) main.currentScene = new config(main,draw);
+        if(a > 0.8 && draw.drawButton("HIGHSCORE",bx,73,80,10) == 1) main.currentScene = new hscore(main,draw);
+        if(a >= 1 && draw.drawButton("EXIT",bx,84,80,10) == 1) main.displayconfirm = main.DIALOG_CONTEXT_EXIT;
     }
 
 }
@@ -123,6 +127,58 @@ class hscore extends scene { // leaderboard menu
             i++;
         }
         if(draw.drawButton("BACK",20,main.FRAMEBUFFER_H-20,80,10) == 1) main.currentScene = new menu(main,draw);
+    }
+
+}
+
+class lobby extends scene { // config menu
+    private int time;
+    public lobby(Tetris2805 m, D2D d) {
+        super(m, d);
+        time = 0;
+        D2D.clearColour = new Color(24,20,37);
+        main.sceneIndex = 2;
+    }
+    @Override
+    public void loop(){
+        main.bgtx = 400+main.frame*0.1;
+        if(time < main.TPS) time++;
+        double a = time/main.TPS;
+        draw.drawText("MULTIPLAYER",20,20,10,8,new Color((int)(255*a),(int)(255*a),(int)(255*a)));
+
+        switch(main.gamemode){
+            case GM_HOST:
+                // tell matchmaking server that it want to start a lobby
+                // if there are 2 or more players in the lobby, let user start the game
+                // when starting, tell server to attempt handshake
+                // wait for server to call handshake
+                // if confirmed and all clients in list validate handshake, start game
+
+            break;
+            case GM_JOIN:
+                // tell matchmaking server that it wants to join a lobby
+                // wait for list of lobbies or enter game code
+                // join a game
+                // wait for server to call handshake
+                // attempt handshake until timeout (tell static method to do this)
+                // when host confirms, start game and start handling game packets
+            break;
+            default:
+                if(draw.drawButton("HOST GAME",20,30+10*2,80,10) == 1){
+                    main.gamemode = GM.GM_HOST;
+                    //main.currentScene = new host(main,draw);
+                }
+                if(draw.drawButton("JOIN GAME",20,30+10*3,80,10) == 1){
+                    main.gamemode = GM.GM_JOIN;
+                    //main.currentScene = new join(main,draw);
+                }
+            break;
+        }
+
+        if(draw.drawButton("BACK",20,main.FRAMEBUFFER_H-20,80,10) == 1){
+            main.gamemode = GM.GM_OFFLINE;
+            main.currentScene = new menu(main,draw);
+        }
     }
 
 }

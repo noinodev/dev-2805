@@ -89,7 +89,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
 
     private int getLightLevel(int x,int y,double scale){
         // starting light distance is distance to current tetromino, as it makes the lighting smoother as it drops between cells
-        double minDistance = Math.sqrt(Math.pow((currentTetromino.dx/main.SPR_WIDTH)+1 - x, 2) + Math.pow((currentTetromino.dy/main.SPR_WIDTH)+1 - y, 2));
+        double minDistance = Math.sqrt(Math.pow((currentTetromino.x/main.SPR_WIDTH)+1 - x, 2) + Math.pow((currentTetromino.y/main.SPR_WIDTH)+1 - y, 2));
         for (int i = board_bound_x; i < board_bound_x+board_bound_w; i++) {
             for (int j = 0; j < boardHeight; j++) {
                 if (board[i][j] != 0 && (board[i][j] < 100 || (board[i][j] >= 160 && board[i][j] <= 162))) { // brick and scaffold tiles specifically are ignored kinda hacky until i add more decorations and fix it
@@ -138,7 +138,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
     }
 
     // get tetromino data from atlas, can add funny shaped ones if i want (??????)
-    private int[][][][] getTetrominoes(BufferedImage in){
+    /*private int[][][][] getTetrominoes(BufferedImage in){
         int count = in.getHeight()/4;
         int[][][][] out = new int[count][4][TET_WIDTH][TET_WIDTH];
         for(int i = 0; i < count; i++){
@@ -153,7 +153,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
             }
         }
         return out;
-    }
+    }*/
 
     /*private boolean checkBoardState(){ // tetromino collision function
         Tetromino t = currentTetromino;
@@ -231,53 +231,74 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
         super(m, d);
         draw.clearColour = new Color(24,20,37);
         main.sceneIndex = 4;
-        ObjectTetromino.tetrominoList = getTetrominoes(main.loadTexture("resources/load/tetrominoatlas5.png"));
-        //boardWidth = main.cfg.get("width");
-        //boardHeight = main.cfg.get("height")+2;
-        boardWidth = levelimage.getWidth();
-        boardHeight = main.cfg.get("height")+2;
-        board_bound_x = 0;
-        board_bound_w = main.cfg.get("width");
+
         posx = 80; // board anchor position
         posy = 6;
         boardx = posx;
         boardy = posy;
-        nextTetronimo = (int)(Math.random() * ObjectTetromino.tetrominoList.length); // random tetromino same as in spawnTetromino
-        currentTetromino = (ObjectTetromino) Object.CreateObject(new ObjectTetromino(this,PlayerControlScheme.PCS_AI,0,0,0,0,0));
-        currentTetromino.ResetTetromino();
+
         time = 0;
         score = 0;
         state = 0;
         oldstate = state;
-        level = main.cfg.get("level"); // starting level
         lines = 0;
         illum = 1;
-        lives = 1+2*main.cfg.get("extend"); // only goblin mode has 3 lives
         clearx = 0;
         cleary = 0;
         cleardy = 0;
         cleardx = 0;
-
-        Object o = Object.CreateObject(new ObjectCharacter(this,PlayerControlScheme.PCS_LOCAL,137,boardx+40,boardy+10));
-        for(int i = 0; i < 40; i++){
-            Object.CreateObject(new ObjectResource(this,(int)(boardx+boardWidth*main.SPR_WIDTH*Math.random()),boardy+boardHeight*main.SPR_WIDTH,Math.random() > 0.5 ? 109 : 119,1,10));
+        //ObjectTetromino.tetrominoList = getTetrominoes(main.loadTexture("resources/load/tetrominoatlas5.png"));
+        //boardWidth = main.cfg.get("width");
+        //boardHeight = main.cfg.get("height")+2;
+        switch(main.gamemode){
+            case GM_OFFLINE:
+                boardWidth = levelimage.getWidth();
+                boardHeight = main.cfg.get("height")+2;
+                board_bound_x = 0;
+                board_bound_w = main.cfg.get("width");
+                nextTetronimo = (int)(Math.random() * ObjectTetromino.tetrominoList.length); // random tetromino same as in spawnTetromino
+                currentTetromino = (ObjectTetromino) Object.CreateObject(new ObjectTetromino(this,PlayerControlScheme.PCS_LOCAL,0,0,0,0,0));
+                currentTetromino.ResetTetromino();
+                level = main.cfg.get("level"); // starting level
+                lives = 1+2*main.cfg.get("extend"); // only goblin mode has 3 lives
+                board = new int[boardWidth][boardHeight]; // board init
+                light = new double[boardWidth][boardHeight]; // light init
+                for(int i = 0; i < boardWidth; i++){
+                    for(int j = 0; j < boardHeight; j++){
+                        board[i][j] = 0;
+                        light[i][j] = 0;
+                    }
+                }
+                if(main.cfg.get("extend") == 1) loadLevel(boardWidth,boardHeight); // first goblin level
+            break;
+            case GM_HOST:
+                boardWidth = 50;
+                boardHeight = main.cfg.get("height")+2;
+                board_bound_x = 0;
+                board_bound_w = main.cfg.get("width");
+                nextTetronimo = (int)(Math.random() * ObjectTetromino.tetrominoList.length); // random tetromino same as in spawnTetromino
+                currentTetromino = (ObjectTetromino) Object.CreateObject(new ObjectTetromino(this,PlayerControlScheme.PCS_LOCAL,0,0,0,0,0));
+                currentTetromino.ResetTetromino();
+                level = main.cfg.get("level"); // starting level
+                lives = 3; // multiplayer is goblin mode only
+                board = new int[boardWidth][boardHeight]; // board init
+                light = new double[boardWidth][boardHeight]; // light init
+                for(int i = 0; i < boardWidth; i++){
+                    for(int j = 0; j < boardHeight; j++){
+                        board[i][j] = 0;
+                        light[i][j] = 0;
+                    }
+                }
+                for(int i = 0; i < 40; i++){
+                    Object.CreateObject(new ObjectResource(this,(int)(boardx+boardWidth*main.SPR_WIDTH*Math.random()),boardy+boardHeight*main.SPR_WIDTH,Math.random() > 0.5 ? 109 : 119,1,10));
+                }
+            break;
+            case GM_JOIN:
+                Object o = Object.CreateObject(new ObjectCharacter(this,PlayerControlScheme.PCS_LOCAL,137,boardx+40,boardy+10));
+            break;
         }
 
-        board = new int[boardWidth][boardHeight]; // board init
-        light = new double[boardWidth][boardHeight]; // light init
-        for(int i = 0; i < boardWidth; i++){
-            for(int j = 0; j < boardHeight; j++){
-                board[i][j] = 0;
-                light[i][j] = 0;
-            }
-        }
-        /*outboard = new int[3*boardWidth][boardHeight];
-        for(int x = 0; x < 3*boardWidth; x++){
-            for(int y = 0; y < boardHeight; y++){
-                outboard[x][y] = 0;
-            }
-        }*/
-        if(main.cfg.get("extend") == 1) loadLevel(boardWidth,boardHeight); // first goblin level
+        //Object o = Object.CreateObject(new ObjectCharacter(this,PlayerControlScheme.PCS_LOCAL,137,boardx+40,boardy+10));
     }
 
     @Override
