@@ -2,6 +2,7 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
 class Game extends scene { // main gameplay scene, i put it in its own class file because its huge. i couldve separated it into other classes but i dont really care
@@ -89,7 +90,8 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
 
     private int getLightLevel(int x,int y,double scale){
         // starting light distance is distance to current tetromino, as it makes the lighting smoother as it drops between cells
-        double minDistance = Math.sqrt(Math.pow((currentTetromino.x/main.SPR_WIDTH)+1 - x, 2) + Math.pow((currentTetromino.y/main.SPR_WIDTH)+1 - y, 2));
+        double minDistance = 100;
+        if(currentTetromino != null) minDistance = Math.sqrt(Math.pow((currentTetromino.x/main.SPR_WIDTH)+1 - x, 2) + Math.pow((currentTetromino.y/main.SPR_WIDTH)+1 - y, 2));
         for (int i = board_bound_x; i < board_bound_x+board_bound_w; i++) {
             for (int j = 0; j < boardHeight; j++) {
                 if (board[i][j] != 0 && (board[i][j] < 100 || (board[i][j] >= 160 && board[i][j] <= 162))) { // brick and scaffold tiles specifically are ignored kinda hacky until i add more decorations and fix it
@@ -226,6 +228,55 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
         enemylist.add(out);
         return out;
     }*/
+    public void networkInit(){
+
+    }
+
+    public void networkUpdate(){
+        switch(main.gamemode){
+            case GM.GM_HOST: {
+                // send board state to everybody
+                if((int)main.frame%24 == 0){
+                    ByteBuffer buffer = NetworkHandler.packet_start(NPH.NET_STATE);
+
+                    buffer.put((byte)board_bound_x);
+                    buffer.put((byte)board_bound_w);
+                    buffer.put((byte)boardHeight);
+                    for (int i = board_bound_x; i < board_bound_x+board_bound_w; i++) {
+                        for (int j = 0; j < boardHeight; j++){
+                            buffer.put((byte)board[i][j]);
+                        }
+                        //System.out.println()
+                    }
+                    //System.out.println("sent a thing!" +board_bound_x + " " + board_bound_w + " "+boardHeight);
+                    /*for (int[] row : board) {
+                        for (int value : row) {
+                            buffer.put((byte)value);
+                        }
+                    }*/
+                    NetworkHandler.send_all(buffer);
+                }
+
+            } break;
+            case GM.GM_JOIN: {
+                if(NetworkHandler.async_load.get("game.state.board") != null){
+                    int x = (int) NetworkHandler.async_load.get("game.state.pos");
+                    int w = (int) NetworkHandler.async_load.get("game.state.width");
+                    int h = (int) NetworkHandler.async_load.get("game.state.height");
+                    //System.out.println("async load...");
+                    //System.out.println(NetworkHandler.async_load.get("game.state.board"));
+                    board_bound_x = x;
+                    board_bound_w = w;
+                    for (int i = 0; i < w; i++) {
+                        for (int j = 0; j < h; j++) {
+                            if(i+x >= 0 && i+x < boardWidth) board[i+x][j] = ((int[][])NetworkHandler.async_load.get("game.state.board"))[i][j]; //yucky!
+                        }
+                    }
+                    NetworkHandler.async_load.remove("game.state.board");
+                }
+            } break;
+        }
+    }
 
     public Game(Tetris2805 m, D2D d) { // this is really gross
         super(m, d);
@@ -300,6 +351,23 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                 }
             break;
             case GM.GM_JOIN:
+                boardWidth = 50;
+                boardHeight = main.cfg.get("height")+2;
+                board_bound_x = 0;
+                board_bound_w = main.cfg.get("width");
+                nextTetronimo = 0;//(int)(Math.random() * ObjectTetromino.tetrominoList.length); // random tetromino same as in spawnTetromino
+                currentTetromino = null;//(ObjectTetromino) GameObject.CreateObject(new ObjectTetromino(this,PlayerControlScheme.PCS_LOCAL,0,0,0,0,0));
+                //currentTetromino.ResetTetromino();
+                level = main.cfg.get("level"); // starting level
+                lives = 3; // multiplayer is goblin mode only
+                board = new int[boardWidth][boardHeight]; // board init
+                light = new double[boardWidth][boardHeight]; // light init
+                for(int i = 0; i < boardWidth; i++){
+                    for(int j = 0; j < boardHeight; j++){
+                        board[i][j] = 0;
+                        light[i][j] = 0;
+                    }
+                }
                 Object o = GameObject.CreateObject(new ObjectCharacter(this,PlayerControlScheme.PCS_LOCAL,137,boardx+40,boardy+10));
             break;
         }
@@ -329,6 +397,8 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
 
         //if(main.input.get(-1) == 1) Object.CreateObject(new ObjectCharacter(this,PlayerControlScheme.PCS_AI,137,(int)main.mousex,(int)main.mousey));
 
+        networkUpdate();
+
         time++;
         if(state != STATE_GAMEOVER){
             if(main.input.get(KeyEvent.VK_ESCAPE) == 1 || main.input.get(KeyEvent.VK_P) == 1) state = 1-state; // pause input
@@ -337,6 +407,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
             //play area borders
             draw.batchPush(9,boardx+board_bound_x*main.SPR_WIDTH,boardy+2*main.SPR_WIDTH,1,(boardHeight-2)*main.SPR_WIDTH+1,new Color(139,155,180));
             draw.batchPush(9,boardx+(board_bound_x+board_bound_w)*main.SPR_WIDTH,boardy+2*main.SPR_WIDTH,1,(boardHeight-2)*main.SPR_WIDTH+1,new Color(139,155,180));
+
 
             // draw board
             for(int i = boardvisx; i < boardvisx+boardvisw; i++){
@@ -494,7 +565,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                 if(clearx >= boardWidth*boardHeight-1){
                     if(state == STATE_ENDLEVEL){ // if animation is for end of level, load next level and start level clear animation
                         level++;
-                        currentTetromino.ResetTetromino();// = spawnTetromino();
+                        if(currentTetromino != null) currentTetromino.ResetTetromino();// = spawnTetromino();
                         loadLevel(boardWidth,boardHeight);
                         state = 6;
                         cleardx = boardWidth*main.SPR_WIDTH;

@@ -157,7 +157,7 @@ class MenuLobby extends scene { // config menu
 
         if(NetworkHandler.async_load.get("udp.connecting") != null){
             //main.currentScene = new Game(main,draw);
-            System.out.println("NAT TRAVERSE STATUS:");
+            /*System.out.println("NAT TRAVERSE STATUS:");
             int count = 0;
             for (Map.Entry<String, Client> entry : NetworkHandler.clients.entrySet()) {
                 Client i = entry.getValue();
@@ -165,13 +165,23 @@ class MenuLobby extends scene { // config menu
                 System.out.println("uid: "+i.UID+" syn: "+i.syn+" ack: "+i.ack);
             }
 
-            System.out.println("udp holepunching ret: "+count+"/"+NetworkHandler.clients.size());
+            System.out.println("udp holepunching ret: "+count+"/"+NetworkHandler.clients.size());*/
             if(NetworkHandler.async_load.get("udp.success") != null){
                 NetworkHandler.async_load.remove("udp.success");
+                System.out.println("NAT traversal success");
                 if(main.gamemode == GM.GM_HOST){
+                    ByteBuffer buffer = NetworkHandler.packet_start(NPH.NET_GAME);
+                    for (Map.Entry<String, Client> entry : NetworkHandler.clients.entrySet()) {
+                        Client i = entry.getValue();
+                        if(i!=null){
+                            NetworkHandler.send(buffer,i.ipaddr,i.port);
+                        }
+                    }
+                    //main.currentScene = new Game(main,draw);
                     // send game settings to all clients and start game
                     // when clients receive, start game
                 }
+                main.currentScene = new Game(main,draw);
             }
         }else{
             switch(main.gamemode){

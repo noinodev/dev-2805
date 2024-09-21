@@ -219,6 +219,33 @@ public class NetworkHandler {
                             System.out.println("CONNECTION SUCCESS TO "+uid);
                             async_load.put("udp.ack."+uid,1);
                         } break;
+
+                        case NPH.NET_GAME: {
+
+                        } break;
+
+                        case NPH.NET_STATE: {
+                            buffer_recv.get(uidrecv);
+                            int x = buffer_recv.get();
+                            int w = buffer_recv.get();
+                            int h = buffer_recv.get();
+                            async_load.put("game.state.pos",x);
+                            async_load.put("game.state.width",w);
+                            async_load.put("game.state.height",h);
+
+                            //System.out.println("received a thing!" +x + " " + w + " "+h);
+
+                            int[][] array = new int[w][h];
+                            for (int i = 0; i < w; i++) {
+                                for (int j = 0; j < h; j++) {
+                                    array[i][j] = buffer_recv.get();
+                                }
+                            }
+                            //System.out.println(array);
+                            async_load.put("game.state.board",array);
+                        } break;
+
+
                         default:
                             //pretty much just skip through irrelevant packets
                             System.out.println("somethin aint right");
@@ -227,21 +254,6 @@ public class NetworkHandler {
                     //byte i;
                     //while(buffer_recv.remaining() > 0) i = buffer_recv.get();
                 }
-                // Prepare a packet to receive data
-                /*DatagramPacket receivePacket = new DatagramPacket(receiveBuffer, receiveBuffer.length);
-                socket.receive(receivePacket);  // Receive the data
-
-                // Extract data and sender information
-                String receivedData = new String(receivePacket.getData(), 0, receivePacket.getLength());
-                InetAddress clientAddress = receivePacket.getAddress();
-                int clientPort = receivePacket.getPort();
-                System.out.println("Received from client: " + receivedData);
-
-                // Send a response
-                String response = "Hello from server!";
-                byte[] sendBuffer = response.getBytes();
-                DatagramPacket sendPacket = new DatagramPacket(sendBuffer, sendBuffer.length, clientAddress, clientPort);
-                socket.send(sendPacket);  // Send response back to client*/
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -278,20 +290,8 @@ public class NetworkHandler {
     }
 
     public static void startNetworkThread() {
-        //while(true){
-            networkThread = new Thread(NetworkHandler::networkInit);
-            networkThread.start();
-
-            /*while(true){
-                if((int)main.frame%main.TPS == 0){
-                    if(System.currentTimeMillis()-timeout > 10000){
-                        stopNetworkThread();
-                        break;
-                    }
-                }
-            }
-            if(disconnect == 1) break;*/
-        //}
+        networkThread = new Thread(NetworkHandler::networkInit);
+        networkThread.start();
     }
 
     public static void stopNetworkThread(){
@@ -307,6 +307,20 @@ public class NetworkHandler {
         try {
             socket.send(send);
         } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void send_all(ByteBuffer buffer){
+        try {
+            for (Map.Entry<String, Client> entry : clients.entrySet()) {
+                Client i = entry.getValue();
+                if(i != null){
+                    DatagramPacket send = new DatagramPacket(buffer.array(), buffer.position(), i.ipaddr, i.port);
+                    socket.send(send);
+                }
+            }
+        }catch (IOException e) {
             throw new RuntimeException(e);
         }
     }

@@ -15,7 +15,7 @@ class NPH { //NetworkPacketHeader
     public static final byte NET_JOIN=2; // send to matchmaking server to get list of active lobbies
     public static final byte NET_START=3;
     public static final byte NET_PING=4; // keepalive packet
-    public static final byte NET_SHAKE=5; // handshake packet containing client info to establish UDP connections
+    public static final byte NET_ACK=5; // handshake packet containing client info to establish UDP connections
     public static final byte NET_EVENT=6; // game event, such as a player hitting something or a tetromino merging
     public static final byte NET_STATE=7; // probably board state updates
     public static final byte NET_OBJ=8; // dynamic network synchronized objects, sent from host to clients
@@ -43,11 +43,13 @@ class Client {
 class Lobby {
     String host;
     Map<String,Client> clients;
+    byte punch;
 
     public Lobby(Client h){
         this.host = h.UID;
         clients = new HashMap<>();
         clients.put(h.UID,h);
+        punch = 0;
     }
 }
 
@@ -215,6 +217,7 @@ public class MatchmakingServer {
                             System.out.println("attempting to start "+UID);
                             Lobby lobby = lobbies.get(UID);
                             if(lobby != null){
+                                lobby.punch=10;
                                 //Client host = lobby.clients.get(0);
                                 //if(clientAddress == client.ipaddr && clientPort == client.port){
                                     //ByteBuffer send = ByteBuffer.allocate(1024);// = new byte[1024];
@@ -263,6 +266,13 @@ public class MatchmakingServer {
                             }else System.out.println("lobby null?");
                         } break;
 
+                        /*case NPH.NET_ACK: {
+                            if(lobbies.get(UID) != null){
+                                lobbies.remove(UID);
+                                System.out.println(UID+ " finished UDP holepunching, server not needed anymore");
+                            }
+                        } break;*/
+
                         default: {
                             //bad header or malformed packet
                             System.out.println("something aint right server");
@@ -301,24 +311,35 @@ public class MatchmakingServer {
             throw new RuntimeException(e);
         }
 
+        ByteBuffer buffer_async = ByteBuffer.allocate(1024);
+        buffer_async.clear();
+        buffer_async.put(NPH.NET_PING);
+
         while(true){
             long time = System.currentTimeMillis();
             for (Map.Entry<String, Lobby> le : lobbies.entrySet()) {
                 //String key = entry.getKey();
                 Lobby lobby = le.getValue();
-                Iterator<Map.Entry<String, Client>> clientIterator = lobby.clients.entrySet().iterator();
-                while (clientIterator.hasNext()) {
-                    Map.Entry<String, Client> ce = clientIterator.next();
-                    Client i = ce.getValue();
+                if(lobby != null){
+                    Iterator<Map.Entry<String, Client>> clientIterator = lobby.clients.entrySet().iterator();
+                    while (clientIterator.hasNext()) {
+                        Map.Entry<String, Client> ce = clientIterator.next();
+                        Client i = ce.getValue();
 
-                    if (time - i.timeout > 10000) {
-                        System.out.println(ce.getKey() + " timed out");
-                        clientIterator.remove(); // Remove using the iterator
+                        if (time - i.timeout > 10000) {
+                            System.out.println(ce.getKey() + " timed out");
+                            lobbies.put(i.UID,null);
+                            clientIterator.remove(); // Remove using the iterator
+                        }
+                        if(Objects.equals(i.LUID, lobby.host) && lobby.punch > 0){
+                            send(buffer_async,i.ipaddr,i.port);
+                            lobby.punch--;
+                        }
                     }
                 }
             }
             try{
-                Thread.sleep(1000);
+                Thread.sleep(300);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
