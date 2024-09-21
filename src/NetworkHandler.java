@@ -2,7 +2,9 @@
 //import server.Lobby;
 
 import javax.xml.crypto.Data;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -243,6 +245,19 @@ public class NetworkHandler {
                             }
                             //System.out.println(array);
                             async_load.put("game.state.board",array);
+                        } break;
+
+                        case NPH.NET_OBJ: {
+                            buffer_recv.get(uidrecv);
+                            buffer_recv.get(uidrecv);
+                            String objuid = new String(uidrecv, StandardCharsets.UTF_8);
+                            byte inst = buffer_recv.get();
+                            double x = buffer_recv.getDouble();
+                            double y = buffer_recv.getDouble();
+                            double sprite = buffer_recv.getDouble();
+                            byte hp = buffer_recv.get();
+                            ObjectResource obj = new ObjectResource(null,(int)x,(int)y,(int)sprite,hp);
+                            GameObject.syncObject(obj,objuid);
                         } break;
 
 

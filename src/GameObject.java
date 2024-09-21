@@ -2,6 +2,8 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 enum ecs {
     ECS_TETROMINO,
@@ -20,10 +22,12 @@ enum PlayerControlScheme {
 
 public abstract class GameObject {
     public int destroy,id;
+    public byte inst,change;
     public double sprite,x,y,w,h,xd,hsp,vsp,grv;
     public Tetris2805 main;
     public D2D draw;
     public Game game;
+    public String UID;
     public GameObject(Game game){
         this.game = game;
         this.main = game.main;
@@ -37,11 +41,21 @@ public abstract class GameObject {
         hsp = 0;
         vsp = 0;
         grv = 0.02;
+        change = 0;
 
     }
     public void update(){ }
 
     public static final ArrayList<GameObject> objects = new ArrayList<GameObject>();
+    public static final Map<String,GameObject> netobjects = new HashMap<>();
+    public static GameObject syncObject(GameObject object, String UID){
+        object.UID = UID;
+        if(netobjects.get(UID) == null){
+            netobjects.put(UID,object);
+            objects.add(object);
+        }
+        return object;
+    }
     public static GameObject CreateObject(GameObject object){
         objects.add(object);
         return object;
@@ -52,13 +66,14 @@ public abstract class GameObject {
 }
 
 class ObjectResource extends GameObject {
+    public byte inst = 0;
     public int resource, hp, hps, timer;
-    public ObjectResource(Game game, int x, int y, int sprite, int resource, int hp){
+    public ObjectResource(Game game, int x, int y, int sprite, int hp){
         super(game);
         this.x = x;
         this.y = y;
         this.sprite = sprite;
-        this.resource = resource;
+        //this.resource = resource;
         this.hp = hp;
         this.hps = hp;
 
@@ -80,6 +95,7 @@ class ObjectResource extends GameObject {
                 hp -= 1;
                 hsp =  4-2*Math.random();
                 vsp = Math.random();
+                change = 1;
             }
         }
         int bx = Math.max(Math.min((int)(Math.floor(x-game.boardx)/main.SPR_WIDTH),game.boardWidth-1),0);
@@ -94,6 +110,7 @@ class ObjectResource extends GameObject {
 }
 
 class ObjectParticle extends GameObject {
+    public byte inst = 1;
     public int start, end, time;
     public double spd;
     public Color colour;
@@ -133,6 +150,7 @@ abstract class PlayerObject extends GameObject {
 }
 
 class ObjectCharacter extends PlayerObject {
+    public byte inst = 2;
     public static final String[] taunts = {"YOU SUCK","???","GONNA CRY?","LOL","AINT MEAN IF U AINT GREEN","GOBLINZ RULE","BUYING GOBLIN GF","SO GOBLINCORE","GOBLINMAXXING RN",
             "WOW...","ZZZ","STOP TRYING","IM IN JAVA?","GOBLINPILLED","GOBLIN4LIFE","...","THEY NOT LIKE US","I LOVE GRIMES"};
     public static final Color[] tauntcolours = {new Color(104,46,108), new Color(38,92,66), new Color(25,60,62), new Color(58,68,102), new Color(38,43,68), new Color(62,39,49)};
@@ -194,6 +212,8 @@ class ObjectCharacter extends PlayerObject {
                 break;
             }
 
+            if(Math.abs(hsp)+Math.abs(vsp) > 0.01) change = 1;
+
             if(game.pointCheck(x,y) == 1){ // die from being crushed
                 destroy = 1;
                 //for(int j = 0; j < 4; j++) draw.particlePush(130,134,0.03+0.02*Math.random(),(int)x,(int)y,-0.1+0.2*Math.random(),-0.1+0.2*Math.random(), Color.WHITE);
@@ -224,6 +244,7 @@ class ObjectCharacter extends PlayerObject {
 }
 
 class ObjectTetromino extends PlayerObject {
+    public byte inst = 3;
     private static int[][][][] getTetrominoes(BufferedImage in){
         int count = in.getHeight()/4;
         int[][][][] out = new int[count][4][4][4];
@@ -261,6 +282,7 @@ class ObjectTetromino extends PlayerObject {
     public void update(){
         switch(control_scheme){
             case PCS_LOCAL:
+                change = 1;
                 controlLocal(game);
             break;
             case PCS_EXTERN:
