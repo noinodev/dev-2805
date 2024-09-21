@@ -80,7 +80,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                     else if(c == 0xFFFF80) b[x][y] = 191; // scaffold horizontal
                     else if(c == 0xFF00FF) b[x][y] = 192; // pole
                     else if(c == 0xFF80FF) b[x][y] = 163; // flag
-                    if(c == 0xFF0000 && b == board) Object.CreateObject(new ObjectCharacter(this,PlayerControlScheme.PCS_AI,137+10*(int)(Math.random()*3),posx+x*main.SPR_WIDTH,posy+y*main.SPR_WIDTH));//spawnEnemy(posx+x*main.SPR_WIDTH,posy+y*main.SPR_WIDTH); // goblin only spawn in board area
+                    if(c == 0xFF0000 && b == board) GameObject.CreateObject(new ObjectCharacter(this,PlayerControlScheme.PCS_AI,137+10*(int)(Math.random()*3),posx+x*main.SPR_WIDTH,posy+y*main.SPR_WIDTH));//spawnEnemy(posx+x*main.SPR_WIDTH,posy+y*main.SPR_WIDTH); // goblin only spawn in board area
                     //else System.out.println("funny colour dattebayo.. " + c); // precision error logging
                 }
             }
@@ -232,6 +232,8 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
         draw.clearColour = new Color(24,20,37);
         main.sceneIndex = 4;
 
+        //NetworkHandler.game = this;
+
         posx = 80; // board anchor position
         posy = 6;
         boardx = posx;
@@ -251,13 +253,13 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
         //boardWidth = main.cfg.get("width");
         //boardHeight = main.cfg.get("height")+2;
         switch(main.gamemode){
-            case GM_OFFLINE:
+            case GM.GM_OFFLINE:
                 boardWidth = levelimage.getWidth();
                 boardHeight = main.cfg.get("height")+2;
                 board_bound_x = 0;
                 board_bound_w = main.cfg.get("width");
                 nextTetronimo = (int)(Math.random() * ObjectTetromino.tetrominoList.length); // random tetromino same as in spawnTetromino
-                currentTetromino = (ObjectTetromino) Object.CreateObject(new ObjectTetromino(this,PlayerControlScheme.PCS_LOCAL,0,0,0,0,0));
+                currentTetromino = (ObjectTetromino) GameObject.CreateObject(new ObjectTetromino(this,PlayerControlScheme.PCS_AI,0,0,0,0,0));
                 currentTetromino.ResetTetromino();
                 level = main.cfg.get("level"); // starting level
                 lives = 1+2*main.cfg.get("extend"); // only goblin mode has 3 lives
@@ -270,14 +272,18 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                     }
                 }
                 if(main.cfg.get("extend") == 1) loadLevel(boardWidth,boardHeight); // first goblin level
+                GameObject.CreateObject(new ObjectCharacter(this,PlayerControlScheme.PCS_LOCAL,137,boardx+40,boardy+10));
+                for(int i = 0; i < 40; i++){
+                    GameObject.CreateObject(new ObjectResource(this,(int)(boardx+boardWidth*main.SPR_WIDTH*Math.random()),boardy+boardHeight*main.SPR_WIDTH,Math.random() > 0.5 ? 109 : 119,1,10));
+                }
             break;
-            case GM_HOST:
+            case GM.GM_HOST:
                 boardWidth = 50;
                 boardHeight = main.cfg.get("height")+2;
                 board_bound_x = 0;
                 board_bound_w = main.cfg.get("width");
                 nextTetronimo = (int)(Math.random() * ObjectTetromino.tetrominoList.length); // random tetromino same as in spawnTetromino
-                currentTetromino = (ObjectTetromino) Object.CreateObject(new ObjectTetromino(this,PlayerControlScheme.PCS_LOCAL,0,0,0,0,0));
+                currentTetromino = (ObjectTetromino) GameObject.CreateObject(new ObjectTetromino(this,PlayerControlScheme.PCS_LOCAL,0,0,0,0,0));
                 currentTetromino.ResetTetromino();
                 level = main.cfg.get("level"); // starting level
                 lives = 3; // multiplayer is goblin mode only
@@ -290,11 +296,11 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                     }
                 }
                 for(int i = 0; i < 40; i++){
-                    Object.CreateObject(new ObjectResource(this,(int)(boardx+boardWidth*main.SPR_WIDTH*Math.random()),boardy+boardHeight*main.SPR_WIDTH,Math.random() > 0.5 ? 109 : 119,1,10));
+                    GameObject.CreateObject(new ObjectResource(this,(int)(boardx+boardWidth*main.SPR_WIDTH*Math.random()),boardy+boardHeight*main.SPR_WIDTH,Math.random() > 0.5 ? 109 : 119,1,10));
                 }
             break;
-            case GM_JOIN:
-                Object o = Object.CreateObject(new ObjectCharacter(this,PlayerControlScheme.PCS_LOCAL,137,boardx+40,boardy+10));
+            case GM.GM_JOIN:
+                Object o = GameObject.CreateObject(new ObjectCharacter(this,PlayerControlScheme.PCS_LOCAL,137,boardx+40,boardy+10));
             break;
         }
 
@@ -380,13 +386,13 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                 }
             }
 
-            if(Object.objects.size() > 0){
-                for(int i = 0; i < Object.objects.size(); i++){
-                    Object obj = Object.objects.get(i);
+            if(GameObject.objects.size() > 0){
+                for(int i = 0; i < GameObject.objects.size(); i++){
+                    GameObject obj = GameObject.objects.get(i);
                     if(obj != null && obj.destroy == 0){
                         obj.update();
                     }else{
-                        Object.objects.remove(i);
+                        GameObject.objects.remove(i);
                         i--;
                     }
                 }

@@ -2,7 +2,6 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
-import java.util.UUID;
 
 enum ecs {
     ECS_TETROMINO,
@@ -19,13 +18,13 @@ enum PlayerControlScheme {
     PCS_AI
 }
 
-public abstract class Object {
+public abstract class GameObject {
     public int destroy,id;
     public double sprite,x,y,w,h,xd,hsp,vsp,grv;
     public Tetris2805 main;
     public D2D draw;
     public Game game;
-    public Object(Game game){
+    public GameObject(Game game){
         this.game = game;
         this.main = game.main;
         this.draw = game.draw;
@@ -42,8 +41,8 @@ public abstract class Object {
     }
     public void update(){ }
 
-    public static final ArrayList<Object> objects = new ArrayList<Object>();
-    public static Object CreateObject(Object object){
+    public static final ArrayList<GameObject> objects = new ArrayList<GameObject>();
+    public static GameObject CreateObject(GameObject object){
         objects.add(object);
         return object;
     }
@@ -52,7 +51,7 @@ public abstract class Object {
     }
 }
 
-class ObjectResource extends Object {
+class ObjectResource extends GameObject {
     public int resource, hp, hps, timer;
     public ObjectResource(Game game, int x, int y, int sprite, int resource, int hp){
         super(game);
@@ -94,7 +93,7 @@ class ObjectResource extends Object {
     }
 }
 
-class ObjectParticle extends Object {
+class ObjectParticle extends GameObject {
     public int start, end, time;
     public double spd;
     public Color colour;
@@ -106,7 +105,7 @@ class ObjectParticle extends Object {
         this.vsp = vsp;
         this.sprite = start;
         this.start = start;
-        this.end = end;
+        this.end = end-1;
         this.spd = spd;
         this.time = time;
         this.colour = colour;
@@ -119,11 +118,13 @@ class ObjectParticle extends Object {
         if(sprite > end) destroy = 1;
         time--;
         if(time <= 0) destroy = 1;
-        draw.batchPush((int)Math.floor(sprite),x,y,w,h,colour);
+        x += hsp;
+        y += vsp;
+        if(sprite != 0) draw.batchPush((int)Math.floor(sprite),x,y,w,h,colour);
     }
 }
 
-abstract class PlayerObject extends Object {
+abstract class PlayerObject extends GameObject {
     public PlayerControlScheme control_scheme;
     public PlayerObject(Game game, PlayerControlScheme pcs){
         super(game);
@@ -240,7 +241,7 @@ class ObjectTetromino extends PlayerObject {
         return out;
     }
 
-    public static int[][][][] tetrominoList = getTetrominoes(Tetris2805.loadTexture("resources/load/tetrominoatlas5.png"));
+    public static int[][][][] tetrominoList = getTetrominoes(Tetris2805.loadTexture("resources/load/tetrominoatlas3.png"));
 
     public int index,rotation,t;
     int dx,dy;
@@ -346,8 +347,12 @@ class ObjectTetromino extends PlayerObject {
                     if(ty < 0 || ty >= game.boardHeight || tx < game.board_bound_x || tx >= game.board_bound_x+game.board_bound_w || (board[tx][ty] > 0 && board[tx][ty] < 160)){ // hack to ignore decorative tiles
                         collision = false; // this doesnt make sense because if this happens then there is a collision, but 'nocollision' as a variable name seems silly and i didnt want to reverse usages of the function
                         // create particles even for potential collision because it gives player feedback
-                        if((int)(Math.random()*2) == 0) draw.particlePush(29,34,0.05+0.05*Math.random(),game.boardx+tx*main.SPR_WIDTH,game.boardy+(ty-1)*main.SPR_WIDTH,-0.1+0.2*Math.random(),-0.1+0.3*Math.random(),game.flash[(int)(Math.random()*5)]); // yuck
-                        if((int)(Math.random()*2) == 0) CreateObject(new ObjectParticle(game,game.boardx+tx*main.SPR_WIDTH,game.boardy+(ty-1)*main.SPR_WIDTH,-0.1+0.2*Math.random(),-0.1+0.3*Math.random(),29,34,0.05+0.05*Math.random(),240,Color.WHITE));
+                        //if((int)(Math.random()*2) == 0) draw.particlePush(29,34,0.05+0.05*Math.random(),game.boardx+tx*main.SPR_WIDTH,game.boardy+(ty-1)*main.SPR_WIDTH,-0.1+0.2*Math.random(),-0.1+0.3*Math.random(),game.flash[(int)(Math.random()*5)]); // yuck
+                        if((int)(Math.random()*2) == 0){
+                            CreateObject(new ObjectParticle(game,game.boardx+tx*main.SPR_WIDTH,game.boardy+(ty-1)*main.SPR_WIDTH,
+                                                            -0.1+0.2*Math.random(),-0.1+0.3*Math.random(),
+                                                            30,34,0.05+0.05*Math.random(),240,game.flash[(int)(Math.random()*5)]));
+                        }
                         //CreateObject(new ObjectParticle(game, (int)x-main.SPR_WIDTH/2, (int)y-main.SPR_WIDTH, -0.01+0.02*Math.random(), -0.08, 150, 154, 0.09+0.01*Math.random(), 240, Color.WHITE));
                     }
                 }

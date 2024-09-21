@@ -8,10 +8,10 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.util.*;
 
-enum GM {
-    GM_OFFLINE,
-    GM_HOST,
-    GM_JOIN
+class GM {
+    public static final byte GM_OFFLINE = 0;
+    public static final byte GM_HOST = 1;
+    public static final byte GM_JOIN = 2;
 }
 
 public class Tetris2805 extends JPanel implements ActionListener {
@@ -20,6 +20,8 @@ public class Tetris2805 extends JPanel implements ActionListener {
     public int VIEWPORT_W = 1080, VIEWPORT_H = 1080;
     public final float TPS = 240;
     public final int DIALOG_CONTEXT_EXIT = 1, DIALOG_CONTEXT_MENU = 2;
+
+    public String UID = "AAAAAAAA";
 
     public Map<String,Integer> scores;
     public Map<String,Integer> cfg;
@@ -38,7 +40,8 @@ public class Tetris2805 extends JPanel implements ActionListener {
     public scene currentScene;
     public int sceneIndex;
     public int gameShouldClose;
-    public GM gamemode;
+    public byte gamemode;
+    public byte gamemode_last;
 
     public Path working_directory;
 
@@ -137,10 +140,22 @@ public class Tetris2805 extends JPanel implements ActionListener {
     public Tetris2805(){
         gameShouldClose = 0;
         gamemode = GM.GM_OFFLINE;
+        gamemode_last = gamemode;
         working_directory = Path.of("").toAbsolutePath();
         //String cwd = working_directory.toString();
         //System.out.println(cwd+"src/resources/atlas.png");
 
+        System.out.println(UID);
+        StringBuilder newUID = new StringBuilder(UID.length());
+        for (int i = 0; i < UID.length(); i++) {
+            // Replace the current character with a random letter A-Z
+            char randomChar = (char) ('A' + (int) (Math.random() * ('Z' - 'A' + 1)));
+            newUID.append(randomChar);
+        }
+        UID = newUID.toString();
+        System.out.println(UID);
+
+        NetworkHandler.main = this;
         NetworkHandler.startNetworkThread();
 
         // draw init
@@ -255,6 +270,8 @@ public class Tetris2805 extends JPanel implements ActionListener {
                     draw.batchPush(bgtex[i],(int)((bgx*(0.1+0.1*i))%FRAMEBUFFER_W),(int)((bgy*(0.1+0.1*i))%FRAMEBUFFER_H),FRAMEBUFFER_W,FRAMEBUFFER_H);
                     draw.batchPush(bgtex[i],(int)((bgx*(0.1+0.1*i))%FRAMEBUFFER_W-FRAMEBUFFER_W),(int)((bgy*(0.1+0.1*i))%FRAMEBUFFER_H),FRAMEBUFFER_W,FRAMEBUFFER_H);
                 }*/
+
+                draw.batchPush(9,draw.view_x,draw.view_y,draw.view_w,draw.view_h,new Color(24,20,37));
 
                 // scene loop
                 currentScene.loop();
