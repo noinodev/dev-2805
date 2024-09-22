@@ -6,12 +6,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-public class draw2d{
+
+
+/*public class draw2d{
     public BufferedImage[] sprites;
     public BufferedImage framebuffer;
     public Graphics2D viewport;
     public Color clearColour;
-    public static class quad { public int id,x,y,w,h; Color c;}
+    public static class quad { public int id; double x,y,w,h; Color c;}
     public static class ptcl { public int f; double id,animspd,x,y,hsp,vsp; Color c;}
     private ArrayList<quad> batch;
     private ArrayList<ptcl> particles;
@@ -55,8 +57,8 @@ public class draw2d{
         particles.add(p);
     }
 
-    public void batchPush(int id,int x,int y,int w,int h){ batchPush(id,x,y,w,h,null); }
-    public void batchPush(int id,int x,int y,int w,int h, Color c){
+    public void batchPush(int id,double x,double y,double w,double h){ batchPush(id,x,y,w,h,null); }
+    public void batchPush(int id,double x,double y,double w,double h, Color c){
         quad q = new quad();
         q.id = id;
         q.x = x;
@@ -102,7 +104,7 @@ public class draw2d{
                     if(j.id > j.f){
                         particles.remove(i);
                         i--;
-                    }else batchPush((int)Math.floor(j.id),(int)j.x,(int)j.y,main.SPR_WIDTH,main.SPR_WIDTH,j.c);
+                    }else batchPush((int)Math.floor(j.id),j.x,j.y,main.SPR_WIDTH,main.SPR_WIDTH,j.c);
                 }
             }
         }
@@ -116,7 +118,9 @@ public class draw2d{
                 if(j != null){
                     BufferedImage finaldraw = sprites[j.id];
                     if(j.c != null && j.c != Color.WHITE) finaldraw = tintImage(finaldraw,j.c);
-                    viewport.drawImage(finaldraw, j.x, j.y, j.w, j.h, null);
+                    int x,y,w,h;
+                    x =
+                    viewport.drawImage(finaldraw, x, y, w, h, null);
                 }
             }
         }
@@ -202,3 +206,4 @@ public class draw2d{
         return "";
     }
 }
+*/
