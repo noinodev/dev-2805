@@ -2,9 +2,7 @@
 //import server.Lobby;
 
 import javax.xml.crypto.Data;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -12,10 +10,7 @@ import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.rmi.server.UID;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 class NPH { //NetworkPacketHeader
     public static final byte NET_HOST = 0; // send to matchmaking server to start a new lobby
@@ -63,8 +58,13 @@ public class NetworkHandler {
     public static final InetAddress mmserver_ip;
     static {
         try {
-            mmserver_ip = InetAddress.getByName("localhost");
-        } catch (UnknownHostException e) {
+            Scanner scan = new Scanner(new File("src/data/network.txt"));
+            String ipaddr;
+            if (scan.hasNextLine()) {
+                ipaddr = scan.nextLine();
+            }else ipaddr = "localhost";
+            mmserver_ip = InetAddress.getByName(ipaddr);
+        } catch (UnknownHostException | FileNotFoundException e) {
             throw new RuntimeException("Failed to resolve IP address", e);
         }
     }
