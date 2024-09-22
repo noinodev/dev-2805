@@ -61,6 +61,7 @@ public class MatchmakingServer {
     public static final ByteBuffer buffer_send = ByteBuffer.allocate(1024);
     public static DatagramSocket socket;
     public static Thread networkThread;
+    public static int lock;
 
     public static void send(ByteBuffer send, InetAddress ip, int p){
         //System.out.println("len: "+packet.getLength());
@@ -86,6 +87,8 @@ public class MatchmakingServer {
                 socket.receive(receivePacket);  // Receive the data
                 //System.out.println("recevied packet");
                 //ByteBuffer buffer = ByteBuffer.wrap(recv);
+
+                lock = 1;
 
                 InetAddress clientAddress = receivePacket.getAddress();
                 int clientPort = receivePacket.getPort();
@@ -287,18 +290,7 @@ public class MatchmakingServer {
                     }
                 }
 
-
-                // Extract data and sender information
-                    /*String receivedData = new String(receivePacket.getData(), 0, receivePacket.getLength());
-                    InetAddress clientAddress = receivePacket.getAddress();
-                    int clientPort = receivePacket.getPort();
-                    System.out.println("Received from client: " + receivedData);*/
-
-                // Send a response
-                /*String response = "Hello from server!";
-                byte[] sendBuffer = response.getBytes();
-                DatagramPacket sendPacket = new DatagramPacket(sendBuffer, sendBuffer.length, clientAddress, clientPort);
-                socket.send(sendPacket);  // Send response back to client*/
+                lock = 0;
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -306,6 +298,7 @@ public class MatchmakingServer {
     }
 
     public static void main(String[] args){
+        lock = 0;
         try{
             socket = new DatagramSocket(22565);
             //byte[] recv = new byte[1024];
@@ -323,27 +316,29 @@ public class MatchmakingServer {
 
         while(true){
             long time = System.currentTimeMillis();
-            Iterator<Map.Entry<String, Lobby>> lobbyIterator = lobbies.entrySet().iterator();
-            while (lobbyIterator.hasNext()) {
-                Map.Entry<String, Lobby> le = lobbyIterator.next();
-                Lobby lobby = le.getValue();
-            //llfor (Map.Entry<String, Lobby> le : lobbies.entrySet()) {
-                //String key = entry.getKey();
-                //Lobby lobby = le.getValue();
-                if(lobby != null){
-                    Iterator<Map.Entry<String, Client>> clientIterator = lobby.clients.entrySet().iterator();
-                    while (clientIterator.hasNext()) {
-                        Map.Entry<String, Client> ce = clientIterator.next();
-                        Client i = ce.getValue();
+            if(lock == 0 && lobbies.size() > 0){
+                Iterator<Map.Entry<String, Lobby>> lobbyIterator = lobbies.entrySet().iterator();
+                while (lobbyIterator.hasNext()) {
+                    Map.Entry<String, Lobby> le = lobbyIterator.next();
+                    Lobby lobby = le.getValue();
+                //llfor (Map.Entry<String, Lobby> le : lobbies.entrySet()) {
+                    //String key = entry.getKey();
+                    //Lobby lobby = le.getValue();
+                    if(lobby != null){
+                        Iterator<Map.Entry<String, Client>> clientIterator = lobby.clients.entrySet().iterator();
+                        while (clientIterator.hasNext()) {
+                            Map.Entry<String, Client> ce = clientIterator.next();
+                            Client i = ce.getValue();
 
-                        if (time - i.timeout > 10000) {
-                            System.out.println(ce.getKey() + " timed out");
-                            lobbies.put(i.UID,null);
-                            clientIterator.remove(); // Remove using the iterator
-                        }
-                        if(Objects.equals(i.LUID, lobby.host) && lobby.punch > 0){
-                            send(buffer_async,i.ipaddr,i.port);
-                            lobby.punch--;
+                            if (time - i.timeout > 10000) {
+                                System.out.println(ce.getKey() + " timed out");
+                                lobbies.put(i.UID,null);
+                                clientIterator.remove(); // Remove using the iterator
+                            }
+                            if(Objects.equals(i.LUID, lobby.host) && lobby.punch > 0){
+                                send(buffer_async,i.ipaddr,i.port);
+                                lobby.punch--;
+                            }
                         }
                     }
                 }

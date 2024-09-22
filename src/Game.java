@@ -35,6 +35,8 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
     private int tbx,tby;
     private double tilebreak;
 
+    public double globallight;
+
     /*public final ArrayList<Object> objects = new ArrayList<Object>();
 
     public Object CreateObject(Object object){
@@ -95,6 +97,15 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                 }
             }
         }
+    }
+
+    public Color getLightLocal(double x, double y, double shift){
+        int bx = Math.max(Math.min((int)(Math.floor(x-boardx)/main.SPR_WIDTH),boardWidth-1),0);
+        int by = Math.max(Math.min((int)(Math.floor(y-boardy)/main.SPR_WIDTH),boardHeight-1),0);
+
+        double disttocenter = Math.abs(x - (draw.view_x+draw.view_w/2))/(draw.view_w*0.5);
+        double l = Math.min(1,Math.max(0, Math.min(1-(light[bx][by])/10f,disttocenter+globallight)+shift ));
+        return new Color((int)D2D.lerp(255,24,l),(int)D2D.lerp(255,20,l),(int)D2D.lerp(255,37,l));
     }
 
     private int getLightLevel(int x,int y,double scale){
@@ -367,6 +378,8 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
         main.sceneIndex = 4;
         GameObject.g = this;
 
+        globallight = 1;
+
         //NetworkHandler.game = this;
 
         posx = 80; // board anchor position
@@ -426,7 +439,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                 }*/
             }break;
             case GM.GM_HOST:{
-                boardWidth = 50;
+                boardWidth = 100;
                 boardHeight = main.cfg.get("height")+2;
                 board_bound_x = 0;
                 board_bound_w = main.cfg.get("width");
@@ -458,7 +471,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                 }
             }break;
             case GM.GM_JOIN:{
-                boardWidth = 50;
+                boardWidth = 100;
                 boardHeight = main.cfg.get("height")+2;
                 board_bound_x = 0;
                 board_bound_w = main.cfg.get("width");
@@ -492,6 +505,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
 
         int boardvisw = (int)(main.FRAMEBUFFER_W/main.SPR_WIDTH)+1, boardvisx = Math.min(boardWidth-boardvisw,Math.max(0,(int)((draw.view_x-boardx)/main.SPR_WIDTH)));
 
+        //Color bgc = new Color((int)D2D.lerp(255,24,globallight),(int)D2D.lerp(255,20,globallight),(int)D2D.lerp(255,37,globallight));
         double bgx = draw.view_x;
         double bgy = draw.view_y;
         int[] bgtex = {42,61,60,52,51,50};
@@ -555,11 +569,12 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                         if(k == 114) k = getTileIndex(k,i,j,board); // the brick tile is the only tile with autotiling
                         else if(k >= 160 && k < 170) k += ((int)(main.frame/(main.TPS/6))%3)*10; // torch animation
 
-                        double disttocenter = Math.abs(boardx+i*main.SPR_WIDTH - (draw.view_x+draw.view_w/2))/(draw.view_w*0.5);
+                        //double disttocenter = Math.abs(boardx+i*main.SPR_WIDTH - (draw.view_x+draw.view_w/2))/(draw.view_w*0.5);
 
-                        double l = Math.min(1,Math.max(0,Math.min(1-(4+light[i][j])/10f,disttocenter)));
-                        draw.batchPush(k,boardx+i*main.SPR_WIDTH + lo,boardy+j*main.SPR_WIDTH + (j < cleary ? (int)cleardy : 0), main.SPR_WIDTH,main.SPR_WIDTH,
-                                new Color((int)draw.lerp(255,24,l),(int)draw.lerp(255,20,l),(int)draw.lerp(255,37,l))); // ternary operator to only draw rows above cleardy in animated state for row clear, also lerp for light level
+                        //double l = Math.min(1,Math.max(0,Math.min(1-(4+light[i][j])/10f,disttocenter)));
+                        Color c = getLightLocal(boardx+i*main.SPR_WIDTH,boardy+j*main.SPR_WIDTH,0);
+                        draw.batchPush(k,boardx+i*main.SPR_WIDTH + lo,boardy+j*main.SPR_WIDTH + (j < cleary ? (int)cleardy : 0), main.SPR_WIDTH,main.SPR_WIDTH,c);
+                        // ternary operator to only draw rows above cleardy in animated state for row clear, also lerp for light level
                     }
                 }
             }
@@ -596,11 +611,12 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
 
             // draw ground
             for(int i = boardvisx; i <= boardvisx+boardvisw; i += 1){
-                double disttocenter = Math.abs(boardx+i*main.SPR_WIDTH - (draw.view_x+draw.view_w/2))/(draw.view_w*0.5);
+                Color c = getLightLocal(boardx+i*main.SPR_WIDTH,boardy+boardHeight*main.SPR_WIDTH,0);
+                //double disttocenter = Math.abs(boardx+i*main.SPR_WIDTH - (draw.view_x+draw.view_w/2))/(draw.view_w*0.5);
                 //double l = Math.min(1,Math.max(0,1-(4+light[i][boardHeight-1])/10f + disttocenter));
-                double l = Math.min(1,Math.max(0,Math.min(1-(4+light[i][boardHeight-1])/10f,disttocenter)));
+                //double l = Math.min(1,Math.max(0,Math.min(1-(4+light[i][boardHeight-1])/10f,disttocenter)));
                 //double l = Math.min(1,2*Math.abs(i/((double)main.SPR_WIDTH)-boardWidth*1.5f)/(boardWidth*3f));
-                Color c = new Color((int)draw.lerp(255,24,l),(int)draw.lerp(255,20,l),(int)draw.lerp(255,37,l));
+                //Color c = new Color((int)draw.lerp(255,24,l),(int)draw.lerp(255,20,l),(int)draw.lerp(255,37,l));
                 draw.batchPush(100+Math.abs(i)%3,boardx+i*main.SPR_WIDTH+(int)cleardx%main.SPR_WIDTH,(i/main.SPR_WIDTH*i)%3-1+boardy+boardHeight*main.SPR_WIDTH, main.SPR_WIDTH, main.SPR_WIDTH,c);
                 draw.batchPush(110+Math.abs(i)%3,boardx+i*main.SPR_WIDTH+(int)cleardx%main.SPR_WIDTH,(i/main.SPR_WIDTH*i)%3-1+boardy+(boardHeight+1)*main.SPR_WIDTH, main.SPR_WIDTH, main.SPR_WIDTH,c);
                 draw.batchPush(120+Math.abs(i)%3,boardx+i*main.SPR_WIDTH+(int)cleardx%main.SPR_WIDTH,(i/main.SPR_WIDTH*i)%3-1+boardy+(boardHeight+2)*main.SPR_WIDTH, main.SPR_WIDTH, main.SPR_WIDTH,c);
@@ -768,7 +784,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                                     int yes = 0;
                                     if(tile != 0){
                                         if((board[mx][my] == 0)){
-                                            if((mx-1 >= 0 && board[mx-1][my] > 0) || (my-1 >= 0 && board[mx][my-1] > 0) || (mx+1 < boardWidth && board[mx+1][my] > 0) || (my+1 < boardHeight && board[mx][my+1] > 0) || my+1 == boardHeight-1){
+                                            if((mx-1 >= 0 && board[mx-1][my] > 0) || (my-1 >= 0 && board[mx][my-1] > 0) || (mx+1 < boardWidth && board[mx+1][my] > 0) || (my+1 < boardHeight && board[mx][my+1] > 0) || my+1 == boardHeight){
                                                 yes = 1;
                                             }
                                         }

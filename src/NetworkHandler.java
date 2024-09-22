@@ -55,6 +55,7 @@ class Lobby {
 }
 
 public class NetworkHandler {
+    public static final int mmserver_port = 22565;
     public static final InetAddress mmserver_ip;
     static {
         try {
@@ -63,12 +64,12 @@ public class NetworkHandler {
             if (scan.hasNextLine()) {
                 ipaddr = scan.nextLine();
             }else ipaddr = "localhost";
+            System.out.println("mmserver: "+ipaddr+":"+mmserver_port);
             mmserver_ip = InetAddress.getByName(ipaddr);
         } catch (UnknownHostException | FileNotFoundException e) {
             throw new RuntimeException("Failed to resolve IP address", e);
         }
     }
-    public static final int mmserver_port = 22565;
 
     public static final Map<String, Object> async_load = new HashMap<>();
 
@@ -300,6 +301,10 @@ public class NetworkHandler {
                                     if(p != null){
                                         p.tx = x;
                                         p.ty = y;
+                                        if(p.inst == 0){
+                                            p.x = x;
+                                            p.y = y;
+                                        }
                                         p.sprite = sprite;
                                         p.hsp = hsp;
                                         p.vsp = vsp;

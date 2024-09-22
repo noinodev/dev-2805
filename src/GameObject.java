@@ -113,13 +113,14 @@ class ObjectResource extends GameObject {
                 change = 1;
             }
         }
-        int bx = Math.max(Math.min((int)(Math.floor(x-game.boardx)/main.SPR_WIDTH),game.boardWidth-1),0);
-        int by = Math.max(Math.min((int)(Math.floor(y-game.boardy)/main.SPR_WIDTH),game.boardHeight-1),0);
+        //int bx = Math.max(Math.min((int)(Math.floor(x-game.boardx)/main.SPR_WIDTH),game.boardWidth-1),0);
+        //int by = Math.max(Math.min((int)(Math.floor(y-game.boardy)/main.SPR_WIDTH),game.boardHeight-1),0);
 
         if(hp <= 0) destroy = 1;
-        double disttocenter = Math.abs(x - (draw.view_x+draw.view_w/2))/(draw.view_w*0.5);
-        double l = Math.min(1,Math.max(0,Math.min(1-(4+game.light[bx][by])/10f,disttocenter)+dmg));
-        Color c = new Color((int)D2D.lerp(255,24,l),(int)D2D.lerp(255,20,l),(int)D2D.lerp(255,37,l));
+        //double disttocenter = Math.abs(x - (draw.view_x+draw.view_w/2))/(draw.view_w*0.5)*game.globallight;
+        //double l = Math.min(1,Math.max(0,Math.min(1-(4+game.light[bx][by])/10f,disttocenter)+dmg));
+        //Color c = new Color((int)D2D.lerp(255,24,l),(int)D2D.lerp(255,20,l),(int)D2D.lerp(255,37,l));
+        Color c = game.getLightLocal(x,y,dmg);
         draw.batchPush((int)sprite,x-w/2+hsp,y-h+vsp,w,h,c);
     }
 }
@@ -270,9 +271,7 @@ class ObjectCharacter extends PlayerObject {
         int bx = Math.max(Math.min((int)(Math.floor(x-game.boardx)/main.SPR_WIDTH),game.boardWidth-1),0);
         int by = Math.max(Math.min((int)(Math.floor(y-game.boardy)/main.SPR_WIDTH),game.boardHeight-1),0);
 
-        double disttocenter = Math.abs(x - (draw.view_x+draw.view_w/2))/(draw.view_w*0.5);
-        double l = Math.min(1,Math.max(0,Math.min(1-(4+game.light[bx][by])/10f,disttocenter)));
-        Color c = new Color((int)D2D.lerp(255,24,l),(int)D2D.lerp(255,20,l),(int)D2D.lerp(255,37,l));
+        Color c = game.getLightLocal(x,y,0);
 
         draw.batchPush((int)sprite+(int)(main.frame/(main.TPS/2))%2+(hsp != 0 ? 1 : 0),
                 (int)x-xd*main.SPR_WIDTH/2,
@@ -305,7 +304,7 @@ class ObjectTetromino extends PlayerObject {
         return out;
     }
 
-    public static int[][][][] tetrominoList = getTetrominoes(Tetris2805.loadTexture("resources/load/tetrominoatlas3.png"));
+    public static int[][][][] tetrominoList = getTetrominoes(Tetris2805.loadTexture("resources/load/tetrominoatlas.png"));
 
     public int index,rotation,t;
     int dx,dy;
