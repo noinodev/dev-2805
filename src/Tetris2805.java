@@ -145,14 +145,7 @@ public class Tetris2805 extends JPanel implements ActionListener {
         //String cwd = working_directory.toString();
         //System.out.println(cwd+"src/resources/atlas.png");
 
-        System.out.println(UID);
-        StringBuilder newUID = new StringBuilder(UID.length());
-        for (int i = 0; i < UID.length(); i++) {
-            // Replace the current character with a random letter A-Z
-            char randomChar = (char) ('A' + (int) (Math.random() * ('Z' - 'A' + 1)));
-            newUID.append(randomChar);
-        }
-        UID = newUID.toString();
+        UID = NetworkHandler.generateUID();
         System.out.println(UID);
 
         NetworkHandler.main = this;

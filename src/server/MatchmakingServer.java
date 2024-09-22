@@ -161,7 +161,13 @@ public class MatchmakingServer {
                             buffer_send.clear();
                             buffer_send.put(NPH.NET_GET);
                             // this is the format of NET_GET on the client side when it receives it
-                            buffer_send.put((byte)lobbies.size());
+                            int lc = 0;
+                            for (Map.Entry<String, Lobby> entry : lobbies.entrySet()) {
+                                Lobby lobby = entry.getValue();
+                                String lobbyuid = entry.getKey();
+                                if(lobby != null && clients.get(lobbyuid) != null) lc++;
+                            }
+                            buffer_send.put((byte)lc);
                             for (Map.Entry<String, Lobby> entry : lobbies.entrySet()) {
                                 Lobby lobby = entry.getValue();
                                 String lobbyuid = entry.getKey();
@@ -317,9 +323,13 @@ public class MatchmakingServer {
 
         while(true){
             long time = System.currentTimeMillis();
-            for (Map.Entry<String, Lobby> le : lobbies.entrySet()) {
-                //String key = entry.getKey();
+            Iterator<Map.Entry<String, Lobby>> lobbyIterator = lobbies.entrySet().iterator();
+            while (lobbyIterator.hasNext()) {
+                Map.Entry<String, Lobby> le = lobbyIterator.next();
                 Lobby lobby = le.getValue();
+            //llfor (Map.Entry<String, Lobby> le : lobbies.entrySet()) {
+                //String key = entry.getKey();
+                //Lobby lobby = le.getValue();
                 if(lobby != null){
                     Iterator<Map.Entry<String, Client>> clientIterator = lobby.clients.entrySet().iterator();
                     while (clientIterator.hasNext()) {

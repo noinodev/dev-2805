@@ -21,6 +21,7 @@ enum PlayerControlScheme {
 }
 
 public abstract class GameObject {
+    public static Game g;
     public int destroy,id;
     public byte inst,change;
     public double sprite,x,y,w,h,xd,hsp,vsp,grv;
@@ -41,18 +42,28 @@ public abstract class GameObject {
         hsp = 0;
         vsp = 0;
         grv = 0.02;
-        change = 0;
+        change = 1;
 
     }
     public void update(){ }
 
     public static final ArrayList<GameObject> objects = new ArrayList<GameObject>();
     public static final Map<String,GameObject> netobjects = new HashMap<>();
+    public static byte lock = 0;
+    public static GameObject getNetObject(String UID){
+        return netobjects.get(UID);
+    }
+    public static GameObject syncObject(GameObject object){
+        String UID = NetworkHandler.generateUID();
+        return syncObject(object,UID);
+    }
     public static GameObject syncObject(GameObject object, String UID){
-        object.UID = UID;
-        if(netobjects.get(UID) == null){
-            netobjects.put(UID,object);
-            objects.add(object);
+        if(g != null){
+            object.UID = UID;
+            if(netobjects.get(UID) == null){
+                netobjects.put(UID,object);
+                objects.add(object);
+            }
         }
         return object;
     }
@@ -66,7 +77,7 @@ public abstract class GameObject {
 }
 
 class ObjectResource extends GameObject {
-    public byte inst = 0;
+    //public byte inst = 0;
     public int resource, hp, hps, timer;
     public ObjectResource(Game game, int x, int y, int sprite, int hp){
         super(game);
@@ -80,6 +91,7 @@ class ObjectResource extends GameObject {
         w = D2D.sprites[sprite].getWidth();
         h = D2D.sprites[sprite].getHeight();
         timer = 0;
+        inst = 0;
     }
 
     @Override
@@ -110,7 +122,7 @@ class ObjectResource extends GameObject {
 }
 
 class ObjectParticle extends GameObject {
-    public byte inst = 1;
+    //public byte inst = 1;
     public int start, end, time;
     public double spd;
     public Color colour;
@@ -126,6 +138,7 @@ class ObjectParticle extends GameObject {
         this.spd = spd;
         this.time = time;
         this.colour = colour;
+        inst = 1;
     }
 
     @Override
@@ -150,7 +163,7 @@ abstract class PlayerObject extends GameObject {
 }
 
 class ObjectCharacter extends PlayerObject {
-    public byte inst = 2;
+    //public byte inst = 2;
     public static final String[] taunts = {"YOU SUCK","???","GONNA CRY?","LOL","AINT MEAN IF U AINT GREEN","GOBLINZ RULE","BUYING GOBLIN GF","SO GOBLINCORE","GOBLINMAXXING RN",
             "WOW...","ZZZ","STOP TRYING","IM IN JAVA?","GOBLINPILLED","GOBLIN4LIFE","...","THEY NOT LIKE US","I LOVE GRIMES"};
     public static final Color[] tauntcolours = {new Color(104,46,108), new Color(38,92,66), new Color(25,60,62), new Color(58,68,102), new Color(38,43,68), new Color(62,39,49)};
@@ -165,6 +178,7 @@ class ObjectCharacter extends PlayerObject {
         txt = "";
         taunt = "";
         txtcolour = tauntcolours[(int)(Math.random()*tauntcolours.length)];
+        inst = 2;
     }
 
     @Override
@@ -244,7 +258,7 @@ class ObjectCharacter extends PlayerObject {
 }
 
 class ObjectTetromino extends PlayerObject {
-    public byte inst = 3;
+    //public byte inst = 3;
     private static int[][][][] getTetrominoes(BufferedImage in){
         int count = in.getHeight()/4;
         int[][][][] out = new int[count][4][4][4];
@@ -275,11 +289,48 @@ class ObjectTetromino extends PlayerObject {
         this.dy = (int)y/main.SPR_WIDTH;
         this.index = _i;
         this.rotation = _j;
+        inst = 3;
     }
 
 
     @Override
     public void update(){
+        int time = game.time;
+        if((time/4f > Math.max(1,60-6*game.level) || (main.input.get(KeyEvent.VK_DOWN)%12 == 1 && control_scheme == PlayerControlScheme.PCS_LOCAL)) && Math.abs(x-dx*main.SPR_WIDTH) + Math.abs(y-dy*main.SPR_WIDTH) < 10){
+            game.time = 0;
+            if(!checkBoardState()){ // collision on drop
+                // merge tetromino
+                for(int i = 0; i < game.TET_WIDTH; i++){
+                    for(int j = 0; j < game.TET_WIDTH; j++){
+                        int tx = dx+i, ty = dy+j;
+                        if(tetrominoList[index][rotation][i][j] > 0) game.board[tx][ty] = (int)sprite;
+                    }
+                }
+                // add score and set state to clear rows
+                int rows = game.checkRows();
+                if(rows > 0){ //
+                    game.score += game.scores[rows-1]*(game.level+1);
+                    game.state = game.STATE_CLEAR;
+                }
+                // spawn new tetromino
+                //game.currentTetromino = spawnTetromino();
+                //Tetromino out = new Tetromino(board_bound_x+board_bound_w/2-TET_WIDTH/2,0,nextTetronimo,0,10*Math.min(level/2,5)+4+(int)(Math.random()*4));
+                //nextTetronimo = (int)(Math.random() * tetrominoList.length);
+                if(control_scheme == PlayerControlScheme.PCS_LOCAL) ResetTetromino(/*game.board_bound_x+game.board_bound_w/2-game.TET_WIDTH/2,0,game.nextTetronimo,10*Math.min(game.level/2,5)+4+(int)(Math.random()*4)*/);
+                if(!checkBoardState()){ // fail state, if tetromino spawns fouled then state is set to lose
+                    game.lives--;
+                    game.clearx = 0;
+                    game.state = game.STATE_LOSE;
+                }
+                game.boardx += 2-(int)(Math.random()*4); // shake the board
+                game.boardy += 2-(int)(Math.random()*4);
+                game.illum = 0.5; // light up the board
+            }else{
+                dy++; // drop tetromino
+                game.illum *= 0.8;
+            }
+        }
+
         switch(control_scheme){
             case PCS_LOCAL:
                 change = 1;
@@ -384,7 +435,7 @@ class ObjectTetromino extends PlayerObject {
     }
 
     private void controlLocal(Game game){
-        int time = game.time;
+        /*int time = game.time;
 
         if((time/4f > Math.max(1,60-6*game.level) || main.input.get(KeyEvent.VK_DOWN)%12 == 1) && Math.abs(x-dx*main.SPR_WIDTH) + Math.abs(y-dy*main.SPR_WIDTH) < 10){
             game.time = 0;
@@ -406,7 +457,7 @@ class ObjectTetromino extends PlayerObject {
                 //game.currentTetromino = spawnTetromino();
                 //Tetromino out = new Tetromino(board_bound_x+board_bound_w/2-TET_WIDTH/2,0,nextTetronimo,0,10*Math.min(level/2,5)+4+(int)(Math.random()*4));
                 //nextTetronimo = (int)(Math.random() * tetrominoList.length);
-                ResetTetromino(/*game.board_bound_x+game.board_bound_w/2-game.TET_WIDTH/2,0,game.nextTetronimo,10*Math.min(game.level/2,5)+4+(int)(Math.random()*4)*/);
+                ResetTetromino(game.board_bound_x+game.board_bound_w/2-game.TET_WIDTH/2,0,game.nextTetronimo,10*Math.min(game.level/2,5)+4+(int)(Math.random()*4));
                 if(!checkBoardState()){ // fail state, if tetromino spawns fouled then state is set to lose
                     game.lives--;
                     game.clearx = 0;
@@ -419,7 +470,7 @@ class ObjectTetromino extends PlayerObject {
                 dy++; // drop tetromino
                 game.illum *= 0.8;
             }
-        }
+        }*/
         // all other tetromino inputs
         int xp =dx, rp = rotation;
         if(main.input.get(KeyEvent.VK_RIGHT) == 1 || main.input.get(KeyEvent.VK_RIGHT) > main.TPS/8) dx++;

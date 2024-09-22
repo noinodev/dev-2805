@@ -2,8 +2,12 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
+import java.net.DatagramPacket;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Objects;
 
 class Game extends scene { // main gameplay scene, i put it in its own class file because its huge. i couldve separated it into other classes but i dont really care
     public final int TET_WIDTH = 4;
@@ -17,6 +21,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
     //public int[][][][] tetrominoList;
     public final BufferedImage levelimage = main.loadTexture("resources/load/levelatlas.png");
     public GameObject playerObject;
+    public ObjectTetromino currentTetromino;
     //public final String[] taunts = {"YOU SUCK","???","GONNA CRY?","LOL","AINT MEAN IF U AINT GREEN","GOBLINZ RULE","BUYING GOBLIN GF","SO GOBLINCORE","GOBLINMAXXING RN",
     //        "WOW...","ZZZ","STOP TRYING","IM IN JAVA?","GOBLINPILLED","GOBLIN4LIFE","...","THEY NOT LIKE US","I LOVE GRIMES"};
     //public final Color[] tauntcolours = {new Color(104,46,108), new Color(38,92,66), new Color(25,60,62), new Color(58,68,102), new Color(38,43,68), new Color(62,39,49)};
@@ -229,15 +234,64 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
         return out;
     }*/
     public void networkInit(){
+        switch(main.gamemode){
+            case GM.GM_HOST: {
+                /*for (Map.Entry<String, Client> entry : NetworkHandler.clients.entrySet()) {
+                    Client i = entry.getValue();
+                    if(i!=null){
+                        GameObject.syncObject(new ObjectCharacter(this,PlayerControlScheme.PCS_EXTERN,137,boardx+40,boardy+10),i.UID);
+                    }
+                }*/
+            } break;
+            case GM.GM_JOIN: {
 
+            } break;
+        }
     }
 
     public void networkUpdate(){
         switch(main.gamemode){
             case GM.GM_HOST: {
+                if((int)main.frame%2 == 0 && GameObject.lock == 0){
+                    if(GameObject.netobjects.size() > 0){
+                        ByteBuffer buffer = NetworkHandler.packet_start(NPH.NET_OBJ);
+                        int nc = 0;
+                        for (Map.Entry<String, GameObject> le : GameObject.netobjects.entrySet()) {
+                            GameObject obj = le.getValue();
+                            if(obj != null && obj.destroy == 0 && obj.change == 1) nc++;
+                        }
+
+                        buffer.putInt(nc);
+                        //System.out.println(GameObject.netobjects.size());
+
+                        for (Map.Entry<String, GameObject> le : GameObject.netobjects.entrySet()) {
+                            GameObject obj = le.getValue();
+                            if(obj != null && obj.destroy == 0 && obj.change == 1){
+                                //buffer = NetworkHandler.packet_start(NPH.NET_OBJ,obj.UID);
+                                buffer.put(obj.UID.getBytes());
+                                buffer.put(obj.inst);
+                                buffer.putDouble(obj.x);
+                                buffer.putDouble(obj.y);
+                                buffer.putDouble(obj.sprite);
+                                buffer.putDouble(obj.hsp);
+                                buffer.putDouble(obj.vsp);
+                                obj.change = 0;
+                            }
+                        }
+                        NetworkHandler.send_all(buffer);
+                    }
+                }
                 // send board state to everybody
-                if((int)main.frame%24 == 0){
+                if((int)main.frame%10 == 0){
                     ByteBuffer buffer = NetworkHandler.packet_start(NPH.NET_STATE);
+                    ObjectTetromino t = (ObjectTetromino)playerObject;
+                    buffer.putInt(t.dx);
+                    buffer.putInt(t.dy);
+                    buffer.putInt(t.index);
+                    buffer.putInt(t.rotation);
+                    buffer.putDouble(t.x);
+                    buffer.putDouble(t.y);
+                    buffer.putDouble(t.sprite);
 
                     buffer.put((byte)board_bound_x);
                     buffer.put((byte)board_bound_w);
@@ -302,11 +356,17 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                     }
                     NetworkHandler.async_load.remove("game.state.board");
                 }
-                if((int)main.frame%24 == 0){
-                    ByteBuffer buffer = NetworkHandler.packet_start(NPH.NET_STATE);
+                if((int)main.frame%2 == 0 && GameObject.lock == 0){
+                    ByteBuffer buffer = NetworkHandler.packet_start(NPH.NET_OBJ);
+                    buffer.putInt(1);
+                    buffer.put(main.UID.getBytes());
+                    buffer.put(playerObject.inst);
                     buffer.putDouble(playerObject.x);
                     buffer.putDouble(playerObject.y);
-                    buffer.put((byte)playerObject.sprite);
+                    buffer.putDouble(playerObject.sprite);
+                    buffer.putDouble(playerObject.hsp);
+                    buffer.putDouble(playerObject.vsp);
+                    NetworkHandler.send_all(buffer);
                 }
             } break;
         }
@@ -316,6 +376,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
         super(m, d);
         draw.clearColour = new Color(24,20,37);
         main.sceneIndex = 4;
+        GameObject.g = this;
 
         //NetworkHandler.game = this;
 
@@ -334,6 +395,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
         cleary = 0;
         cleardy = 0;
         cleardx = 0;
+        currentTetromino = (ObjectTetromino)GameObject.CreateObject(new ObjectTetromino(this,PlayerControlScheme.PCS_EXTERN,0,0,0,0,0));
         //ObjectTetromino.tetrominoList = getTetrominoes(main.loadTexture("resources/load/tetrominoatlas5.png"));
         //boardWidth = main.cfg.get("width");
         //boardHeight = main.cfg.get("height")+2;
@@ -344,9 +406,11 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                 board_bound_x = 0;
                 board_bound_w = main.cfg.get("width");
                 nextTetronimo = (int)(Math.random() * ObjectTetromino.tetrominoList.length); // random tetromino same as in spawnTetromino
-                playerObject = GameObject.CreateObject(new ObjectTetromino(this,PlayerControlScheme.PCS_LOCAL,0,0,0,0,0));
+                playerObject = currentTetromino;
+
                 ObjectTetromino t = (ObjectTetromino) playerObject;
                 t.ResetTetromino();
+                t.control_scheme = PlayerControlScheme.PCS_LOCAL;
                 level = main.cfg.get("level"); // starting level
                 lives = 1+2*main.cfg.get("extend"); // only goblin mode has 3 lives
                 board = new int[boardWidth][boardHeight]; // board init
@@ -359,9 +423,16 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                 }
                 if(main.cfg.get("extend") == 1) loadLevel(boardWidth,boardHeight); // first goblin level
                 //GameObject.CreateObject(new ObjectCharacter(this,PlayerControlScheme.PCS_LOCAL,137,boardx+40,boardy+10));
-                for(int i = 0; i < 40; i++){
-                    GameObject.CreateObject(new ObjectResource(this,(int)(boardx+boardWidth*main.SPR_WIDTH*Math.random()),boardy+boardHeight*main.SPR_WIDTH,Math.random() > 0.5 ? 109 : 119,10));
+                for(int i = 0; i < 10; i++){
+                    GameObject.syncObject(new ObjectResource(this,(int)(boardx+boardWidth*main.SPR_WIDTH*Math.random()),boardy+boardHeight*main.SPR_WIDTH,Math.random() > 0.5 ? 109 : 119,10));
+                    //board[(int)(boardWidth*Math.random())][boardHeight-1] = Math.random() > 0.5 ? 109 : 119;
                 }
+                /*for (Map.Entry<String, Client> entry : NetworkHandler.clients.entrySet()) {
+                    Client i = entry.getValue();
+                    if(i != null){
+                        i.agent = GameObject.syncObject(new ObjectCharacter(this,PlayerControlScheme.PCS_EXTERN,137,boardx+40,boardy+10));
+                    }
+                }*/
             }break;
             case GM.GM_HOST:{
                 boardWidth = 50;
@@ -382,8 +453,16 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                         light[i][j] = 0;
                     }
                 }
-                for(int i = 0; i < 40; i++){
-                    GameObject.CreateObject(new ObjectResource(this,(int)(boardx+boardWidth*main.SPR_WIDTH*Math.random()),boardy+boardHeight*main.SPR_WIDTH,Math.random() > 0.5 ? 109 : 119,10));
+
+                for(int i = 0; i < 20; i++){
+                    //board[(int)(boardWidth*Math.random())][boardHeight-1] = Math.random() > 0.5 ? 109 : 119;
+                    GameObject.syncObject(new ObjectResource(this,(int)(boardx+boardWidth*main.SPR_WIDTH*Math.random()),boardy+boardHeight*main.SPR_WIDTH,Math.random() > 0.5 ? 109 : 119,10));
+                }
+                for (Map.Entry<String, Client> entry : NetworkHandler.clients.entrySet()) {
+                    Client i = entry.getValue();
+                    if(i != null){
+                        i.agent = GameObject.syncObject(new ObjectCharacter(this,PlayerControlScheme.PCS_EXTERN,137,boardx+40,boardy+10));
+                    }
                 }
             }break;
             case GM.GM_JOIN:{
@@ -504,6 +583,19 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                     }
                 }
             }
+
+            /*if(GameObject.netobjects.size() > 0){
+                Iterator<Map.Entry<String, GameObject>> objit = GameObject.netobjects.entrySet().iterator();
+                while (objit.hasNext()) {
+                    Map.Entry<String, GameObject> le = objit.next();
+                    GameObject obj = le.getValue();
+                    if(obj != null && obj.destroy == 0){
+                        obj.update();
+                    }else{
+                        objit.remove();
+                    }
+                }
+            }*/
 
             //update enemies in goblin mode
             if(main.cfg.get("extend") == 1){

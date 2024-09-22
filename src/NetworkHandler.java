@@ -31,6 +31,8 @@ class NPH { //NetworkPacketHeader
     public static final byte NET_KICK=10;
     public static final byte NET_ACK=11;
     public static final byte NET_SYN=12;
+    public static final byte NET_OBJ_CREATE=15;
+    public static final byte NET_OBJ_DESTROY=14;
 }
 
 class Client {
@@ -73,8 +75,8 @@ public class NetworkHandler {
     public static final Map<String,Client> clients = new HashMap<>();
     public static Client host;
     public static Thread networkThread;
-    public static final ByteBuffer buffer_send = ByteBuffer.allocate(1024);
-    public static final ByteBuffer buffer_recv = ByteBuffer.allocate(1024);
+    public static final ByteBuffer buffer_send = ByteBuffer.allocate(4096);
+    public static final ByteBuffer buffer_recv = ByteBuffer.allocate(4096);
     public static Tetris2805 main;
     //public static Game game;
     //public static lobby mlobby;
@@ -228,18 +230,27 @@ public class NetworkHandler {
 
                         case NPH.NET_STATE: {
                             buffer_recv.get(uidrecv);
-                            int x = buffer_recv.get();
-                            int w = buffer_recv.get();
-                            int h = buffer_recv.get();
-                            async_load.put("game.state.pos",x);
-                            async_load.put("game.state.width",w);
-                            async_load.put("game.state.height",h);
+
+                            int dx = buffer_recv.getInt();
+                            int dy = buffer_recv.getInt();
+                            int index = buffer_recv.getInt();
+                            int rot = buffer_recv.getInt();
+                            double x = buffer_recv.getDouble();
+                            double y = buffer_recv.getDouble();
+                            double sprite = buffer_recv.getDouble();
+
+                            int bx = buffer_recv.get();
+                            int bw = buffer_recv.get();
+                            int bh = buffer_recv.get();
+                            async_load.put("game.state.pos",bx);
+                            async_load.put("game.state.width",bw);
+                            async_load.put("game.state.height",bh);
 
                             //System.out.println("received a thing!" +x + " " + w + " "+h);
 
-                            int[][] array = new int[w][h];
-                            for (int i = 0; i < w; i++) {
-                                for (int j = 0; j < h; j++) {
+                            int[][] array = new int[bw][bh];
+                            for (int i = 0; i < bw; i++) {
+                                for (int j = 0; j < bh; j++) {
                                     array[i][j] = buffer_recv.get();
                                 }
                             }
@@ -248,16 +259,68 @@ public class NetworkHandler {
                         } break;
 
                         case NPH.NET_OBJ: {
+                            GameObject.lock = 1; // poor mans mutex
                             buffer_recv.get(uidrecv);
+                            //String cuid = new String(uidrecv, StandardCharsets.UTF_8);
+                            int objcount = buffer_recv.getInt();
+                            for(int i = 0; i < objcount; i++){
+                                buffer_recv.get(uidrecv);
+                                String uid = new String(uidrecv, StandardCharsets.UTF_8);
+                                byte inst = buffer_recv.get();
+                                if(!uid.equals(main.UID)){
+                                    double x = buffer_recv.getDouble();
+                                    double y = buffer_recv.getDouble();
+                                    double sprite = buffer_recv.getDouble();
+                                    double hsp = buffer_recv.getDouble();
+                                    double vsp = buffer_recv.getDouble();
+                                    //GameObject p = GameObject.netobjects.get(uid);
+                                    if(GameObject.netobjects.get(uid) == null){
+                                        GameObject o = null;
+                                        if(inst == 0){
+                                            o = new ObjectResource(GameObject.g,(int)sprite,(int)x,(int)y,10);
+                                            o.w = D2D.sprites[(int)sprite].getWidth();
+                                            o.h = D2D.sprites[(int)sprite].getHeight();
+                                            //System.out.println("tree/rock at: "+x+","+y);
+                                        }else if(inst == 2){
+                                            o = new ObjectCharacter(GameObject.g,PlayerControlScheme.PCS_EXTERN,137,140,50);
+                                            System.out.println("gobby at: "+x+","+y);
+                                        }
+                                        else if(inst == 3) o = new ObjectTetromino(GameObject.g,PlayerControlScheme.PCS_EXTERN,(int)sprite,(int)x,(int)y,0,0);
+                                        if(o != null) GameObject.syncObject(o,uid);
+                                    }
+                                    GameObject p = GameObject.netobjects.get(uid);
+                                    if(p != null){
+                                        p.x = x;
+                                        p.y = y;
+                                        p.sprite = sprite;
+                                        p.hsp = hsp;
+                                        p.vsp = vsp;
+                                        p.change = 1;
+                                    }
+                                }
+                            }
+                            GameObject.lock = 0;
+                            //System.out.println("object: "+x+", "+y+", "+sprite);*/
+                            //async_load.put("game.obj.x."+uid,x);
+
+                            //handle_object(buffer_recv);
+                            /*buffer_recv.get(uidrecv);
                             buffer_recv.get(uidrecv);
                             String objuid = new String(uidrecv, StandardCharsets.UTF_8);
                             byte inst = buffer_recv.get();
                             double x = buffer_recv.getDouble();
                             double y = buffer_recv.getDouble();
                             double sprite = buffer_recv.getDouble();
-                            byte hp = buffer_recv.get();
-                            ObjectResource obj = new ObjectResource(null,(int)x,(int)y,(int)sprite,hp);
-                            GameObject.syncObject(obj,objuid);
+                            //byte hp = buffer_recv.get();
+                            GameObject obj = GameObject.getNetObject(objuid);
+                            if(obj == null){
+                                obj = new ObjectResource(GameObject.g,(int)x,(int)y,(int)sprite,hp);
+                                GameObject.syncObject(obj,objuid);
+                            }else{
+                                obj.x = x;
+                                obj.y = y;
+                                obj.sprite = sprite;
+                            }*/
                         } break;
 
 
@@ -341,10 +404,27 @@ public class NetworkHandler {
     }
 
     public static ByteBuffer packet_start(byte header){
+        return packet_start(header,main.UID);
+    }
+    public static ByteBuffer packet_start(byte header, String uid){
         buffer_send.clear();
         buffer_send.put(header);
-        buffer_send.put(main.UID.getBytes());
+        buffer_send.put(uid.getBytes());
         return buffer_send;
+    }
+
+    public static void handle_object(ByteBuffer buffer){
+
+    }
+
+    public static String generateUID(){
+        String UID = "AAAAAAAA";
+        StringBuilder newUID = new StringBuilder(UID.length());
+        for (int i = 0; i < UID.length(); i++) {
+            char randomChar = (char) ('A' + (int) (Math.random() * ('Z' - 'A' + 1)));
+            newUID.append(randomChar);
+        }
+        return newUID.toString();
     }
 
     //public static void packet_send(Data
