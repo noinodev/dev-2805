@@ -732,9 +732,13 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                         int ui = 0;
 
                         for(int i = 0; i < 3; i++){
-                            draw.batchPush(156,(int)draw.view_x+main.FRAMEBUFFER_W-(1.5-i)*(main.SPR_WIDTH+2),(int)draw.view_y+main.FRAMEBUFFER_H-main.SPR_WIDTH,main.SPR_WIDTH,main.SPR_WIDTH);
-                            if(tool == i) draw.batchPush(155,(int)draw.view_x+main.FRAMEBUFFER_W-(1.5-i)*(main.SPR_WIDTH+2),(int)draw.view_y+main.FRAMEBUFFER_H-main.SPR_WIDTH,main.SPR_WIDTH,main.SPR_WIDTH);
-                            if(main.mouseInArea((int)(draw.view_x+main.FRAMEBUFFER_W-(1.5-i)*(main.SPR_WIDTH+2)),(int)draw.view_y+main.FRAMEBUFFER_H-main.SPR_WIDTH,main.SPR_WIDTH,main.SPR_WIDTH) == 1){
+                            int uix = (int)(draw.view_x+main.FRAMEBUFFER_W/2-(1.5-i)*(main.SPR_WIDTH+2));
+                            int uiy = (int)draw.view_y+main.FRAMEBUFFER_H/2+2*main.SPR_WIDTH;
+                            draw.batchPush(156,uix,uiy,main.SPR_WIDTH,main.SPR_WIDTH);
+                            draw.batchPush(164+i,uix,uiy,main.SPR_WIDTH,main.SPR_WIDTH);
+                            if(tool == i) draw.batchPush(155,uix,uiy,main.SPR_WIDTH,main.SPR_WIDTH);
+                            if(main.mouseInArea(uix,uiy,main.SPR_WIDTH,main.SPR_WIDTH) == 1){
+                                draw.batchPush(164+i,uix,uiy,main.SPR_WIDTH,main.SPR_WIDTH,Color.DARK_GRAY);
                                 ui = 1;
                                 main.cursorcontext = 1;
                                 if(main.input.get(-1) == 1){
@@ -744,6 +748,14 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                         }
 
                         if(ui == 0){
+                            if(tool == 0){
+                                tb = 1;
+                            }else if(tool == 1){
+                                tile = 114;
+                                tb = 0.2;
+                            }else if(tool == 2){
+                                tile = 190;
+                            }
                             int mx = (int)Math.floor((main.mousex-posx)/main.SPR_WIDTH), my = (int)((main.mousey-posy)/main.SPR_WIDTH);
                             draw.batchPush(155,posx+mx*main.SPR_WIDTH,posy+my*main.SPR_WIDTH,main.SPR_WIDTH,main.SPR_WIDTH);
                             if(mx != tbx || my != tby){
@@ -752,16 +764,29 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                                 tby = my;
                             }
                             if(main.input.get(-1) > 0){
-                                if(mx < 0 || mx >= boardWidth || my < 0 || my >= boardHeight || (board[mx][my] > 0)){
-                                    tilebreak += 1/(main.TPS*2.);
-                                    if(tilebreak > 0) draw.batchPush(142+(int)(5*tilebreak),posx+mx*main.SPR_WIDTH,posy+my*main.SPR_WIDTH,main.SPR_WIDTH,main.SPR_WIDTH);
-                                    if(tilebreak > tb){
-                                        board[mx][my] = tile;
-                                        ByteBuffer buffer = NetworkHandler.packet_start(NPH.NET_TILE);
-                                        buffer.putInt(mx);
-                                        buffer.putInt(my);
-                                        buffer.putInt(tile);
-                                        NetworkHandler.send_all(buffer);
+                                if(mx >= 0 && mx < boardWidth && my >= 0 && my < boardHeight){
+                                    int yes = 0;
+                                    if(tile != 0){
+                                        if((board[mx][my] == 0)){
+                                            if((mx-1 >= 0 && board[mx-1][my] > 0) || (my-1 >= 0 && board[mx][my-1] > 0) || (mx+1 < boardWidth && board[mx+1][my] > 0) || (my+1 < boardHeight && board[mx][my+1] > 0) || my+1 == boardHeight-1){
+                                                yes = 1;
+                                            }
+                                        }
+                                    }else if(board[mx][my] > 0){
+                                        yes = 1;
+                                    }
+                                    if(tilebreak > 0) draw.batchPush(142+(int)(5*(tilebreak/tb)),posx+mx*main.SPR_WIDTH,posy+my*main.SPR_WIDTH,main.SPR_WIDTH,main.SPR_WIDTH,yes==1?Color.WHITE:Color.DARK_GRAY);
+                                    if(yes == 1){
+                                        tilebreak += 1/(main.TPS*2.);
+                                        if(tilebreak > tb){
+                                            board[mx][my] = tile;
+                                            ByteBuffer buffer = NetworkHandler.packet_start(NPH.NET_TILE);
+                                            buffer.putInt(mx);
+                                            buffer.putInt(my);
+                                            buffer.putInt(tile);
+                                            NetworkHandler.send_all(buffer);
+                                            tilebreak = 0;
+                                        }
                                     }
                                     //game.board[mx][my] = 0;
                                 }
