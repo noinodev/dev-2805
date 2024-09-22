@@ -31,6 +31,10 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
     private final BufferedImage water = new BufferedImage(main.FRAMEBUFFER_W,main.FRAMEBUFFER_H,BufferedImage.TYPE_INT_ARGB);
     private final Graphics2D water2d = water.createGraphics();
 
+    private int wood,stone,tool;
+    private int tbx,tby;
+    private double tilebreak;
+
     /*public final ArrayList<Object> objects = new ArrayList<Object>();
 
     public Object CreateObject(Object object){
@@ -144,6 +148,12 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
         return 0;
     }
 
+    /*public int pointCheck(double x, double y){ // collision function for enemies, check if out of bounds -> check if inside an occupied cell
+        int bx = (int)Math.floor((x-posx)/main.SPR_WIDTH), by = (int)((y-posy)/main.SPR_WIDTH);
+        if(bx < 0 || bx >= boardWidth || by < 0 || by >= boardHeight || (board[bx][by] > 0 && board[bx][by] < 160)) return 1;
+        return 0;
+    }*/
+
     // get tetromino data from atlas, can add funny shaped ones if i want (??????)
     /*private int[][][][] getTetrominoes(BufferedImage in){
         int count = in.getHeight()/4;
@@ -252,7 +262,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
     public void networkUpdate(){
         switch(main.gamemode){
             case GM.GM_HOST: {
-                if((int)main.frame%2 == 0 && GameObject.lock == 0){
+                if((int)main.frame%8 == 0 && GameObject.lock == 0){
                     if(GameObject.netobjects.size() > 0){
                         ByteBuffer buffer = NetworkHandler.packet_start(NPH.NET_OBJ);
                         int nc = 0;
@@ -282,7 +292,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                     }
                 }
                 // send board state to everybody
-                if((int)main.frame%10 == 0){
+                if((int)main.frame%16 == 0){
                     ByteBuffer buffer = NetworkHandler.packet_start(NPH.NET_STATE);
                     ObjectTetromino t = (ObjectTetromino)playerObject;
                     buffer.putInt(t.dx);
@@ -300,47 +310,13 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                         for (int j = 0; j < boardHeight; j++){
                             buffer.put((byte)board[i][j]);
                         }
-                        //System.out.println()
                     }
-                    //System.out.println("sent a thing!" +board_bound_x + " " + board_bound_w + " "+boardHeight);
-                    /*for (int[] row : board) {
-                        for (int value : row) {
-                            buffer.put((byte)value);
-                        }
-                    }*/
                     NetworkHandler.send_all(buffer);
-
-                    /*for(GameObject j : GameObject.objects){
-                        if(j.inst == 0 && j.UID == null){
-                            String uid = "AAAAAAAA";
-                            StringBuilder newUID = new StringBuilder(uid.length());
-                            for (int i = 0; i < uid.length(); i++) {
-                                char randomChar = (char) ('A' + (int) (Math.random() * ('Z' - 'A' + 1)));
-                                newUID.append(randomChar);
-                            }
-                            j.UID = newUID.toString();
-
-                            buffer = NetworkHandler.packet_start(NPH.NET_OBJ);
-                            buffer.put(j.UID.getBytes());
-                            buffer.put(j.inst);
-                            buffer.putDouble(j.x);
-                            buffer.putDouble(j.y);
-                            buffer.putDouble(j.sprite);
-                            buffer.put((byte)((ObjectResource)j).hp);
-                            NetworkHandler.send_all(buffer);
-                        }else if(j instanceof PlayerObject k && k.UID != null){
-                            if(k.control_scheme == PlayerControlScheme.PCS_EXTERN){
-                                k.x = (double) NetworkHandler.async_load.get("game.object.x."+k.UID);
-                                k.y = (double) NetworkHandler.async_load.get("game.object.y."+k.UID);
-                                k.sprite = (double) NetworkHandler.async_load.get("game.object.sprite."+k.UID);
-                            }
-                        }
-
-                    }*/
                 }
 
             } break;
             case GM.GM_JOIN: {
+                state = STATE_PLAY;
                 if(NetworkHandler.async_load.get("game.state.board") != null){
                     int x = (int) NetworkHandler.async_load.get("game.state.pos");
                     int w = (int) NetworkHandler.async_load.get("game.state.width");
@@ -354,9 +330,22 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                             if(i+x >= 0 && i+x < boardWidth) board[i+x][j] = ((int[][])NetworkHandler.async_load.get("game.state.board"))[i][j]; //yucky!
                         }
                     }
+
                     NetworkHandler.async_load.remove("game.state.board");
                 }
-                if((int)main.frame%2 == 0 && GameObject.lock == 0){
+
+                if(NetworkHandler.async_load.get("game.state.dx") != null){
+                    currentTetromino.dx = (int)NetworkHandler.async_load.get("game.state.dx");
+                    currentTetromino.dy = (int)NetworkHandler.async_load.get("game.state.dy");
+                    currentTetromino.index = (int)NetworkHandler.async_load.get("game.state.index");
+                    currentTetromino.rotation = (int)NetworkHandler.async_load.get("game.state.rot");
+                    currentTetromino.x -= (currentTetromino.x-(double)NetworkHandler.async_load.get("game.state.x"))*0.2;
+                    currentTetromino.y -= (currentTetromino.y-(double)NetworkHandler.async_load.get("game.state.y"))*0.2;
+                    currentTetromino.sprite = (double)NetworkHandler.async_load.get("game.state.sprite");
+                    NetworkHandler.async_load.remove("game.state.dx");
+                }
+
+                if((int)main.frame%8 == 0 && GameObject.lock == 0){
                     ByteBuffer buffer = NetworkHandler.packet_start(NPH.NET_OBJ);
                     buffer.putInt(1);
                     buffer.put(main.UID.getBytes());
@@ -385,6 +374,9 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
         boardx = posx;
         boardy = posy;
 
+        tbx = 0;
+        tby = 0;
+        tilebreak = 0;
         time = 0;
         score = 0;
         state = 0;
@@ -407,7 +399,6 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                 board_bound_w = main.cfg.get("width");
                 nextTetronimo = (int)(Math.random() * ObjectTetromino.tetrominoList.length); // random tetromino same as in spawnTetromino
                 playerObject = currentTetromino;
-
                 ObjectTetromino t = (ObjectTetromino) playerObject;
                 t.ResetTetromino();
                 t.control_scheme = PlayerControlScheme.PCS_LOCAL;
@@ -440,9 +431,10 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                 board_bound_x = 0;
                 board_bound_w = main.cfg.get("width");
                 nextTetronimo = (int)(Math.random() * ObjectTetromino.tetrominoList.length); // random tetromino same as in spawnTetromino
-                playerObject = (ObjectTetromino) GameObject.CreateObject(new ObjectTetromino(this,PlayerControlScheme.PCS_LOCAL,0,0,0,0,0));
+                playerObject = currentTetromino;
                 ObjectTetromino t = (ObjectTetromino) playerObject;
                 t.ResetTetromino();
+                t.control_scheme = PlayerControlScheme.PCS_LOCAL;
                 level = main.cfg.get("level"); // starting level
                 lives = 3; // multiplayer is goblin mode only
                 board = new int[boardWidth][boardHeight]; // board init
@@ -460,7 +452,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                 }
                 for (Map.Entry<String, Client> entry : NetworkHandler.clients.entrySet()) {
                     Client i = entry.getValue();
-                    if(i != null){
+                    if(i != null && i.UID != main.UID){
                         i.agent = GameObject.syncObject(new ObjectCharacter(this,PlayerControlScheme.PCS_EXTERN,137,boardx+40,boardy+10));
                     }
                 }
@@ -669,7 +661,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                 }
             }else cleary = 0; // reset animation
 
-            if(state == STATE_LOSE || state == STATE_ENDLEVEL){ // lose / level transition board clear animation
+            if((state == STATE_LOSE || state == STATE_ENDLEVEL) && main.gamemode != GM.GM_JOIN){ // lose / level transition board clear animation
                 while(board[clearx%boardWidth][clearx/boardWidth] == 0 && clearx < boardWidth*boardHeight-1) clearx++; // skip to next player-placed tile, speeds up the animation
                 int x = clearx%boardWidth, y = clearx/boardWidth; // x y coords from animation state clearx
                 if(board[x][y] > 0 && board[x][y] < 100){ // only clear tetromino sprites
@@ -709,28 +701,74 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
             }
 
             if(main.cfg.get("extend") == 1){ // goblin-specific ui
-                double j = Math.min(1,(clearx*Math.log(1+clearx))/((double)boardWidth*boardHeight)); // animation curve
-                if(state == STATE_ENDLEVEL) j = 0; // hack to not move the hearts during the level clear animation
-                //animation to move 'lives' display to center of screen anytime the player loses a life
-                int dx = (int)draw.lerp(12,boardx+(boardWidth/2f)*main.SPR_WIDTH-12,j)+(int)(Math.random()*j*4-2*j),
-                        dy = (int)draw.lerp(30,main.FRAMEBUFFER_H/2f,j)+(int)(Math.random()*j*4-2*j);
-                for(int i = 0; i < 3; i++){ // 'healthbar'
-                    draw.batchPush(140,dx+i*(main.SPR_WIDTH+1),dy,main.SPR_WIDTH,main.SPR_WIDTH);
-                    if(lives > i) draw.batchPush(141,dx+i*(main.SPR_WIDTH+1),dy,main.SPR_WIDTH,main.SPR_WIDTH);
+                switch(playerObject.inst){
+                    case 3: {
+                        double j = Math.min(1,(clearx*Math.log(1+clearx))/((double)boardWidth*boardHeight)); // animation curve
+                        if(state == STATE_ENDLEVEL) j = 0; // hack to not move the hearts during the level clear animation
+                        //animation to move 'lives' display to center of screen anytime the player loses a life
+                        int dx = (int)draw.lerp(12,boardx+(boardWidth/2f)*main.SPR_WIDTH-12,j)+(int)(Math.random()*j*4-2*j),
+                                dy = (int)draw.lerp(30,main.FRAMEBUFFER_H/2f,j)+(int)(Math.random()*j*4-2*j);
+                        for(int i = 0; i < 3; i++){ // 'healthbar'
+                            draw.batchPush(140,(int)draw.view_x+dx+i*(main.SPR_WIDTH+1),(int)draw.view_y+dy,main.SPR_WIDTH,main.SPR_WIDTH);
+                            if(lives > i) draw.batchPush(141,(int)draw.view_x+dx+i*(main.SPR_WIDTH+1),(int)draw.view_y+dy,main.SPR_WIDTH,main.SPR_WIDTH);
+                        }
+                        if(j == 1){ // scary little message when you lose a life
+                            String txt;
+                            if(lives == 2) txt = "TRY AGAIN";
+                            else if(lives == 1) txt = "CAREFUL NOW";
+                            else txt = "GOODBYE";
+                            int k = (int)(Math.random()*(txt.length()-1));
+                            txt = txt.replace(txt.substring(k,k+1),""+('A'+(int)(Math.random()*('Z'-'A'))) ); // pretty unnecessary but this obfuscates the text
+                            int w = (int)((txt.length()*10)/2f);
+                            draw.batchPush(9,(int)draw.view_x+dx+12-w,(int)draw.view_y+dy+10,2*w,10,new Color(24,20,37));
+                            draw.drawText(txt,(int)draw.view_x+dx+12-w,dy+10,10,10,null);
+                        }
+                        // level clear message
+                        if(state == STATE_STARTLEVEL) draw.drawText("LEVEL CLEARED".substring(0,(int)(13*Math.min(1,((boardWidth*main.SPR_WIDTH-cleardx)*3)/(boardWidth*main.SPR_WIDTH)))),main.FRAMEBUFFER_W/2-65,main.FRAMEBUFFER_H/2,10,10,null);
+                    } break;
+                    case 2: {
+                        double tb = 0;
+                        int tile = 0;
+                        int ui = 0;
+
+                        for(int i = 0; i < 3; i++){
+                            draw.batchPush(156,(int)draw.view_x+main.FRAMEBUFFER_W-(1.5-i)*(main.SPR_WIDTH+2),(int)draw.view_y+main.FRAMEBUFFER_H-main.SPR_WIDTH,main.SPR_WIDTH,main.SPR_WIDTH);
+                            if(tool == i) draw.batchPush(155,(int)draw.view_x+main.FRAMEBUFFER_W-(1.5-i)*(main.SPR_WIDTH+2),(int)draw.view_y+main.FRAMEBUFFER_H-main.SPR_WIDTH,main.SPR_WIDTH,main.SPR_WIDTH);
+                            if(main.mouseInArea((int)(draw.view_x+main.FRAMEBUFFER_W-(1.5-i)*(main.SPR_WIDTH+2)),(int)draw.view_y+main.FRAMEBUFFER_H-main.SPR_WIDTH,main.SPR_WIDTH,main.SPR_WIDTH) == 1){
+                                ui = 1;
+                                main.cursorcontext = 1;
+                                if(main.input.get(-1) == 1){
+                                    tool = i;
+                                }
+                            }
+                        }
+
+                        if(ui == 0){
+                            int mx = (int)Math.floor((main.mousex-posx)/main.SPR_WIDTH), my = (int)((main.mousey-posy)/main.SPR_WIDTH);
+                            draw.batchPush(155,posx+mx*main.SPR_WIDTH,posy+my*main.SPR_WIDTH,main.SPR_WIDTH,main.SPR_WIDTH);
+                            if(mx != tbx || my != tby){
+                                tilebreak = 0;
+                                tbx = mx;
+                                tby = my;
+                            }
+                            if(main.input.get(-1) > 0){
+                                if(mx < 0 || mx >= boardWidth || my < 0 || my >= boardHeight || (board[mx][my] > 0)){
+                                    tilebreak += 1/(main.TPS*2.);
+                                    if(tilebreak > 0) draw.batchPush(142+(int)(5*tilebreak),posx+mx*main.SPR_WIDTH,posy+my*main.SPR_WIDTH,main.SPR_WIDTH,main.SPR_WIDTH);
+                                    if(tilebreak > tb){
+                                        board[mx][my] = tile;
+                                        ByteBuffer buffer = NetworkHandler.packet_start(NPH.NET_TILE);
+                                        buffer.putInt(mx);
+                                        buffer.putInt(my);
+                                        buffer.putInt(tile);
+                                        NetworkHandler.send_all(buffer);
+                                    }
+                                    //game.board[mx][my] = 0;
+                                }
+                            }
+                        }
+                    } break;
                 }
-                if(j == 1){ // scary little message when you lose a life
-                    String txt;
-                    if(lives == 2) txt = "TRY AGAIN";
-                    else if(lives == 1) txt = "CAREFUL NOW";
-                    else txt = "GOODBYE";
-                    int k = (int)(Math.random()*(txt.length()-1));
-                    txt = txt.replace(txt.substring(k,k+1),""+('A'+(int)(Math.random()*('Z'-'A'))) ); // pretty unnecessary but this obfuscates the text
-                    int w = (int)((txt.length()*10)/2f);
-                    draw.batchPush(9,dx+12-w,dy+10,2*w,10,new Color(24,20,37));
-                    draw.drawText(txt,dx+12-w,dy+10,10,10,null);
-                }
-                // level clear message
-                if(state == STATE_STARTLEVEL) draw.drawText("LEVEL CLEARED".substring(0,(int)(13*Math.min(1,((boardWidth*main.SPR_WIDTH-cleardx)*3)/(boardWidth*main.SPR_WIDTH)))),main.FRAMEBUFFER_W/2-65,main.FRAMEBUFFER_H/2,10,10,null);
             }
         }else{ // gameover screen
             main.bgtx = 0;

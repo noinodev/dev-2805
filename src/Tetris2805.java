@@ -194,6 +194,7 @@ public class Tetris2805 extends JPanel implements ActionListener {
         keybuffer = "";
         keycontext = -1;
         displayconfirm = 0;
+        //input.put(-1,0);
         setInput();
 
         scores = loadData("src/data/hscore.txt");

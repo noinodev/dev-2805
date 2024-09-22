@@ -1,6 +1,7 @@
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -24,7 +25,7 @@ public abstract class GameObject {
     public static Game g;
     public int destroy,id;
     public byte inst,change;
-    public double sprite,x,y,w,h,xd,hsp,vsp,grv;
+    public double sprite,x,y,w,h,xd,hsp,vsp,grv,tx,ty;
     public Tetris2805 main;
     public D2D draw;
     public Game game;
@@ -39,6 +40,8 @@ public abstract class GameObject {
         sprite = 0;
         x = 0;
         y = 0;
+        tx = 0;
+        ty = 0;
         hsp = 0;
         vsp = 0;
         grv = 0.02;
@@ -205,6 +208,30 @@ class ObjectCharacter extends PlayerObject {
                     draw.view_y -= (draw.view_y-(y-main.FRAMEBUFFER_H/2.))*0.1;
                     hsp = (main.input.get(KeyEvent.VK_D)-main.input.get(KeyEvent.VK_A))*0.2;
                     if(main.input.get(KeyEvent.VK_W) == 1 && game.pointCheck(x,y+2) == 1) vsp -= 0.5;
+
+                    /*int mx = (int)Math.floor((main.mousex-game.posx)/main.SPR_WIDTH), my = (int)((main.mousey-game.posy)/main.SPR_WIDTH);
+                    draw.batchPush(155,game.posx+mx*main.SPR_WIDTH,game.posy+my*main.SPR_WIDTH,main.SPR_WIDTH,main.SPR_WIDTH);
+                    if(mx != tbx || my != tby){
+                        tilebreak = 0;
+                        tbx = mx;
+                        tby = my;
+                    }
+                    if(main.input.get(-1) > 0){
+                        if(mx < 0 || mx >= game.boardWidth || my < 0 || my >= game.boardHeight || (game.board[mx][my] > 0)){
+                            tilebreak += 1/(main.TPS*2.);
+                            if(tilebreak > 0) draw.batchPush(142+(int)(5*tilebreak),game.posx+mx*main.SPR_WIDTH,game.posy+my*main.SPR_WIDTH,main.SPR_WIDTH,main.SPR_WIDTH);
+                            if(tilebreak >= 1){
+                                game.board[mx][my] = 0;
+                                ByteBuffer buffer = NetworkHandler.packet_start(NPH.NET_TILE);
+                                buffer.putInt(mx);
+                                buffer.putInt(my);
+                                buffer.putInt(0);
+                                NetworkHandler.send_all(buffer);
+                            }
+                            //game.board[mx][my] = 0;
+                        }
+                    }*///else tilebreak = 0;
+
                     //System.out.println(Math.abs(x - (draw.view_x+draw.view_w/2)));
                     /* == 1 || main.input.get(KeyEvent.VK_RIGHT) > main.TPS/8) dx++;
                     if(main.input.get(KeyEvent.VK_LEFT) == 1 || main.input.get(KeyEvent.VK_LEFT) > main.TPS/8) dx--;
@@ -213,6 +240,8 @@ class ObjectCharacter extends PlayerObject {
                 break;
                 case PCS_EXTERN:
                     //
+                    x -= (x-tx)*0.3;
+                    y -= (y-ty)*0.3;
                 break;
                 case PCS_AI:
                     //System.out.print("gobby... ");

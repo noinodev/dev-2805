@@ -31,8 +31,8 @@ class NPH { //NetworkPacketHeader
     public static final byte NET_KICK=10;
     public static final byte NET_ACK=11;
     public static final byte NET_SYN=12;
-    public static final byte NET_OBJ_CREATE=15;
-    public static final byte NET_OBJ_DESTROY=14;
+    public static final byte NET_HIT=13;
+    public static final byte NET_TILE=14;
 }
 
 class Client {
@@ -238,6 +238,14 @@ public class NetworkHandler {
                             double x = buffer_recv.getDouble();
                             double y = buffer_recv.getDouble();
                             double sprite = buffer_recv.getDouble();
+                            async_load.put("game.state.dx",dx);
+                            async_load.put("game.state.dy",dy);
+                            async_load.put("game.state.index",index);
+                            async_load.put("game.state.rot",rot);
+                            async_load.put("game.state.x",x);
+                            async_load.put("game.state.y",y);
+                            async_load.put("game.state.sprite",sprite);
+                            //System.out.println(async_load);
 
                             int bx = buffer_recv.get();
                             int bw = buffer_recv.get();
@@ -267,13 +275,13 @@ public class NetworkHandler {
                                 buffer_recv.get(uidrecv);
                                 String uid = new String(uidrecv, StandardCharsets.UTF_8);
                                 byte inst = buffer_recv.get();
+                                double x = buffer_recv.getDouble();
+                                double y = buffer_recv.getDouble();
+                                double sprite = buffer_recv.getDouble();
+                                double hsp = buffer_recv.getDouble();
+                                double vsp = buffer_recv.getDouble();
+                                //GameObject p = GameObject.netobjects.get(uid);
                                 if(!uid.equals(main.UID)){
-                                    double x = buffer_recv.getDouble();
-                                    double y = buffer_recv.getDouble();
-                                    double sprite = buffer_recv.getDouble();
-                                    double hsp = buffer_recv.getDouble();
-                                    double vsp = buffer_recv.getDouble();
-                                    //GameObject p = GameObject.netobjects.get(uid);
                                     if(GameObject.netobjects.get(uid) == null){
                                         GameObject o = null;
                                         if(inst == 0){
@@ -290,8 +298,8 @@ public class NetworkHandler {
                                     }
                                     GameObject p = GameObject.netobjects.get(uid);
                                     if(p != null){
-                                        p.x = x;
-                                        p.y = y;
+                                        p.tx = x;
+                                        p.ty = y;
                                         p.sprite = sprite;
                                         p.hsp = hsp;
                                         p.vsp = vsp;
@@ -322,7 +330,17 @@ public class NetworkHandler {
                                 obj.sprite = sprite;
                             }*/
                         } break;
+                        case NPH.NET_HIT: {
 
+                        } break;
+
+                        case NPH.NET_TILE: {
+                            buffer_recv.get(uidrecv);
+                            int x = buffer_recv.getInt();
+                            int y = buffer_recv.getInt();
+                            int val = buffer_recv.getInt();
+                            GameObject.g.board[x][y] = val;
+                        } break;
 
                         default:
                             //pretty much just skip through irrelevant packets
@@ -393,7 +411,7 @@ public class NetworkHandler {
         try {
             for (Map.Entry<String, Client> entry : clients.entrySet()) {
                 Client i = entry.getValue();
-                if(i != null){
+                if(i != null && i.UID != main.UID){
                     DatagramPacket send = new DatagramPacket(buffer.array(), buffer.position(), i.ipaddr, i.port);
                     socket.send(send);
                 }
