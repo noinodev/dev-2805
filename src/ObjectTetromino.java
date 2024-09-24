@@ -126,8 +126,9 @@ public class ObjectTetromino extends PlayerObject {
                     //game.currentTetromino = spawnTetromino();
                     //Tetromino out = new Tetromino(board_bound_x+board_bound_w/2-TET_WIDTH/2,0,nextTetronimo,0,10*Math.min(level/2,5)+4+(int)(Math.random()*4));
                     //nextTetronimo = (int)(Math.random() * tetrominoList.length);
-                    /*if(control_scheme != PlayerControlScheme.PCS_EXTERN) */ResetTetromino(/*game.board_bound_x+game.board_bound_w/2-game.TET_WIDTH/2,0,game.nextTetronimo,10*Math.min(game.level/2,5)+4+(int)(Math.random()*4)*/);
-                    if(!checkBoardState()){ // fail state, if tetromino spawns fouled then state is set to lose
+                    ///*if(control_scheme != PlayerControlScheme.PCS_EXTERN) */ResetTetromino(/*game.board_bound_x+game.board_bound_w/2-game.TET_WIDTH/2,0,game.nextTetronimo,10*Math.min(game.level/2,5)+4+(int)(Math.random()*4)*/);
+                    ResetTetromino();
+                    if(!checkBoardState() && game.state != game.STATE_LOSE){ // fail state, if tetromino spawns fouled then state is set to lose
                         game.lives--;
                         game.clearx = 0;
                         game.state = game.STATE_LOSE;

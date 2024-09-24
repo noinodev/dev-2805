@@ -419,6 +419,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                 board_bound_w = main.cfg.get("width");
                 nextTetronimo = 0;//(int)(Math.random() * ObjectTetromino.tetrominoList.length); // random tetromino same as in spawnTetromino
                 playerObject = GameObject.CreateObject(new ObjectCharacter(this,PlayerControlScheme.PCS_LOCAL,137,boardx+40,boardy+10));//(ObjectTetromino) GameObject.CreateObject(new ObjectTetromino(this,PlayerControlScheme.PCS_LOCAL,0,0,0,0,0));
+                if(main.cfg.get("ai") == 1) ((ObjectCharacter)playerObject).control_scheme = PlayerControlScheme.PCS_AI;
                 //currentTetromino.ResetTetromino();
                 level = main.cfg.get("level"); // starting level
                 lives = 3; // multiplayer is goblin mode only
@@ -562,7 +563,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
 
             int lo = 0;
             if(state == STATE_STARTLEVEL){ // level clear animation
-                lo = (int)cleardx;
+                //lo = (int)cleardx;
                 cleardx -= ((board_bound_w+1)*main.SPR_WIDTH-cleardx)*0.01; // cleardx is the horizontal scrolling of the board between levels
                 boardx += (int)(cleardx*0.01)-(int)(Math.random()*(cleardx*0.02));
                 boardy += (int)(cleardx*0.01)-(int)(Math.random()*(cleardx*0.02));
@@ -617,9 +618,10 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
             }*/
 
             //update enemies in goblin mode
-            /*if(main.cfg.get("extend") == 1){
-                int killscore = 0;
-            }*/
+            if(main.cfg.get("ai") == 1 && main.gamemode == GM.GM_JOIN){
+                draw.view_x -= (draw.view_x-(playerObject.x-main.FRAMEBUFFER_W/2.))*0.05;
+                draw.view_y -= (draw.view_y-(playerObject.y-main.FRAMEBUFFER_H/2.))*0.05;
+            }
 
             // draw ground
             for(int i = boardvisx; i <= boardvisx+boardvisw; i += 1){
@@ -629,9 +631,9 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                 //double l = Math.min(1,Math.max(0,Math.min(1-(4+light[i][boardHeight-1])/10f,disttocenter)));
                 //double l = Math.min(1,2*Math.abs(i/((double)main.SPR_WIDTH)-boardWidth*1.5f)/(boardWidth*3f));
                 //Color c = new Color((int)draw.lerp(255,24,l),(int)draw.lerp(255,20,l),(int)draw.lerp(255,37,l));
-                draw.batchPush(100+Math.abs(i)%3,boardx+i*main.SPR_WIDTH+(int)cleardx%main.SPR_WIDTH,(i/main.SPR_WIDTH*i)%3-1+boardy+boardHeight*main.SPR_WIDTH, main.SPR_WIDTH, main.SPR_WIDTH,c);
-                draw.batchPush(110+Math.abs(i)%3,boardx+i*main.SPR_WIDTH+(int)cleardx%main.SPR_WIDTH,(i/main.SPR_WIDTH*i)%3-1+boardy+(boardHeight+1)*main.SPR_WIDTH, main.SPR_WIDTH, main.SPR_WIDTH,c);
-                draw.batchPush(120+Math.abs(i)%3,boardx+i*main.SPR_WIDTH+(int)cleardx%main.SPR_WIDTH,(i/main.SPR_WIDTH*i)%3-1+boardy+(boardHeight+2)*main.SPR_WIDTH, main.SPR_WIDTH, main.SPR_WIDTH,c);
+                draw.batchPush(100+Math.abs(i)%3,boardx+i*main.SPR_WIDTH,(i/main.SPR_WIDTH*i)%3-1+boardy+boardHeight*main.SPR_WIDTH, main.SPR_WIDTH, main.SPR_WIDTH,c);
+                draw.batchPush(110+Math.abs(i)%3,boardx+i*main.SPR_WIDTH,(i/main.SPR_WIDTH*i)%3-1+boardy+(boardHeight+1)*main.SPR_WIDTH, main.SPR_WIDTH, main.SPR_WIDTH,c);
+                draw.batchPush(120+Math.abs(i)%3,boardx+i*main.SPR_WIDTH,(i/main.SPR_WIDTH*i)%3-1+boardy+(boardHeight+2)*main.SPR_WIDTH, main.SPR_WIDTH, main.SPR_WIDTH,c);
             }
 
             for(int i = 0; i < boardHeight+3; i++){
@@ -718,7 +720,8 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
             }*/
 
             if((state == STATE_LOSE) && main.gamemode != GM.GM_JOIN){ // lose / level transition board clear animation
-                //while(board[board_bound_x+clearx%board_bound_w][clearx/board_bound_w] == 0 && clearx < board_bound_x*board_bound_w-1) clearx++; // skip to next player-placed tile, speeds up the animation
+                while(clearx < board_bound_x*board_bound_w-1 && board[board_bound_x+clearx%board_bound_w][clearx/board_bound_w] == 0) clearx++; // skip to next player-placed tile, speeds up the animation
+                //clearx++;
                 int x = board_bound_x+clearx%board_bound_w, y = clearx/board_bound_w; // x y coords from animation state clearx
                 if(x >= 0 && x < boardWidth && y >= 0 && y < boardHeight && board[x][y] > 0 && board[x][y] < 100){ // only clear tetromino sprites
                     board[x][y] = 0;
@@ -749,7 +752,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                     boardy += 2-(int)(Math.random()*4); // lighting, board shake, particle effects
                 }//else draw.particlePush(30,31,0.01+0.01*Math.random(),boardx+(x*main.SPR_WIDTH),boardy+y*main.SPR_WIDTH,0,0,Color.WHITE);
 
-                if(clearx >= boardWidth*boardHeight-1){
+                if(clearx >= board_bound_w*boardHeight-1){
                     /*if(state == STATE_ENDLEVEL){ // if animation is for end of level, load next level and start level clear animation
                         level++;
                         if(playerObject instanceof ObjectTetromino t){
@@ -766,8 +769,8 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
             }else if(clearx > 0) clearx--; // gradually reset animation
 
             if(state == STATE_PAUSE){ // 'pause menu'
-                draw.drawText("PAUSED",main.FRAMEBUFFER_W/2,main.FRAMEBUFFER_H/2,10,8,null,1);
-                draw.drawText("ESC TO RESUME",main.FRAMEBUFFER_W/2,main.FRAMEBUFFER_H/2+10,8,6,Color.GRAY,1);
+                draw.drawText("PAUSED",(int)draw.view_x+main.FRAMEBUFFER_W/2,(int)draw.view_y+main.FRAMEBUFFER_H/2,10,8,null,1);
+                draw.drawText("ESC TO RESUME",(int)draw.view_x+main.FRAMEBUFFER_W/2,(int)draw.view_y+main.FRAMEBUFFER_H/2+10,8,6,Color.GRAY,1);
             }
 
             if(main.cfg.get("extend") == 1){ // goblin-specific ui
@@ -779,13 +782,14 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                 if(state == STATE_ENDLEVEL){ // if animation is for end of level, load next level and start level clear animation
                     level++;
                     board_bound_x += board_bound_w;
+                    currentTetromino.ResetTetromino();
                     //loadLevel(boardWidth,boardHeight);
                     state = STATE_STARTLEVEL;
                 }
                 if(game_start_wait > 0) draw.drawText(""+(game_start_wait/(int)main.TPS),(int)(draw.view_x+draw.view_w/2),(int)draw.view_y+10,10,8,Color.WHITE,1);
                 switch(playerObject.inst){
                     case 3: {
-                        double j = Math.min(1,(clearx*Math.log(1+clearx))/((double)board_bound_x*board_bound_w)); // animation curve
+                        double j = Math.min(1,(clearx*Math.log(1+clearx))/((double)board_bound_w*boardHeight)); // animation curve
                         if(state == STATE_ENDLEVEL) j = 0; // hack to not move the hearts during the level clear animation
                         //animation to move 'lives' display to center of screen anytime the player loses a life
                         int dx = (int)draw.lerp(12,boardx+(board_bound_w/2f)*main.SPR_WIDTH-12,j)+(int)(Math.random()*j*4-2*j),
@@ -806,7 +810,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                             draw.drawText(txt,(int)draw.view_x+dx+12-w,dy+10,10,10,null);
                         }
                         // level clear message
-                        if(state == STATE_STARTLEVEL) draw.drawText("LEVEL CLEARED".substring(0,(int)(13*Math.min(1,((board_bound_w*main.SPR_WIDTH-cleardx)*3)/(board_bound_w*main.SPR_WIDTH)))),main.FRAMEBUFFER_W/2-65,main.FRAMEBUFFER_H/2,10,10,null);
+                        if(state == STATE_STARTLEVEL) draw.drawText("LEVEL CLEARED".substring(0,(int)(13*Math.min(1,((board_bound_w*main.SPR_WIDTH-cleardx)*3)/(board_bound_w*main.SPR_WIDTH)))),(int)draw.view_x+main.FRAMEBUFFER_W/2-65,(int)draw.view_y+main.FRAMEBUFFER_H/2,10,10,null);
 
                         draw.drawText("LEVEL "+level,(int)draw.view_x+10,(int)draw.view_y+10,10,8,Color.WHITE);
                         draw.drawText(""+score,(int)draw.view_x+10,(int)draw.view_y+20,8,6,flash[(score/100)%5]);
