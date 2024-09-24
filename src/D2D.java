@@ -193,32 +193,28 @@ public class D2D{
     public static D2D D2Dget (Tetris2805 m){
         if(instance == null) instance = new D2D();
         main = m;
-
-        //fbo = new D2DFramebuffer(0,0,main.FRAMEBUFFER_W,main.FRAMEBUFFER_H);
-        //batch = new D2DRenderBatch();
-        //d2d_fbo_current = null;
-        //d2d_batch_current = null;
-        //batch = new ArrayList<>();
-        //particles = new ArrayList<>();
-        /*instance.framebuffer = new BufferedImage(main.FRAMEBUFFER_W,main.FRAMEBUFFER_H,BufferedImage.TYPE_INT_ARGB);
-        instance.viewport = instance.framebuffer.createGraphics();
-        instance.buttonanim = 0;
-        instance.lastbutton = 0;*/
         return instance;
+    }
+    public static D2D D2Dget (){
+        return instance;
+    }
+
+    public void D2Dstart(Tetris2805 m){
+        instance.framebuffer = new BufferedImage(m.FRAMEBUFFER_W,m.FRAMEBUFFER_H,BufferedImage.TYPE_INT_ARGB);
+        instance.viewport = instance.framebuffer.createGraphics();
+        instance.view_w = m.FRAMEBUFFER_W;
+        instance.view_h = m.FRAMEBUFFER_H;
     }
 
     public void D2Dinit(Tetris2805 m){
         instance.main = m;
-        instance.framebuffer = new BufferedImage(m.FRAMEBUFFER_W,m.FRAMEBUFFER_H,BufferedImage.TYPE_INT_ARGB);
-        instance.viewport = instance.framebuffer.createGraphics();
+        D2Dstart(m);
         /*instance.viewport.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
         instance.viewport.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
         instance.viewport.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);*/
         instance.batch = new ArrayList<>();
         instance.view_x = 0;
         instance.view_y = 0;
-        instance.view_w = m.FRAMEBUFFER_W;
-        instance.view_h = m.FRAMEBUFFER_H;
         /*instance.view_wscale = instance.framebuffer.getWidth()/instance.view_w;
         instance.view_hscale = instance.framebuffer.getHeight()/instance.view_h;
         AffineTransform scaleTransform = AffineTransform.getScaleInstance(instance.view_wscale, instance.view_hscale);
@@ -233,7 +229,7 @@ public class D2D{
     }
 
     // feels janky ?
-    public void particlePush(double id, int f, double animspd, int x, int y, double hsp, double vsp, Color c){
+    //public void particlePush(double id, int f, double animspd, int x, int y, double hsp, double vsp, Color c){
         /*ptcl p = new ptcl();
         p.id = id;
         p.f = f;
@@ -244,7 +240,7 @@ public class D2D{
         p.vsp = vsp;
         p.c = c;
         particles.add(p);*/
-    }
+    //}
 
     /*public void batchPush(int id,double x,double y,double w,double h){ batchPush(id,x,y,w,h,null); }
     public void batchPush(int id,double x,double y,double w,double h, Color c){
@@ -315,6 +311,7 @@ public class D2D{
             }
         }
         batch.clear();
+        if(view_w != main.FRAMEBUFFER_W) D2Dstart(main);//D2Dinit(main);
     }
 
     // ui elements and functions

@@ -174,6 +174,8 @@ public class Tetris2805 extends JPanel implements ActionListener {
         D2D.sprites[128] = loadTexture("resources/assets/fgtex2.png");
         D2D.sprites[135] = loadTexture("resources/assets/fgtex3.png");
         D2D.sprites[136] = loadTexture("resources/assets/fgtex4.png");
+        D2D.sprites[44] = loadTexture("resources/assets/spr_wall.png");
+        D2D.sprites[54] = loadTexture("resources/assets/spr_wall2.png");
         bgx = 0;
         bgy = 0;
         bgtx = 0;
@@ -330,7 +332,7 @@ public class Tetris2805 extends JPanel implements ActionListener {
         int nfw = (int)(FRAMEBUFFER_H*ratio);
         if(FRAMEBUFFER_W != nfw){
             FRAMEBUFFER_W = nfw;
-            //D2D.initGraphics();
+            //draw.D2Dinit(this);
 
         }
 

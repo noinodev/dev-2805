@@ -18,6 +18,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
     public int[][] board;
     public int board_bound_x, board_bound_w;
     public double[][] light;
+    public ObjectResource[] parallaxobj;
     //public int[][][][] tetrominoList;
     public final BufferedImage levelimage = main.loadTexture("resources/load/levelatlas.png");
     public GameObject playerObject;
@@ -30,10 +31,13 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
 
     private final BufferedImage water = new BufferedImage(main.FRAMEBUFFER_W,main.FRAMEBUFFER_H,BufferedImage.TYPE_INT_ARGB);
     private final Graphics2D water2d = water.createGraphics();
+    private final BufferedImage dark = new BufferedImage(main.FRAMEBUFFER_W,main.FRAMEBUFFER_H,BufferedImage.TYPE_INT_ARGB);
+    private final Graphics2D dark2d = dark.createGraphics();
 
-    private int wood,stone,tool;
+    public int wood,stone,tool;
     private int tbx,tby;
     private double tilebreak;
+    public int game_start_wait;
 
     public double globallight;
 
@@ -104,7 +108,8 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
         int by = Math.max(Math.min((int)(Math.floor(y-boardy)/main.SPR_WIDTH),boardHeight-1),0);
 
         double disttocenter = Math.abs(x - (draw.view_x+draw.view_w/2))/(draw.view_w*0.5);
-        double l = Math.min(1,Math.max(0, Math.min(1-(light[bx][by])/10f,disttocenter+globallight)+shift ));
+        double l = Math.min(1,Math.max(0, 1-(light[bx][by])/10f+shift + disttocenter*globallight));
+
         return new Color((int)D2D.lerp(255,24,l),(int)D2D.lerp(255,20,l),(int)D2D.lerp(255,37,l));
     }
 
@@ -236,7 +241,14 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                     clearflash = (int)(Math.random()*5);
                 }
                 rows++; // count the number of rows for scoring purposes
-                for(int k = 0; k < 10; k++) draw.particlePush(29,34,0.05+0.05*Math.random(),boardx+(int)(board_bound_x+(board_bound_w/2.)*main.SPR_WIDTH*Math.random()),boardy+cleary*main.SPR_WIDTH,-0.1+0.2*Math.random(),-0.1+0.2*Math.random(),flash[(int)(Math.random()*5)]); // yuck
+                //for(int k = 0; k < 10; k++) draw.particlePush(29,34,0.05+0.05*Math.random(),boardx+(int)(board_bound_x+(board_bound_w/2.)*main.SPR_WIDTH*Math.random()),boardy+cleary*main.SPR_WIDTH,-0.1+0.2*Math.random(),-0.1+0.2*Math.random(),flash[(int)(Math.random()*5)]); // yuck
+                for(int k = 0; k < 10; k++){
+                    GameObject.CreateObject(new ObjectParticle(this,
+                       boardx+(int)(board_bound_x+(board_bound_w/2.)*main.SPR_WIDTH*Math.random()),
+                       boardy+cleary*main.SPR_WIDTH, -0.1+0.2*Math.random(),-0.1+0.2*Math.random(),
+                       29,34,0.05+0.05*Math.random(), 240, flash[(int)(Math.random()*5)])
+                    );
+                }
                 // particle effect ^^
             }
         }
@@ -319,7 +331,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                     buffer.put((byte)boardHeight);
                     for (int i = board_bound_x; i < board_bound_x+board_bound_w; i++) {
                         for (int j = 0; j < boardHeight; j++){
-                            buffer.put((byte)board[i][j]);
+                            buffer.putInt(board[i][j]);
                         }
                     }
                     NetworkHandler.send_all(buffer);
@@ -378,8 +390,8 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
         main.sceneIndex = 4;
         GameObject.g = this;
 
-        globallight = 1;
-
+        globallight = 0;
+        game_start_wait = 0;
         //NetworkHandler.game = this;
 
         posx = 80; // board anchor position
@@ -400,6 +412,11 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
         cleary = 0;
         cleardy = 0;
         cleardx = 0;
+        wood=1;
+        stone=1;
+
+
+
         currentTetromino = (ObjectTetromino)GameObject.CreateObject(new ObjectTetromino(this,PlayerControlScheme.PCS_EXTERN,0,0,0,0,0));
         //ObjectTetromino.tetrominoList = getTetrominoes(main.loadTexture("resources/load/tetrominoatlas5.png"));
         //boardWidth = main.cfg.get("width");
@@ -410,6 +427,11 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                 boardHeight = main.cfg.get("height")+2;
                 board_bound_x = 0;
                 board_bound_w = main.cfg.get("width");
+
+                /*for(int i = 0; i < 100; i++){
+                    GameObject.syncObject(new ObjectResource(this,(int)(boardx+boardWidth*main.SPR_WIDTH*Math.random()),boardy+boardHeight*main.SPR_WIDTH,0.005*(100-i),Math.random() > 0.5 ? 109 : 119,10));
+                }*/
+
                 nextTetronimo = (int)(Math.random() * ObjectTetromino.tetrominoList.length); // random tetromino same as in spawnTetromino
                 playerObject = currentTetromino;
                 ObjectTetromino t = (ObjectTetromino) playerObject;
@@ -425,12 +447,8 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                         light[i][j] = 0;
                     }
                 }
-                if(main.cfg.get("extend") == 1) loadLevel(boardWidth,boardHeight); // first goblin level
+                //if(main.cfg.get("extend") == 1) loadLevel(boardWidth,boardHeight); // first goblin level
                 //GameObject.CreateObject(new ObjectCharacter(this,PlayerControlScheme.PCS_LOCAL,137,boardx+40,boardy+10));
-                for(int i = 0; i < 10; i++){
-                    GameObject.syncObject(new ObjectResource(this,(int)(boardx+boardWidth*main.SPR_WIDTH*Math.random()),boardy+boardHeight*main.SPR_WIDTH,Math.random() > 0.5 ? 109 : 119,10));
-                    //board[(int)(boardWidth*Math.random())][boardHeight-1] = Math.random() > 0.5 ? 109 : 119;
-                }
                 /*for (Map.Entry<String, Client> entry : NetworkHandler.clients.entrySet()) {
                     Client i = entry.getValue();
                     if(i != null){
@@ -439,10 +457,16 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                 }*/
             }break;
             case GM.GM_HOST:{
+                game_start_wait = (int)(30*main.TPS);
                 boardWidth = 100;
                 boardHeight = main.cfg.get("height")+2;
                 board_bound_x = 0;
                 board_bound_w = main.cfg.get("width");
+
+                /*for(int i = 0; i < 100; i++){
+                    GameObject.syncObject(new ObjectResource(this,(int)(boardx+boardWidth*main.SPR_WIDTH*Math.random()),boardy+boardHeight*main.SPR_WIDTH,0.005*(100-i),Math.random() > 0.5 ? 109 : 119,10));
+                }*/
+
                 nextTetronimo = (int)(Math.random() * ObjectTetromino.tetrominoList.length); // random tetromino same as in spawnTetromino
                 playerObject = currentTetromino;
                 ObjectTetromino t = (ObjectTetromino) playerObject;
@@ -459,10 +483,6 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                     }
                 }
 
-                for(int i = 0; i < 20; i++){
-                    //board[(int)(boardWidth*Math.random())][boardHeight-1] = Math.random() > 0.5 ? 109 : 119;
-                    GameObject.syncObject(new ObjectResource(this,(int)(boardx+boardWidth*main.SPR_WIDTH*Math.random()),boardy+boardHeight*main.SPR_WIDTH,Math.random() > 0.5 ? 109 : 119,10));
-                }
                 for (Map.Entry<String, Client> entry : NetworkHandler.clients.entrySet()) {
                     Client i = entry.getValue();
                     if(i != null && i.UID != main.UID){
@@ -471,6 +491,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                 }
             }break;
             case GM.GM_JOIN:{
+                game_start_wait = (int)(30*main.TPS);
                 boardWidth = 100;
                 boardHeight = main.cfg.get("height")+2;
                 board_bound_x = 0;
@@ -492,6 +513,11 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
             }break;
         }
 
+        parallaxobj = new ObjectResource[boardWidth];
+        for(int i = 0; i < boardWidth; i++){
+            parallaxobj[i] = new ObjectResource(this,(int)(boardx+boardWidth*main.SPR_WIDTH*Math.random()),boardy+boardHeight*main.SPR_WIDTH,0.2+(0.3/boardWidth)*(boardWidth-i),Math.random() > 0.5 ? 109 : 119,10);
+        }
+
         //Object o = Object.CreateObject(new ObjectCharacter(this,PlayerControlScheme.PCS_LOCAL,137,boardx+40,boardy+10));
     }
 
@@ -504,20 +530,45 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
         illum -= (illum-(2+1*(time/main.TPS)))*0.05;
 
         int boardvisw = (int)(main.FRAMEBUFFER_W/main.SPR_WIDTH)+1, boardvisx = Math.min(boardWidth-boardvisw,Math.max(0,(int)((draw.view_x-boardx)/main.SPR_WIDTH)));
+        double bgw = 256;
 
         //Color bgc = new Color((int)D2D.lerp(255,24,globallight),(int)D2D.lerp(255,20,globallight),(int)D2D.lerp(255,37,globallight));
         double bgx = draw.view_x;
         double bgy = draw.view_y;
         int[] bgtex = {42,61,60,52,51,50};
+        //Color bgc = new Color((int)D2D.lerp(255,24,globallight),(int)D2D.lerp(255,20,globallight),(int)D2D.lerp(255,37,globallight));
         for(int i = 0; i < bgtex.length; i++){
-            for(int j = 0; j <= (boardWidth*main.SPR_WIDTH)/main.FRAMEBUFFER_W; j += 1){
-                draw.batchPush(bgtex[i],(int)((bgx*(1.-0.1*i))%main.FRAMEBUFFER_W+main.FRAMEBUFFER_W*j),(int)((bgy*(1-0.1*i))%main.FRAMEBUFFER_H),main.FRAMEBUFFER_W,main.FRAMEBUFFER_H);
+            for(int j = 0; j <= (boardWidth*main.SPR_WIDTH)/bgw; j += 1){
+                draw.batchPush(bgtex[i],(int)((bgx*(1.-0.1*i))%bgw+bgw*j),(int)((bgy*(1-0.1*i))%bgw),bgw,bgw);
             }
             //draw.batchPush(bgtex[i],(int)((bgx*(0.1+0.1*i))%FRAMEBUFFER_W-FRAMEBUFFER_W),(int)((bgy*(0.1+0.1*i))%FRAMEBUFFER_H),FRAMEBUFFER_W,FRAMEBUFFER_H);
         }
 
+        if(time%60==0){
+            //dark2d.setComposite(AlphaComposite.Clear);
+            //dark2d.clearRect(0, 0, dark.getWidth(), dark.getHeight());
+            dark2d.setComposite(AlphaComposite.Src);
+            dark2d.setColor(new Color(0,0,5,(int)(255*globallight*0.9)));
+            dark2d.fillRect(0, 0, dark.getWidth(), dark.getHeight());
+            //water2d.setComposite(AlphaComposite.SrcOver);
+            //water2d.setClip(0, waterY, water.getWidth(), waterHeight);
+
+            //AffineTransform flip = new AffineTransform();
+            //flip.scale(1, -0.5);
+            //flip.translate(0, -3*waterY);
+
+            //water2d.drawImage(draw.framebuffer,0,0, null);
+        }
+
+        draw.batchPush(dark,draw.view_x,draw.view_y,draw.view_w,draw.view_h);
+
+        for(int i = 0; i < parallaxobj.length; i++)parallaxobj[i].update();
+
         //if(main.input.get(-1) == 1) Object.CreateObject(new ObjectCharacter(this,PlayerControlScheme.PCS_AI,137,(int)main.mousex,(int)main.mousey));
 
+        double moonlight = 0.5;
+        globallight = moonlight-(game_start_wait/(30*main.TPS))*moonlight;
+        if(game_start_wait > 0) game_start_wait--;
         networkUpdate();
 
         time++;
@@ -605,9 +656,9 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
             }*/
 
             //update enemies in goblin mode
-            if(main.cfg.get("extend") == 1){
+            /*if(main.cfg.get("extend") == 1){
                 int killscore = 0;
-            }
+            }*/
 
             // draw ground
             for(int i = boardvisx; i <= boardvisx+boardvisw; i += 1){
@@ -620,6 +671,13 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                 draw.batchPush(100+Math.abs(i)%3,boardx+i*main.SPR_WIDTH+(int)cleardx%main.SPR_WIDTH,(i/main.SPR_WIDTH*i)%3-1+boardy+boardHeight*main.SPR_WIDTH, main.SPR_WIDTH, main.SPR_WIDTH,c);
                 draw.batchPush(110+Math.abs(i)%3,boardx+i*main.SPR_WIDTH+(int)cleardx%main.SPR_WIDTH,(i/main.SPR_WIDTH*i)%3-1+boardy+(boardHeight+1)*main.SPR_WIDTH, main.SPR_WIDTH, main.SPR_WIDTH,c);
                 draw.batchPush(120+Math.abs(i)%3,boardx+i*main.SPR_WIDTH+(int)cleardx%main.SPR_WIDTH,(i/main.SPR_WIDTH*i)%3-1+boardy+(boardHeight+2)*main.SPR_WIDTH, main.SPR_WIDTH, main.SPR_WIDTH,c);
+            }
+
+            for(int i = 0; i < boardHeight+3; i++){
+                Color cl = getLightLocal(boardx+1,boardy+i*main.SPR_WIDTH,0);
+                Color cr = getLightLocal(boardx+boardWidth*main.SPR_WIDTH-1,boardy+i*main.SPR_WIDTH,0);
+                draw.batchPush(44,boardx-200-(boardHeight-i)*3,boardy+i*main.SPR_WIDTH,200,10,cl);
+                draw.batchPush(54, boardx+boardWidth*main.SPR_WIDTH+(boardHeight-i)*3, boardy+i*main.SPR_WIDTH,200,10,cr);
             }
 
             int waterY = (int)(boardy+(boardHeight+3)*main.SPR_WIDTH-draw.view_y);
@@ -642,16 +700,16 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
 
             for(int i = 1; i <= 12; i += 2){
                 int s = 118, h = 1;
-                for(int j = 0; j <= (boardWidth*main.SPR_WIDTH)/main.FRAMEBUFFER_W; j += 1){
-                    draw.batchPush(s,(int)(((boardWidth*main.SPR_WIDTH*0.5-bgx)*(1.+0.02*i)+(Math.sin(i*234)*0.06)*main.frame+25*i)%main.FRAMEBUFFER_W+main.FRAMEBUFFER_W*j),(int)(waterY+(draw.view_y)*(1+0.01*i))+2*i,main.FRAMEBUFFER_W,h);
+                for(int j = 0; j <= (boardWidth*main.SPR_WIDTH)/bgw; j += 1){
+                    draw.batchPush(s,(int)(((boardWidth*main.SPR_WIDTH*0.5-bgx)*(1.+0.02*i)+(Math.sin(i*234)*0.06)*main.frame+25*i)%bgw+bgw*j),(int)(waterY+(draw.view_y)*(1+0.01*i))+2*i,bgw,h);
                 }
             }
 
             int[] fgtex = {129,128,135,136};
             for(int i = 0; i < fgtex.length; i++){
-                for(int j = 0; j <= (boardWidth*main.SPR_WIDTH)/main.FRAMEBUFFER_W; j += 1){
+                for(int j = 0; j <= (boardWidth*main.SPR_WIDTH)/bgw; j += 1){
                     //System.out.println(""+i+": "+D2D.sprites[fgtex[i]]);
-                    draw.batchPush(fgtex[i],(int)((-bgx*(0.4+0.5*i))%main.FRAMEBUFFER_W+main.FRAMEBUFFER_W*j-main.FRAMEBUFFER_W),(int)(waterY+(draw.view_y)*(1.1+0.02*i))-10*i,main.FRAMEBUFFER_W,128/*,new Color(24,20,37)*/);
+                    draw.batchPush(fgtex[i],(int)((-bgx*(0.4+0.5*i))%bgw+bgw*j-bgw),(int)(waterY+(draw.view_y)*(1.1+0.02*i))-10*i,bgw,128);
                 }
             }
 
@@ -667,7 +725,14 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                         new Color((int)draw.lerp(flash[clearflash].getRed(),24,i),(int)draw.lerp(flash[clearflash].getBlue(),20,i),(int)draw.lerp(flash[clearflash].getGreen(),37,i)));
                 if(cleardy > main.SPR_WIDTH){
                     // anim reset, check if more rows need to be cleared
-                    for(int k = 0; k < 10; k++) draw.particlePush(30,33,0.05+0.05*Math.random(),boardx+(int)(boardWidth*main.SPR_WIDTH*Math.random()),boardy+cleary*main.SPR_WIDTH,0,0,Color.WHITE);
+                    //for(int k = 0; k < 10; k++) draw.particlePush(30,33,0.05+0.05*Math.random(),boardx+(int)(boardWidth*main.SPR_WIDTH*Math.random()),boardy+cleary*main.SPR_WIDTH,0,0,Color.WHITE);
+                    for(int k = 0; k < 10; k++){
+                        GameObject.CreateObject(new ObjectParticle(this,
+                            boardx+(int)(boardWidth*main.SPR_WIDTH*Math.random()),
+                            boardy+cleary*main.SPR_WIDTH, 0,0,
+                            30,33,0.05+0.05*Math.random(), 240, Color.WHITE)
+                        );
+                    }
                     cleardy = 0;
                     cleary = 0;
                     clearRows();
@@ -691,8 +756,19 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                         -0.2+0.4*Math.random()+(boardy+y*main.SPR_WIDTH+(int)(main.SPR_WIDTH*Math.random())-30)*-0.01,
                         flash[(int)(Math.random()*5)]);
                     }*/
-                    for(int k = 0; k < 3; k++) draw.particlePush(29,34,0.05+0.05*Math.random(),boardx+(int)(x*main.SPR_WIDTH+main.SPR_WIDTH*Math.random()),boardy+y*main.SPR_WIDTH+(int)(main.SPR_WIDTH*Math.random()),-0.3+0.6*Math.random(),0,flash[(int)(Math.random()*5)]);
-                    draw.particlePush(7,10,0.05+0.05*Math.random(),boardx+(x*main.SPR_WIDTH),boardy+y*main.SPR_WIDTH,0,0,Color.WHITE);
+                    //for(int k = 0; k < 3; k++) draw.particlePush(29,34,0.05+0.05*Math.random(),boardx+(int)(x*main.SPR_WIDTH+main.SPR_WIDTH*Math.random()),boardy+y*main.SPR_WIDTH+(int)(main.SPR_WIDTH*Math.random()),-0.3+0.6*Math.random(),0,flash[(int)(Math.random()*5)]);
+                    //draw.particlePush(7,10,0.05+0.05*Math.random(),boardx+(x*main.SPR_WIDTH),boardy+y*main.SPR_WIDTH,0,0,Color.WHITE);
+                    for(int k = 0; k < 3; k++){
+                        GameObject.CreateObject(new ObjectParticle(this,
+                                boardx+(int)(x*main.SPR_WIDTH+main.SPR_WIDTH*Math.random()),
+                                boardy+y*main.SPR_WIDTH+(int)(main.SPR_WIDTH*Math.random()), -0.3+0.6*Math.random(),0,
+                                30,33,0.05+0.05*Math.random(), 240, flash[(int)(Math.random()*5)])
+                        );
+                    }
+                    GameObject.CreateObject(new ObjectParticle(this,
+                            boardx+(x*main.SPR_WIDTH),boardy+y*main.SPR_WIDTH, 0,0,
+                            7,10,0.05+0.05*Math.random(), 240, Color.WHITE)
+                    );
                     illum = Math.random();
                     boardx += 2-(int)(Math.random()*4);
                     boardy += 2-(int)(Math.random()*4); // lighting, board shake, particle effects
@@ -701,8 +777,11 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                 if(clearx >= boardWidth*boardHeight-1){
                     if(state == STATE_ENDLEVEL){ // if animation is for end of level, load next level and start level clear animation
                         level++;
-                        if(playerObject instanceof ObjectTetromino t) t.ResetTetromino();// = spawnTetromino();
-                        loadLevel(boardWidth,boardHeight);
+                        if(playerObject instanceof ObjectTetromino t){
+                            t.ResetTetromino();// = spawnTetromino();
+
+                        }
+                        //loadLevel(boardWidth,boardHeight);
                         state = 6;
                         cleardx = boardWidth*main.SPR_WIDTH;
                         clearx = 0;
@@ -717,6 +796,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
             }
 
             if(main.cfg.get("extend") == 1){ // goblin-specific ui
+                if(game_start_wait > 0) draw.drawText(""+(game_start_wait/(int)main.TPS),(int)(draw.view_x+draw.view_w/2),(int)draw.view_y+10,10,8,Color.WHITE,1);
                 switch(playerObject.inst){
                     case 3: {
                         double j = Math.min(1,(clearx*Math.log(1+clearx))/((double)boardWidth*boardHeight)); // animation curve
@@ -741,13 +821,18 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                         }
                         // level clear message
                         if(state == STATE_STARTLEVEL) draw.drawText("LEVEL CLEARED".substring(0,(int)(13*Math.min(1,((boardWidth*main.SPR_WIDTH-cleardx)*3)/(boardWidth*main.SPR_WIDTH)))),main.FRAMEBUFFER_W/2-65,main.FRAMEBUFFER_H/2,10,10,null);
+
+                        draw.drawText("LEVEL "+level,(int)draw.view_x+10,(int)draw.view_y+10,10,8,Color.WHITE);
+                        draw.drawText(""+score,(int)draw.view_x+10,(int)draw.view_y+20,8,6,flash[(score/100)%5]);
                     } break;
                     case 2: {
                         double tb = 0;
                         int tile = 0;
                         int ui = 0;
-
-                        for(int i = 0; i < 3; i++){
+                        int tools = 4;
+                        if(tool == 2 && stone <= 0) tool = 0;
+                        if((tool == 3 || tool == 1) && wood <= 0) tool = 0;
+                        for(int i = 0; i < tools; i++){
                             int uix = (int)(draw.view_x+main.FRAMEBUFFER_W/2-(1.5-i)*(main.SPR_WIDTH+2));
                             int uiy = (int)draw.view_y+main.FRAMEBUFFER_H/2+2*main.SPR_WIDTH;
                             draw.batchPush(156,uix,uiy,main.SPR_WIDTH,main.SPR_WIDTH);
@@ -767,34 +852,42 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                             if(tool == 0){
                                 tb = 1;
                             }else if(tool == 1){
+                                tile = 160;
+                                tb = 0;
+                            }else if(tool == 2){
                                 tile = 114;
                                 tb = 0.2;
-                            }else if(tool == 2){
+                            }else if(tool == 3){
                                 tile = 190;
                             }
                             int mx = (int)Math.floor((main.mousex-posx)/main.SPR_WIDTH), my = (int)((main.mousey-posy)/main.SPR_WIDTH);
-                            draw.batchPush(155,posx+mx*main.SPR_WIDTH,posy+my*main.SPR_WIDTH,main.SPR_WIDTH,main.SPR_WIDTH);
+                            int yes = 0;
+                            if(mx >= 0 && mx < boardWidth && my >= 0 && my < boardHeight){
+                                if(tile != 0){
+                                    if((board[mx][my] == 0)){
+                                        if((mx-1 >= 0 && board[mx-1][my] > 0) || (my-1 >= 0 && board[mx][my-1] > 0) || (mx+1 < boardWidth && board[mx+1][my] > 0) || (my+1 < boardHeight && board[mx][my+1] > 0) || my+1 == boardHeight){
+                                            yes = 1;
+                                        }
+                                    }
+                                }else if(board[mx][my] > 0){
+                                    yes = 1;
+                                }
+                            }
+                            if(yes==1)draw.batchPush(155,posx+mx*main.SPR_WIDTH,posy+my*main.SPR_WIDTH,main.SPR_WIDTH,main.SPR_WIDTH);
                             if(mx != tbx || my != tby){
                                 tilebreak = 0;
                                 tbx = mx;
                                 tby = my;
                             }
                             if(main.input.get(-1) > 0){
-                                if(mx >= 0 && mx < boardWidth && my >= 0 && my < boardHeight){
-                                    int yes = 0;
-                                    if(tile != 0){
-                                        if((board[mx][my] == 0)){
-                                            if((mx-1 >= 0 && board[mx-1][my] > 0) || (my-1 >= 0 && board[mx][my-1] > 0) || (mx+1 < boardWidth && board[mx+1][my] > 0) || (my+1 < boardHeight && board[mx][my+1] > 0) || my+1 == boardHeight){
-                                                yes = 1;
-                                            }
-                                        }
-                                    }else if(board[mx][my] > 0){
-                                        yes = 1;
-                                    }
-                                    if(tilebreak > 0) draw.batchPush(142+(int)(5*(tilebreak/tb)),posx+mx*main.SPR_WIDTH,posy+my*main.SPR_WIDTH,main.SPR_WIDTH,main.SPR_WIDTH,yes==1?Color.WHITE:Color.DARK_GRAY);
-                                    if(yes == 1){
+                                if(yes == 1){
+                                //if(mx >= 0 && mx < boardWidth && my >= 0 && my < boardHeight){
+                                    if(tilebreak > 0) draw.batchPush(142+(int)(5*(tilebreak/tb)),posx+mx*main.SPR_WIDTH,posy+my*main.SPR_WIDTH,main.SPR_WIDTH,main.SPR_WIDTH);
+                                    //if(yes == 1){
                                         tilebreak += 1/(main.TPS*2.);
                                         if(tilebreak > tb){
+                                            if(board[mx][my] == 114) stone++;
+                                            else if(board[mx][my] > 100) wood++;
                                             board[mx][my] = tile;
                                             ByteBuffer buffer = NetworkHandler.packet_start(NPH.NET_TILE);
                                             buffer.putInt(mx);
@@ -802,16 +895,31 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                                             buffer.putInt(tile);
                                             NetworkHandler.send_all(buffer);
                                             tilebreak = 0;
+
+                                            if(tool == 0){
+                                                tb = 1;
+                                            }else if(tool == 1){
+                                                tile = 160;
+                                                tb = 0;
+                                            }else if(tool == 2){
+                                                tile = 114;
+                                                tb = 0.2;
+                                            }else if(tool == 3){
+                                                tile = 190;
+                                            }
                                         }
-                                    }
+                                    //}
                                     //game.board[mx][my] = 0;
                                 }
+                            //}
                             }
                         }
                     } break;
                 }
             }
         }else{ // gameover screen
+            draw.view_x = 0;
+            draw.view_y = 0;
             main.bgtx = 0;
             String name = draw.drawTextfield("ENTER NAME",10,60,80,10);
             if(name != ""){
@@ -823,8 +931,8 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
             draw.drawText("GAME OVER",10,30,10,10,Color.RED);
         }
         // context independent ui for level and score
-        draw.drawText("LEVEL "+level,10,10,10,8,Color.WHITE);
-        draw.drawText(""+score,10,20,8,6,flash[(score/100)%5]);
+        //draw.drawText("LEVEL "+level,10,10,10,8,Color.WHITE);
+        //draw.drawText(""+score,10,20,8,6,flash[(score/100)%5]);
 
         if(state == STATE_oops){
             if(main.displayconfirm != main.DIALOG_CONTEXT_MENU) state = oldstate;

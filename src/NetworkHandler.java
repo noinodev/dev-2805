@@ -260,7 +260,7 @@ public class NetworkHandler {
                             int[][] array = new int[bw][bh];
                             for (int i = 0; i < bw; i++) {
                                 for (int j = 0; j < bh; j++) {
-                                    array[i][j] = buffer_recv.get();
+                                    array[i][j] = buffer_recv.getInt();
                                 }
                             }
                             //System.out.println(array);
@@ -286,7 +286,7 @@ public class NetworkHandler {
                                     if(GameObject.netobjects.get(uid) == null){
                                         GameObject o = null;
                                         if(inst == 0){
-                                            o = new ObjectResource(GameObject.g,(int)sprite,(int)x,(int)y,10);
+                                            o = new ObjectResource(GameObject.g,(int)x,(int)y,0.1*Math.random(),(int)sprite,10);
                                             o.w = D2D.sprites[(int)sprite].getWidth();
                                             o.h = D2D.sprites[(int)sprite].getHeight();
                                             //System.out.println("tree/rock at: "+x+","+y);

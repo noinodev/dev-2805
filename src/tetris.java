@@ -3,8 +3,8 @@ import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 
-class tetris extends scene { // main gameplay scene, i put it in its own class file because its huge. i couldve separated it into other classes but i dont really care
-    public final int TET_WIDTH = 4;
+class tetris { // main gameplay scene, i put it in its own class file because its huge. i couldve separated it into other classes but i dont really care
+    /*public final int TET_WIDTH = 4;
     private int boardWidth,boardHeight,posx,posy,boardx,boardy,time,score,state,oldstate,clearx,cleary,clearflash,level,lines,nextTetronimo,lives; // yuck
     private double cleardy,cleardx,illum;
     private final Color[] flash = {new Color(255,255,255), new Color(255,0,68), new Color(99,199,77), new Color(44,232,245), new Color(254,231,97)}; // merge particle colours
@@ -409,7 +409,7 @@ class tetris extends scene { // main gameplay scene, i put it in its own class f
                             if((int)(Math.random()*main.TPS) == 0) e.hsp = 0;
                         }
 
-                        if(pointCheck(e.x,e.y) == 1/* || main.input.get(-1) == 1*/){ // die from being crushed
+                        if(pointCheck(e.x,e.y) == 1){ // die from being crushed
                             enemylist.remove(i);
                             for(int j = 0; j < 4; j++) draw.particlePush(130,134,0.03+0.02*Math.random(),(int)e.x,(int)e.y,-0.1+0.2*Math.random(),-0.1+0.2*Math.random(),Color.WHITE);
                             draw.particlePush(150,154,0.09+0.01*Math.random(),(int)e.x-main.SPR_WIDTH/2,(int)e.y-main.SPR_WIDTH,-0.01+0.02*Math.random(),-0.08,Color.WHITE);
@@ -494,14 +494,14 @@ class tetris extends scene { // main gameplay scene, i put it in its own class f
                 if(board[x][y] > 0 && board[x][y] < 100){ // only clear tetromino sprites
                     board[x][y] = 0;
                     //draw.particlePush(29,34,0.05+0.05*Math.random(),boardx+(int)(boardWidth*main.SPR_WIDTH*Math.random()),boardy+cleary*main.SPR_WIDTH,-0.1+0.2*Math.random(),-0.2+0.4*Math.random(),flash[(int)(Math.random()*5)]);
-                    /*for(int k = 0; k < 3; k++){
+                    for(int k = 0; k < 3; k++){
                         draw.particlePush(29,34,0.03+0.02*Math.random(),
                         boardx+(int)(x*main.SPR_WIDTH+main.SPR_WIDTH*Math.random()),
                         boardy+y*main.SPR_WIDTH+(int)(main.SPR_WIDTH*Math.random()),
                         -0.2+0.4*Math.random()+(boardx+(int)(x*main.SPR_WIDTH+main.SPR_WIDTH*Math.random())-(12+main.SPR_WIDTH*lives))*-0.01,
                         -0.2+0.4*Math.random()+(boardy+y*main.SPR_WIDTH+(int)(main.SPR_WIDTH*Math.random())-30)*-0.01,
                         flash[(int)(Math.random()*5)]);
-                    }*/
+                    }
                     for(int k = 0; k < 3; k++) draw.particlePush(29,34,0.05+0.05*Math.random(),boardx+(int)(x*main.SPR_WIDTH+main.SPR_WIDTH*Math.random()),boardy+y*main.SPR_WIDTH+(int)(main.SPR_WIDTH*Math.random()),-0.3+0.6*Math.random(),0,flash[(int)(Math.random()*5)]);
                     draw.particlePush(7,10,0.05+0.05*Math.random(),boardx+(x*main.SPR_WIDTH),boardy+y*main.SPR_WIDTH,0,0,Color.WHITE);
                     illum = Math.random();
@@ -575,5 +575,5 @@ class tetris extends scene { // main gameplay scene, i put it in its own class f
                 main.displayconfirm = main.DIALOG_CONTEXT_MENU;
             }else main.currentScene = new menu(main,draw);
         }
-    }
+    }*/
 }
