@@ -5,14 +5,14 @@ public class PlayerAgentAI {
     //static byte[][] board; // copy of the visible space of the board
     static final double[] weights = {-0.510066,0.760666,-0.35663,-0.184483};
 
-    static ObjectTetromino getBestPosition(int[][] gameboard, int xb, int xw,ObjectTetromino t){
+    static Object[] getBestPosition(int[][] gameboard, int xb, int xw,ObjectTetromino[] pieces, int index){
         D2D draw = D2D.D2Dget();
-        double bestscore = 0;
+        double bestscore = Double.MAX_VALUE;
         ObjectTetromino best = null;
         int[][] bestboard = null;
         int[][] board = cpy(gameboard,xb,xw);
         for(int rotation = 0; rotation < 4; rotation++){
-            ObjectTetromino agent = new ObjectTetromino(t);
+            ObjectTetromino agent = new ObjectTetromino(pieces[index]);
             agent.dx -= xb;
             //System.out.print("[rot:"+rotation+"]");
             agent.rotation = rotation;
@@ -28,8 +28,11 @@ public class PlayerAgentAI {
                 int[][] tb = cpy(board,0,board.length);
                 merge(tb,ta);
 
-                double score = -weights[0]*aggregateHeight(tb)+weights[1]*lines(tb)-weights[2]*holes(tb)-weights[3]*bumpiness(tb);
-                if(bestscore == 0 || score < bestscore){
+
+                double score = Double.MAX_VALUE;
+                if(index == pieces.length-1) score = -weights[0]*aggregateHeight(tb)+weights[1]*lines(tb)-weights[2]*holes(tb)-weights[3]*bumpiness(tb);
+                else score = (double) getBestPosition(tb,0,tb.length,pieces,index+1)[1];
+                if(score < bestscore){
                     //System.out.print("[score:"+score+"]\n");
                     bestscore = score;
                     best = new ObjectTetromino(agent);
@@ -40,7 +43,7 @@ public class PlayerAgentAI {
                 agent.dx++;
             }
         }
-        if(best != null){
+        /*if(best != null){
             double s = 4;
             for(int i = 0; i < bestboard.length; i++){
                 for(int j = 0; j < bestboard[0].length; j++){
@@ -55,8 +58,11 @@ public class PlayerAgentAI {
                     }
                 }
             }
-        }
-        return best;
+        }*/
+        Object[] ret = new Object[2];
+        ret[0] = best;
+        ret[1] = bestscore;
+        return ret;
     }
 
     static int[][] cpy(int[][] gameboard, int xb, int xw){
@@ -74,8 +80,8 @@ public class PlayerAgentAI {
 
     static int columnHeight(int[][] board, int x){
         int y;
-        for(y = board[0].length-1; y > 0 && board[x][y] != 0; y--);
-        return y;
+        for(y = 0; y < board[0].length && board[x][y] == 0; y++);
+        return board[0].length-y;
     }
     static int aggregateHeight(int[][] board){
         int total = 0;
@@ -85,7 +91,8 @@ public class PlayerAgentAI {
     static int bumpiness(int[][] board){
         int total = 0;
         for(int x = 0; x < board.length-1; x++) total += Math.abs(columnHeight(board,x)-columnHeight(board,x+1));
-        return total;
+        for(int x = 1; x < board.length; x++) total += Math.abs(columnHeight(board,x)-columnHeight(board,x-1));
+        return total/2;
     }
     static int lines(int[][] board){
         int total = 0;
@@ -103,9 +110,10 @@ public class PlayerAgentAI {
     }
     static int holes(int[][] board){
         int total = 0;
-        for(int y = 0; y < board[0].length; y++){
+        for(int x = 0; x < board.length; x++){
             int block = 0;
-            for(int x = 0; x < board.length; x++){ // come back and double check this
+             // come back and double check this
+            for(int y = 0; y < board[0].length; y++){
                 if(board[x][y] != 0) block = 1;
                 else if(board[x][y] == 0 && block == 1) total++;
             }
@@ -126,7 +134,7 @@ public class PlayerAgentAI {
         for(int i = 0; i < 4; i++){
             for(int j = 0; j < 4; j++){
                 if(ObjectTetromino.tetrominoList[agent.index][agent.rotation][i][j] > 0){
-                    int tx = agent.dx+i, ty = agent.dy+j;
+                    int tx = agent.dx+i, ty = agent.dy+1+j;
                     if(ty < 0 || ty >= board[0].length || tx < 0 || tx >= board.length || board[tx][ty] > 0){
                         return 0;
                     }

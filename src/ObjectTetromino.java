@@ -24,8 +24,8 @@ public class ObjectTetromino extends PlayerObject {
 
     public int index,rotation,t;
     int dx,dy;
-
-    private ObjectTetromino best;
+    //ObjectTetromino[] pieces;
+    //public ObjectTetromino best;
 
     public ObjectTetromino(Game game, PlayerControlScheme pcs, int sprite, int _x, int _y, int _i, int _j){
         super(game,pcs);
@@ -51,6 +51,56 @@ public class ObjectTetromino extends PlayerObject {
 
     @Override
     public void update(){
+
+        //dx = Math.max(dx,game.board_bound_x);
+        //dx = Math.min(dx-4,game.board_bound_x+game.board_bound_w);
+
+        switch(control_scheme){
+            case PCS_LOCAL:
+                /*if(dy == 0){
+                    pieces = new ObjectTetromino[2];
+                    pieces[0] = new ObjectTetromino(this);
+                    pieces[1] = new ObjectTetromino(this);
+                    pieces[1].dx = game.board_bound_x+game.board_bound_w/2-game.TET_WIDTH/2;
+                    pieces[1].dy = 0;
+                    pieces[1].index = game.nextTetronimo;
+                }*/
+                //best = (ObjectTetromino) PlayerAgentAI.getBestPosition(game.board,game.board_bound_x,game.board_bound_w,pieces,0)[0];
+                //if(best != null){
+                    //best.dx += game.board_bound_x;
+                    //dx = best.dx;
+                    //rotation = best.rotation;
+                    /*if(dx < best.dx) main.input.put(KeyEvent.VK_RIGHT,1);
+                    if(dx > best.dx) main.input.put(KeyEvent.VK_LEFT,1);
+                    if(rotation != best.rotation) main.input.put(KeyEvent.VK_UP,1);
+                    if(dx == best.dx && rotation == best.rotation) main.input.put(KeyEvent.VK_DOWN,1);*/
+                    //System.out.println("trying to go: "+best.dx+", "+best.rotation);
+                    //System.out.println("is: "+dx+", "+rotation);
+                //}//else rotation = (rotation+1)%4;
+                change = 1;
+                controlLocal(game);
+                break;
+            case PCS_EXTERN:
+
+                break;
+            case PCS_AI:
+                /*if(dy == 0) best = PlayerAgentAI.getBestPosition(game.board,game.board_bound_x,game.board_bound_w,new ObjectTetromino(this));
+                if(best != null){
+                    //best.dx += game.board_bound_x;
+                    //dx = best.dx;
+                    //rotation = best.rotation;
+                    if(dx < best.dx) main.input.put(KeyEvent.VK_RIGHT,1);
+                    if(dx > best.dx) main.input.put(KeyEvent.VK_LEFT,1);
+                    if(rotation != best.rotation) main.input.put(KeyEvent.VK_UP,1);
+                    if(dx == best.dx && rotation == best.rotation) main.input.put(KeyEvent.VK_DOWN,1);
+                    System.out.println("trying to go: "+best.dx+", "+best.rotation);
+                    System.out.println("is: "+dx+", "+rotation);
+                }//else rotation = (rotation+1)%4;*/
+                change = 1;
+                controlLocal(game);
+                break;
+        }
+
         int time = game.time;
         if(game.game_start_wait <= 0){
             if((time/4f > Math.max(1,60-6*game.level) || (main.input.get(KeyEvent.VK_DOWN)%12 == 1 && control_scheme == PlayerControlScheme.PCS_LOCAL)) && Math.abs(x-dx*main.SPR_WIDTH) + Math.abs(y-dy*main.SPR_WIDTH) < 10){
@@ -60,7 +110,10 @@ public class ObjectTetromino extends PlayerObject {
                     for(int i = 0; i < game.TET_WIDTH; i++){
                         for(int j = 0; j < game.TET_WIDTH; j++){
                             int tx = dx+i, ty = dy+j;
-                            if(tetrominoList[index][rotation][i][j] > 0) game.board[tx][ty] = (int)sprite;
+                            if(tetrominoList[index][rotation][i][j] > 0){
+                                game.board[tx][ty] = (int)sprite;
+                                game.light[tx][ty] = 100;
+                            }
                         }
                     }
                     // add score and set state to clear rows
@@ -73,7 +126,7 @@ public class ObjectTetromino extends PlayerObject {
                     //game.currentTetromino = spawnTetromino();
                     //Tetromino out = new Tetromino(board_bound_x+board_bound_w/2-TET_WIDTH/2,0,nextTetronimo,0,10*Math.min(level/2,5)+4+(int)(Math.random()*4));
                     //nextTetronimo = (int)(Math.random() * tetrominoList.length);
-                    if(control_scheme == PlayerControlScheme.PCS_LOCAL) ResetTetromino(/*game.board_bound_x+game.board_bound_w/2-game.TET_WIDTH/2,0,game.nextTetronimo,10*Math.min(game.level/2,5)+4+(int)(Math.random()*4)*/);
+                    /*if(control_scheme != PlayerControlScheme.PCS_EXTERN) */ResetTetromino(/*game.board_bound_x+game.board_bound_w/2-game.TET_WIDTH/2,0,game.nextTetronimo,10*Math.min(game.level/2,5)+4+(int)(Math.random()*4)*/);
                     if(!checkBoardState()){ // fail state, if tetromino spawns fouled then state is set to lose
                         game.lives--;
                         game.clearx = 0;
@@ -87,47 +140,6 @@ public class ObjectTetromino extends PlayerObject {
                     game.illum *= 0.8;
                 }
             }
-        }
-
-        dx = Math.max(dx,game.board_bound_x);
-        //dx = Math.min(dx-4,game.board_bound_x+game.board_bound_w);
-
-        switch(control_scheme){
-            case PCS_LOCAL:
-                best = PlayerAgentAI.getBestPosition(game.board,game.board_bound_x,game.board_bound_w,new ObjectTetromino(this));
-                if(best != null){
-                    //best.dx += game.board_bound_x;
-                    //dx = best.dx;
-                    //rotation = best.rotation;
-                    if(dx < best.dx) main.input.put(KeyEvent.VK_RIGHT,1);
-                    if(dx > best.dx) main.input.put(KeyEvent.VK_LEFT,1);
-                    if(rotation != best.rotation) main.input.put(KeyEvent.VK_UP,1);
-                    if(dx == best.dx && rotation == best.rotation) main.input.put(KeyEvent.VK_DOWN,1);
-                    //System.out.println("trying to go: "+best.dx+", "+best.rotation);
-                    //System.out.println("is: "+dx+", "+rotation);
-                }//else rotation = (rotation+1)%4;
-                change = 1;
-                controlLocal(game);
-                break;
-            case PCS_EXTERN:
-
-                break;
-            case PCS_AI:
-                if(dy == 0) best = PlayerAgentAI.getBestPosition(game.board,game.board_bound_x,game.board_bound_w,new ObjectTetromino(this));
-                if(best != null){
-                    //best.dx += game.board_bound_x;
-                    //dx = best.dx;
-                    //rotation = best.rotation;
-                    if(dx < best.dx) main.input.put(KeyEvent.VK_RIGHT,1);
-                    if(dx > best.dx) main.input.put(KeyEvent.VK_LEFT,1);
-                    if(rotation != best.rotation) main.input.put(KeyEvent.VK_UP,1);
-                    if(dx == best.dx && rotation == best.rotation) main.input.put(KeyEvent.VK_DOWN,1);
-                    System.out.println("trying to go: "+best.dx+", "+best.rotation);
-                    System.out.println("is: "+dx+", "+rotation);
-                }//else rotation = (rotation+1)%4;
-                change = 1;
-                controlLocal(game);
-                break;
         }
 
         x -= (x-dx*main.SPR_WIDTH)/16; // interpolate tetronimo position

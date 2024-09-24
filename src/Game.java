@@ -119,7 +119,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
         if(playerObject != null) minDistance = Math.sqrt(Math.pow((playerObject.x/main.SPR_WIDTH)+1 - x, 2) + Math.pow((playerObject.y/main.SPR_WIDTH)+1 - y, 2));
         for (int i = board_bound_x; i < board_bound_x+board_bound_w; i++) {
             for (int j = 0; j < boardHeight; j++) {
-                if (board[i][j] != 0 && (board[i][j] < 100 || (board[i][j] >= 160 && board[i][j] <= 162))) { // brick and scaffold tiles specifically are ignored kinda hacky until i add more decorations and fix it
+                if (board[i][j] != 0 && (/*board[i][j] < 100 || */(board[i][j] >= 160 && board[i][j] <= 162))) { // brick and scaffold tiles specifically are ignored kinda hacky until i add more decorations and fix it
                     double distance = Math.sqrt(Math.pow(i - x, 2) + Math.pow(j - y, 2)); // euclidean distance to target cell
                     minDistance = Math.min(minDistance, distance); // self explanatory
                 }
@@ -447,7 +447,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                         light[i][j] = 0;
                     }
                 }
-                //if(main.cfg.get("extend") == 1) loadLevel(boardWidth,boardHeight); // first goblin level
+                if(main.cfg.get("extend") == 1) loadLevel(boardWidth,boardHeight); // first goblin level
                 //GameObject.CreateObject(new ObjectCharacter(this,PlayerControlScheme.PCS_LOCAL,137,boardx+40,boardy+10));
                 /*for (Map.Entry<String, Client> entry : NetworkHandler.clients.entrySet()) {
                     Client i = entry.getValue();
@@ -455,6 +455,44 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                         i.agent = GameObject.syncObject(new ObjectCharacter(this,PlayerControlScheme.PCS_EXTERN,137,boardx+40,boardy+10));
                     }
                 }*/
+                if(main.cfg.get("ai") == 1){
+                    Thread aithread = new Thread(() -> {
+                        double expectedFrametime = 1000000000 / (20.);
+                        ObjectTetromino best = null;
+                        ObjectTetromino[] pieces = null;
+                        while(state != STATE_GAMEOVER && main.sceneIndex == 4){
+                            long now = System.nanoTime();
+                            if(currentTetromino != null){
+                                if(currentTetromino.dy == 0){
+                                    pieces = new ObjectTetromino[2];
+                                    pieces[0] = new ObjectTetromino(currentTetromino);
+                                    pieces[1] = new ObjectTetromino(currentTetromino);
+                                    pieces[1].dx = board_bound_x+board_bound_w/2-TET_WIDTH/2;
+                                    pieces[1].dy = 0;
+                                    pieces[1].index = nextTetronimo;
+                                }
+                                if(pieces != null) best = (ObjectTetromino) PlayerAgentAI.getBestPosition(board,board_bound_x,board_bound_w,pieces,0)[0];
+                                if(best != null){
+                                    if(currentTetromino.dx < best.dx) main.input.put(KeyEvent.VK_RIGHT,1);
+                                    if(currentTetromino.dx > best.dx) main.input.put(KeyEvent.VK_LEFT,1);
+                                    if(currentTetromino.rotation != best.rotation) main.input.put(KeyEvent.VK_UP,1);
+                                    if(currentTetromino.dx == best.dx && currentTetromino.rotation == best.rotation) main.input.put(KeyEvent.VK_DOWN,1);
+                                }
+                            }
+
+                            long timeTaken = System.nanoTime() - now,
+                                    sleepTime = (long)(expectedFrametime - timeTaken);
+                            if (sleepTime > 0) {
+                                try {
+                                    Thread.sleep(sleepTime / 1000000, (int)(sleepTime % 1000000));
+                                } catch (InterruptedException e) {
+                                    // e.printStackTrace(); // shouldnt happen anyway
+                                }
+                            }
+                        }
+                    });
+                    aithread.start();
+                }
             }break;
             case GM.GM_HOST:{
                 game_start_wait = (int)(30*main.TPS);
