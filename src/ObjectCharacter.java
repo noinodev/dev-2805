@@ -22,6 +22,7 @@ public class ObjectCharacter extends PlayerObject {
 
     @Override
     public void update(){
+        if(x > game.boardx+game.board_bound_x*main.SPR_WIDTH && x < game.boardx+(game.board_bound_x+game.board_bound_w)*main.SPR_WIDTH) game.enemy_visible = 1;
         if(game.state == game.STATE_PLAY){
             if(hsp != 0) xd = hsp > 0 ? 1 : -1; // set facing direction
             if(game.pointCheck(x+2*xd+hsp,y) == 1) hsp = 0; // collisions

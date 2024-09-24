@@ -38,47 +38,9 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
     private int tbx,tby;
     private double tilebreak;
     public int game_start_wait;
+    public int enemy_visible;
 
     public double globallight;
-
-    /*public final ArrayList<Object> objects = new ArrayList<Object>();
-
-    public Object CreateObject(Object object){
-        objects.add(object);
-        return object;
-    }*/
-
-    /*private class Tetromino { // tetromino class
-        public int x,y,i,j,t;
-        double dx,dy;
-        public Tetromino(int _x, int _y, int _i, int _j, int _t){
-            x = _x;
-            y = _y;
-            dx = x*main.SPR_WIDTH;
-            dy = y*main.SPR_WIDTH;
-            i = _i;
-            j = _j;
-            t = _t;
-        }
-    }
-    private Tetromino currentTetromino;*/
-
-    /*private class Enemy { // goblins
-        double x,y,hsp,vsp;
-        int spr,xd;
-        String taunt,txt;
-        Color c;
-        public Enemy(int _spr, double _x, double _y){
-            x = _x;
-            y = _y;
-            spr = _spr;
-            xd = 1;
-            taunt = "";
-            txt = "";
-            c = tauntcolours[(int)(Math.random()*tauntcolours.length)];
-        }
-    }
-    private final ArrayList<Enemy> enemylist = new ArrayList<Enemy>();*/
 
     private void loadLevel(int w, int h){ // loads goblin levels from an image, colour data represents what goes where
         BufferedImage in = levelimage;
@@ -163,48 +125,6 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
         if(bx < 0 || bx >= boardWidth || by < 0 || by >= boardHeight || (board[bx][by] > 0 && board[bx][by] < 160)) return 1;
         return 0;
     }
-
-    /*public int pointCheck(double x, double y){ // collision function for enemies, check if out of bounds -> check if inside an occupied cell
-        int bx = (int)Math.floor((x-posx)/main.SPR_WIDTH), by = (int)((y-posy)/main.SPR_WIDTH);
-        if(bx < 0 || bx >= boardWidth || by < 0 || by >= boardHeight || (board[bx][by] > 0 && board[bx][by] < 160)) return 1;
-        return 0;
-    }*/
-
-    // get tetromino data from atlas, can add funny shaped ones if i want (??????)
-    /*private int[][][][] getTetrominoes(BufferedImage in){
-        int count = in.getHeight()/4;
-        int[][][][] out = new int[count][4][TET_WIDTH][TET_WIDTH];
-        for(int i = 0; i < count; i++){
-            for(int j = 0; j < 4; j++){
-                for(int x = 0; x < TET_WIDTH; x++){
-                    for(int y = 0; y < TET_WIDTH; y++){
-                        // i=tetromino index, j=rotation index, x=x, y=y
-                        // it was easier to handle rotations this way, as if im gonna do a rotation matrix just for this that would be silly
-                        out[i][j][x][y] = Math.min(in.getRGB(j*TET_WIDTH+x,i*TET_WIDTH+y) & 0xff,1); // set cells of tetromino grid by colour data
-                    }
-                }
-            }
-        }
-        return out;
-    }*/
-
-    /*private boolean checkBoardState(){ // tetromino collision function
-        Tetromino t = currentTetromino;
-        boolean collision = true;
-        for(int i = 0; i < TET_WIDTH; i++){
-            for(int j = 0; j < TET_WIDTH; j++){
-                if(tetrominoList[t.i][t.j][i][j] > 0){
-                    int x = t.x+i, y = t.y+1+j; // normalized x and y for tetromino position
-                    if(y < 0 || y >= boardHeight || x < board_bound_x || x >= board_bound_x+board_bound_w || (board[x][y] > 0 && board[x][y] < 160)){ // hack to ignore decorative tiles
-                        collision = false; // this doesnt make sense because if this happens then there is a collision, but 'nocollision' as a variable name seems silly and i didnt want to reverse usages of the function
-                        // create particles even for potential collision because it gives player feedback
-                        if((int)(Math.random()*2) == 0) draw.particlePush(29,34,0.05+0.05*Math.random(),boardx+x*main.SPR_WIDTH,boardy+(y-1)*main.SPR_WIDTH,-0.1+0.2*Math.random(),-0.1+0.3*Math.random(),flash[(int)(Math.random()*5)]); // yuck
-                    }
-                }
-            }
-        }
-        return collision;
-    }*/
 
     // 2 functions that pretty much do the same thing
     // kinda hacky sorry
@@ -414,6 +334,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
         cleardx = 0;
         wood=1;
         stone=1;
+        enemy_visible = 0;
 
 
 
@@ -455,44 +376,6 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                         i.agent = GameObject.syncObject(new ObjectCharacter(this,PlayerControlScheme.PCS_EXTERN,137,boardx+40,boardy+10));
                     }
                 }*/
-                if(main.cfg.get("ai") == 1){
-                    Thread aithread = new Thread(() -> {
-                        double expectedFrametime = 1000000000 / (20.);
-                        ObjectTetromino best = null;
-                        ObjectTetromino[] pieces = null;
-                        while(state != STATE_GAMEOVER && main.sceneIndex == 4){
-                            long now = System.nanoTime();
-                            if(currentTetromino != null){
-                                if(currentTetromino.dy == 0){
-                                    pieces = new ObjectTetromino[2];
-                                    pieces[0] = new ObjectTetromino(currentTetromino);
-                                    pieces[1] = new ObjectTetromino(currentTetromino);
-                                    pieces[1].dx = board_bound_x+board_bound_w/2-TET_WIDTH/2;
-                                    pieces[1].dy = 0;
-                                    pieces[1].index = nextTetronimo;
-                                }
-                                if(pieces != null) best = (ObjectTetromino) PlayerAgentAI.getBestPosition(board,board_bound_x,board_bound_w,pieces,0)[0];
-                                if(best != null){
-                                    if(currentTetromino.dx < best.dx) main.input.put(KeyEvent.VK_RIGHT,1);
-                                    if(currentTetromino.dx > best.dx) main.input.put(KeyEvent.VK_LEFT,1);
-                                    if(currentTetromino.rotation != best.rotation) main.input.put(KeyEvent.VK_UP,1);
-                                    if(currentTetromino.dx == best.dx && currentTetromino.rotation == best.rotation) main.input.put(KeyEvent.VK_DOWN,1);
-                                }
-                            }
-
-                            long timeTaken = System.nanoTime() - now,
-                                    sleepTime = (long)(expectedFrametime - timeTaken);
-                            if (sleepTime > 0) {
-                                try {
-                                    Thread.sleep(sleepTime / 1000000, (int)(sleepTime % 1000000));
-                                } catch (InterruptedException e) {
-                                    // e.printStackTrace(); // shouldnt happen anyway
-                                }
-                            }
-                        }
-                    });
-                    aithread.start();
-                }
             }break;
             case GM.GM_HOST:{
                 game_start_wait = (int)(30*main.TPS);
@@ -551,6 +434,45 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
             }break;
         }
 
+        if(main.cfg.get("ai") == 1 && main.gamemode != GM.GM_JOIN){
+            Thread aithread = new Thread(() -> {
+                double expectedFrametime = 1000000000 / (20.);
+                ObjectTetromino best = null;
+                ObjectTetromino[] pieces = null;
+                while(state != STATE_GAMEOVER && main.sceneIndex == 4){
+                    long now = System.nanoTime();
+                    if(currentTetromino != null){
+                        if(currentTetromino.dy == 0){
+                            pieces = new ObjectTetromino[2];
+                            pieces[0] = new ObjectTetromino(currentTetromino);
+                            pieces[1] = new ObjectTetromino(currentTetromino);
+                            pieces[1].dx = board_bound_x+board_bound_w/2-TET_WIDTH/2;
+                            pieces[1].dy = 0;
+                            pieces[1].index = nextTetronimo;
+                        }
+                        if(pieces != null) best = (ObjectTetromino) PlayerAgentAI.getBestPosition(board,board_bound_x,board_bound_w,pieces,0)[0];
+                        if(best != null){
+                            if(currentTetromino.dx < best.dx) main.input.put(KeyEvent.VK_RIGHT,1);
+                            if(currentTetromino.dx > best.dx) main.input.put(KeyEvent.VK_LEFT,1);
+                            if(currentTetromino.rotation != best.rotation) main.input.put(KeyEvent.VK_UP,1);
+                            if(currentTetromino.dx == best.dx && currentTetromino.rotation == best.rotation) main.input.put(KeyEvent.VK_DOWN,1);
+                        }
+                    }
+
+                    long timeTaken = System.nanoTime() - now,
+                            sleepTime = (long)(expectedFrametime - timeTaken);
+                    if (sleepTime > 0) {
+                        try {
+                            Thread.sleep(sleepTime / 1000000, (int)(sleepTime % 1000000));
+                        } catch (InterruptedException e) {
+                            // e.printStackTrace(); // shouldnt happen anyway
+                        }
+                    }
+                }
+            });
+            aithread.start();
+        }
+
         parallaxobj = new ObjectResource[boardWidth];
         for(int i = 0; i < boardWidth; i++){
             parallaxobj[i] = new ObjectResource(this,(int)(boardx+boardWidth*main.SPR_WIDTH*Math.random()),boardy+boardHeight*main.SPR_WIDTH,0.2+(0.3/boardWidth)*(boardWidth-i),Math.random() > 0.5 ? 109 : 119,10);
@@ -562,6 +484,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
     @Override
     public void loop(){
         // animations and interpolations for various states
+        enemy_visible = 0;
         double interpolatespeed = 16-12*Math.min(1.,main.input.get(KeyEvent.VK_DOWN));
         boardx -= Math.ceil(boardx-posx)*0.2;
         boardy -= Math.ceil(boardy-posy)*0.2;
@@ -640,7 +563,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
             int lo = 0;
             if(state == STATE_STARTLEVEL){ // level clear animation
                 lo = (int)cleardx;
-                cleardx -= ((boardWidth+1)*main.SPR_WIDTH-cleardx)*0.01; // cleardx is the horizontal scrolling of the board between levels
+                cleardx -= ((board_bound_w+1)*main.SPR_WIDTH-cleardx)*0.01; // cleardx is the horizontal scrolling of the board between levels
                 boardx += (int)(cleardx*0.01)-(int)(Math.random()*(cleardx*0.02));
                 boardy += (int)(cleardx*0.01)-(int)(Math.random()*(cleardx*0.02));
                 illum = 10;
@@ -780,10 +703,24 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                 }
             }else cleary = 0; // reset animation
 
-            if((state == STATE_LOSE || state == STATE_ENDLEVEL) && main.gamemode != GM.GM_JOIN){ // lose / level transition board clear animation
-                while(board[clearx%boardWidth][clearx/boardWidth] == 0 && clearx < boardWidth*boardHeight-1) clearx++; // skip to next player-placed tile, speeds up the animation
-                int x = clearx%boardWidth, y = clearx/boardWidth; // x y coords from animation state clearx
-                if(board[x][y] > 0 && board[x][y] < 100){ // only clear tetromino sprites
+            /*if(main.cfg.get("extend") == 1){
+                if(state != STATE_STARTLEVEL && (int)main.frame % (int)main.TPS == 0 && main.gamemode == GM.GM_OFFLINE && enemy_visible == 0){
+                    state = STATE_ENDLEVEL;
+
+                }
+
+                if(state == STATE_ENDLEVEL){ // if animation is for end of level, load next level and start level clear animation
+                    level++;
+                    board_bound_x += board_bound_w;
+                    //loadLevel(boardWidth,boardHeight);
+                    state = STATE_STARTLEVEL;
+                }
+            }*/
+
+            if((state == STATE_LOSE) && main.gamemode != GM.GM_JOIN){ // lose / level transition board clear animation
+                //while(board[board_bound_x+clearx%board_bound_w][clearx/board_bound_w] == 0 && clearx < board_bound_x*board_bound_w-1) clearx++; // skip to next player-placed tile, speeds up the animation
+                int x = board_bound_x+clearx%board_bound_w, y = clearx/board_bound_w; // x y coords from animation state clearx
+                if(x >= 0 && x < boardWidth && y >= 0 && y < boardHeight && board[x][y] > 0 && board[x][y] < 100){ // only clear tetromino sprites
                     board[x][y] = 0;
                     //draw.particlePush(29,34,0.05+0.05*Math.random(),boardx+(int)(boardWidth*main.SPR_WIDTH*Math.random()),boardy+cleary*main.SPR_WIDTH,-0.1+0.2*Math.random(),-0.2+0.4*Math.random(),flash[(int)(Math.random()*5)]);
                     /*for(int k = 0; k < 3; k++){
@@ -813,7 +750,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                 }//else draw.particlePush(30,31,0.01+0.01*Math.random(),boardx+(x*main.SPR_WIDTH),boardy+y*main.SPR_WIDTH,0,0,Color.WHITE);
 
                 if(clearx >= boardWidth*boardHeight-1){
-                    if(state == STATE_ENDLEVEL){ // if animation is for end of level, load next level and start level clear animation
+                    /*if(state == STATE_ENDLEVEL){ // if animation is for end of level, load next level and start level clear animation
                         level++;
                         if(playerObject instanceof ObjectTetromino t){
                             t.ResetTetromino();// = spawnTetromino();
@@ -823,7 +760,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                         state = 6;
                         cleardx = boardWidth*main.SPR_WIDTH;
                         clearx = 0;
-                    }else if(state == STATE_LOSE && lives <= 0) state = 2; // otherwise kill the player
+                    }else */if(state == STATE_LOSE && lives <= 0) state = 2; // otherwise kill the player
                     else state = STATE_PLAY;
                 }else clearx++;
             }else if(clearx > 0) clearx--; // gradually reset animation
@@ -834,13 +771,24 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
             }
 
             if(main.cfg.get("extend") == 1){ // goblin-specific ui
+                if(state != STATE_STARTLEVEL && (int)main.frame % (int)main.TPS == 0 && main.gamemode == GM.GM_OFFLINE && enemy_visible == 0){
+                    state = STATE_ENDLEVEL;
+                    cleardx = board_bound_w*main.SPR_WIDTH;
+                }
+
+                if(state == STATE_ENDLEVEL){ // if animation is for end of level, load next level and start level clear animation
+                    level++;
+                    board_bound_x += board_bound_w;
+                    //loadLevel(boardWidth,boardHeight);
+                    state = STATE_STARTLEVEL;
+                }
                 if(game_start_wait > 0) draw.drawText(""+(game_start_wait/(int)main.TPS),(int)(draw.view_x+draw.view_w/2),(int)draw.view_y+10,10,8,Color.WHITE,1);
                 switch(playerObject.inst){
                     case 3: {
-                        double j = Math.min(1,(clearx*Math.log(1+clearx))/((double)boardWidth*boardHeight)); // animation curve
+                        double j = Math.min(1,(clearx*Math.log(1+clearx))/((double)board_bound_x*board_bound_w)); // animation curve
                         if(state == STATE_ENDLEVEL) j = 0; // hack to not move the hearts during the level clear animation
                         //animation to move 'lives' display to center of screen anytime the player loses a life
-                        int dx = (int)draw.lerp(12,boardx+(boardWidth/2f)*main.SPR_WIDTH-12,j)+(int)(Math.random()*j*4-2*j),
+                        int dx = (int)draw.lerp(12,boardx+(board_bound_w/2f)*main.SPR_WIDTH-12,j)+(int)(Math.random()*j*4-2*j),
                                 dy = (int)draw.lerp(30,main.FRAMEBUFFER_H/2f,j)+(int)(Math.random()*j*4-2*j);
                         for(int i = 0; i < 3; i++){ // 'healthbar'
                             draw.batchPush(140,(int)draw.view_x+dx+i*(main.SPR_WIDTH+1),(int)draw.view_y+dy,main.SPR_WIDTH,main.SPR_WIDTH);
@@ -858,7 +806,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                             draw.drawText(txt,(int)draw.view_x+dx+12-w,dy+10,10,10,null);
                         }
                         // level clear message
-                        if(state == STATE_STARTLEVEL) draw.drawText("LEVEL CLEARED".substring(0,(int)(13*Math.min(1,((boardWidth*main.SPR_WIDTH-cleardx)*3)/(boardWidth*main.SPR_WIDTH)))),main.FRAMEBUFFER_W/2-65,main.FRAMEBUFFER_H/2,10,10,null);
+                        if(state == STATE_STARTLEVEL) draw.drawText("LEVEL CLEARED".substring(0,(int)(13*Math.min(1,((board_bound_w*main.SPR_WIDTH-cleardx)*3)/(board_bound_w*main.SPR_WIDTH)))),main.FRAMEBUFFER_W/2-65,main.FRAMEBUFFER_H/2,10,10,null);
 
                         draw.drawText("LEVEL "+level,(int)draw.view_x+10,(int)draw.view_y+10,10,8,Color.WHITE);
                         draw.drawText(""+score,(int)draw.view_x+10,(int)draw.view_y+20,8,6,flash[(score/100)%5]);

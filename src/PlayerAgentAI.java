@@ -43,22 +43,6 @@ public class PlayerAgentAI {
                 agent.dx++;
             }
         }
-        /*if(best != null){
-            double s = 4;
-            for(int i = 0; i < bestboard.length; i++){
-                for(int j = 0; j < bestboard[0].length; j++){
-                    if(bestboard[i][j] == 1) draw.batchPush(9,draw.view_x+draw.view_w/6+(i)* s,draw.view_y+draw.view_h/6+(j)* s,s,s);
-                    else draw.batchPush(18,draw.view_x+draw.view_w/6+(i)* s,draw.view_y+draw.view_h/6+(j)* s,s,s);
-                }
-            }
-            for(int i = 0; i < 4; i++){
-                for(int j = 0; j < 4; j++){
-                    if(ObjectTetromino.tetrominoList[best.index][best.rotation][i][j] > 0){
-                        draw.batchPush(9,draw.view_x+draw.view_w/6+(best.dx-xb+i)* s,draw.view_y+draw.view_h/6+(best.dy+j)* s,s,s, Color.MAGENTA); // draw tetromino
-                    }
-                }
-            }
-        }*/
         Object[] ret = new Object[2];
         ret[0] = best;
         ret[1] = bestscore;
