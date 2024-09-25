@@ -55,9 +55,9 @@ class Lobby {
 }
 
 public class NetworkHandler {
-    public static final int mmserver_port = 22565;
-    public static final InetAddress mmserver_ip;
-    static {
+    public static int mmserver_port;
+    public static InetAddress mmserver_ip;
+    /*static {
         try {
             Scanner scan = new Scanner(new File("src/data/network.txt"));
             String ipaddr;
@@ -69,7 +69,7 @@ public class NetworkHandler {
         } catch (UnknownHostException | FileNotFoundException e) {
             throw new RuntimeException("Failed to resolve IP address", e);
         }
-    }
+    }*/
 
     public static final Map<String, Object> async_load = new HashMap<>();
 
@@ -90,6 +90,8 @@ public class NetworkHandler {
 
     public static void networkInit(){
         try{
+            mmserver_ip = InetAddress.getByName((String)Tetris2805.main.cfg.get("networkip"));
+            mmserver_port = (Integer)Tetris2805.main.cfg.get("networkport");
             disconnect = 0;
             timeout = System.currentTimeMillis();
             socket = new DatagramSocket(0);

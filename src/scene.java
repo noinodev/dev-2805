@@ -88,22 +88,36 @@ class config extends scene { // config menu
         double a = time/main.TPS;
         draw.drawText("CONFIGURE",20,20,10,8,new Color((int)(255*a),(int)(255*a),(int)(255*a)));
 
-        main.cfg.put("width",draw.drawSlider("BOARD WIDTH",20,30,main.FRAMEBUFFER_W-40,10,main.cfg.get("width"),5,15));
-        main.cfg.put("height",draw.drawSlider("BOARD HEIGHT",20,30+10,main.FRAMEBUFFER_W-40,10,main.cfg.get("height"),15,30));
-        main.cfg.put("level",draw.drawSlider("LEVEL",20,30+10*2,main.FRAMEBUFFER_W-40,10,main.cfg.get("level"),0,10));
+        main.cfg.put("width",draw.drawSlider("BOARD WIDTH",20,30,main.FRAMEBUFFER_W-40,10,(Integer)main.cfg.get("width"),5,15));
+        main.cfg.put("height",draw.drawSlider("BOARD HEIGHT",20,30+10,main.FRAMEBUFFER_W-40,10,(Integer)main.cfg.get("height"),15,30));
+        main.cfg.put("level",draw.drawSlider("LEVEL",20,30+10*2,main.FRAMEBUFFER_W-40,10,(Integer)main.cfg.get("level"),0,10));
 
-        main.cfg.put("music",draw.drawToggle("MUSIC",20,30+10*3,main.FRAMEBUFFER_W-40,10,main.cfg.get("music")));
-        main.cfg.put("sound",draw.drawToggle("SFX",20,30+10*4,main.FRAMEBUFFER_W-40,10,main.cfg.get("sound")));
-        main.cfg.put("ai",draw.drawToggle("AI PLAY",20,30+10*5,main.FRAMEBUFFER_W-40,10,main.cfg.get("ai")));
-        main.cfg.put("extend",draw.drawToggle("GOBLIN MODE",20,30+10*6,main.FRAMEBUFFER_W-40,10,main.cfg.get("extend")));
+        main.cfg.put("music",draw.drawToggle("MUSIC",20,30+10*3,main.FRAMEBUFFER_W-40,10,(Integer)main.cfg.get("music")));
+        main.cfg.put("sound",draw.drawToggle("SFX",20,30+10*4,main.FRAMEBUFFER_W-40,10,(Integer)main.cfg.get("sound")));
+        main.cfg.put("ai",draw.drawToggle("AI MODE",20,30+10*5,main.FRAMEBUFFER_W-40,10,(Integer)main.cfg.get("ai")));
+        main.cfg.put("extend",draw.drawToggle("GOBLIN MODE",20,30+10*6,main.FRAMEBUFFER_W-40,10,(Integer)main.cfg.get("extend")));
 
-        if(draw.drawButton("APPLY",20,30+10*9,80,10) == 1) main.saveData(main.cfg,"src/data/config.txt");
-        if(draw.drawButton("RESET",20,30+10*8,80,10) == 1) main.cfg = main.loadData("src/data/cfgdef.txt");
+        String uname = (String)main.cfg.get("username");
+        String name = draw.drawTextfield("USERNAME",uname,20,30+10*9,main.FRAMEBUFFER_W-40,10);
+        if(name != "") main.cfg.put("username",name.replace(" ",""));
+
+        String uip = (String)main.cfg.get("networkip");
+        String ip = draw.drawTextfield("SERVER HOSTNAME",uip,20,30+10*10,main.FRAMEBUFFER_W-40,10);
+        if(ip != "") main.cfg.put("networkip",ip);
+
+        String uport = ((Integer)main.cfg.get("networkport")).toString();
+        String port = draw.drawTextfield("SERVER PORT",uport,20,30+10*11,main.FRAMEBUFFER_W-40,10);
+        if(port != "") main.cfg.put("networkport",Integer.getInteger(port));
+
+        if(draw.drawButton("APPLY",20,30+10*14,80,10) == 1) Tetris2805.saveData(main.cfg,"src/data/config.txt",ParseFormat.JSON);
+        if(draw.drawButton("RESET",20,30+10*13,80,10) == 1) main.cfg = Tetris2805.loadData("src/data/cfgdef.txt",ParseFormat.JSON);
 
         if(draw.drawButton("BACK",20,main.FRAMEBUFFER_H-20,80,10) == 1) main.currentScene = new menu(main,draw);
     }
 
 }
+
+// TODO Visisble gobbies heuristic??????
 
 class hscore extends scene { // leaderboard menu
     private int time;
@@ -113,9 +127,9 @@ class hscore extends scene { // leaderboard menu
         time = 0;
         D2D.clearColour = new Color(24,20,37);
         // sorted score list
-        list = new ArrayList<>(main.scores.entrySet());
-        list.sort(Map.Entry.<String, Integer>comparingByValue().reversed());
-        main.sceneIndex = 3;
+        /*list = new ArrayList<>(main.scores.entrySet());
+        list.sort(Map.Entry.<String, Object>comparingByValue().reversed());
+        main.sceneIndex = 3;*/
     }
     @Override
     public void loop(){
@@ -124,12 +138,12 @@ class hscore extends scene { // leaderboard menu
         double a = time/main.TPS;
         draw.drawText("HIGHSCORES",20,20,10,8,new Color((int)(255*a),(int)(255*a),(int)(255*a)));
         // draw leaderboard
-        int i = 0;
+        /*int i = 0;
         for(Map.Entry<String, Integer> entry : list){
             int c = (int)(255*(a/(2+i)));
             draw.drawText(entry.getKey() + " " + entry.getValue(),20,30+8*i,8,6,new Color(c,c,c));
             i++;
-        }
+        }*/
         if(draw.drawButton("BACK",20,main.FRAMEBUFFER_H-20,80,10) == 1) main.currentScene = new menu(main,draw);
     }
 

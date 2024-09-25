@@ -5,7 +5,9 @@ import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 class GM {
@@ -14,7 +16,14 @@ class GM {
     public static final byte GM_JOIN = 2;
 }
 
+class ParseFormat {
+    public static final byte JSON = 0;
+    public static final byte MAP = 1;
+    public static final byte SERIAL = 2;
+}
+
 public class Tetris2805 extends JPanel implements ActionListener {
+    public static Tetris2805 main;
     public final int SPR_WIDTH = 10;
     public int FRAMEBUFFER_W = 256, FRAMEBUFFER_H = 256;
     public int VIEWPORT_W = 1080, VIEWPORT_H = 1080;
@@ -23,8 +32,8 @@ public class Tetris2805 extends JPanel implements ActionListener {
 
     public String UID = "AAAAAAAA";
 
-    public Map<String,Integer> scores;
-    public Map<String,Integer> cfg;
+    public Map<String,Object> scores;
+    public Map<String,Object> cfg;
 
     public final HashMap<Integer,Integer> input = new HashMap<>();
     public final int keybuffermax = 10;
@@ -45,27 +54,95 @@ public class Tetris2805 extends JPanel implements ActionListener {
 
     public Path working_directory;
 
-    public void saveData(Map<String,Integer> map, String file) {
+    public static String mapToJson(Map<String,Object> map){
+        StringBuilder json = new StringBuilder();
+        json.append("{\n");
+        int i = 0;
+        Set<String> keys = map.keySet();
+        for(String key: keys){
+            json.append("   \"").append(key).append("\":");
+            Object val = map.get(key);
+
+            if(val instanceof String) json.append("\"").append(val).append("\"");
+            else json.append(val);
+
+            if(i < map.size() - 1) json.append(",\n");
+            else json.append("\n");
+            i++;
+        }
+
+        json.append("}");
+        return json.toString();
+    }
+
+    public static Map<String,Object> JsonToMap(String json){
+        Map<String, Object> map = new HashMap<>();
+        json = json.replace("\n", "");
+        json = json.trim().substring(1, json.length() - 1); // Remove curly braces
+
+        String[] pairs = json.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)"); // Split by comma outside quotes
+        for (String pair : pairs) {
+            String[] keyValue = pair.split(":", 2);
+            String key = keyValue[0].trim().replaceAll("^\"|\"$", ""); // Remove surrounding quotes
+
+            String valueStr = keyValue[1].trim();
+            Object value;
+
+            if(valueStr.startsWith("\"")) {
+                value = valueStr.replaceAll("^\"|\"$", ""); // It's a String
+            }else{
+                try {
+                    value = Integer.parseInt(valueStr); // It's an integer
+                } catch (NumberFormatException e) {
+                    value = valueStr; // If parsing fails, leave it as a String
+                }
+            }
+
+            map.put(key, value);
+        }
+
+        return map;
+    }
+
+    public static void saveData(Map<String,Object> map, String file, byte format) {
         try {
             BufferedWriter a = new BufferedWriter(new FileWriter(file));
-            Set<String> keys = map.keySet();
-            for(String key: keys) a.write(key+" "+map.get(key)+'\n');
+            //Set<String> keys = map.keySet();
+            //for(String key: keys) a.write(key+" "+map.get(key)+'\n');
+            switch(format){
+                case ParseFormat.JSON:
+                    a.write(mapToJson(map));
+                    break;
+                case ParseFormat.MAP:
+                    Set<String> keys = map.keySet();
+                    for(String key: keys) a.write(key+" "+map.get(key)+'\n');
+                    break;
+            }
             a.close();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public Map<String,Integer> loadData(String file){
-        Map<String,Integer> out = new HashMap<>();
+    public static Map<String,Object> loadData(String file, byte format){
+        Map<String,Object> out = null;
         try {
-            Scanner scan = new Scanner(new File(file));
-            while(scan.hasNextLine()) {
-                String[] entry = scan.nextLine().split(" ");
-                out.put(entry[0], Integer.parseInt(entry[1]));
-                //System.out.println(entry[0]);
+            switch(format){
+                case ParseFormat.JSON:
+                    String json = new String(Files.readAllBytes(Paths.get(file)));
+                    if(json.charAt(0) == '{') out = JsonToMap(json);
+                    else System.out.println("not json: "+file);
+                break;
+                case ParseFormat.MAP:
+                    out = new HashMap<>();
+                    Scanner scan = new Scanner(new File(file));
+                    while(scan.hasNextLine()) {
+                        String[] entry = scan.nextLine().split(" ");
+                        out.put(entry[0], Integer.parseInt(entry[1]));
+                    }
+                break;
             }
-        } catch (FileNotFoundException e) {
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
         return out;
@@ -93,7 +170,7 @@ public class Tetris2805 extends JPanel implements ActionListener {
         return null;
     }
 
-    private BufferedImage[] getTextureAtlasSquare(BufferedImage a, int size){
+    private static BufferedImage[] getTextureAtlasSquare(BufferedImage a, int size){
         int w = a.getWidth()/size, h = a.getHeight()/size;
         BufferedImage[] out = new BufferedImage[w*h];
         for(int i = 0; i < w; i++){
@@ -138,6 +215,7 @@ public class Tetris2805 extends JPanel implements ActionListener {
     }*/
 
     public Tetris2805(){
+        Tetris2805.main = this;
         gameShouldClose = 0;
         gamemode = GM.GM_OFFLINE;
         gamemode_last = gamemode;
@@ -147,9 +225,6 @@ public class Tetris2805 extends JPanel implements ActionListener {
 
         UID = NetworkHandler.generateUID();
         System.out.println(UID);
-
-        NetworkHandler.main = this;
-        NetworkHandler.startNetworkThread();
 
         // draw init
         BufferedImage atlas = loadTexture("resources/assets/atlas.png");
@@ -180,6 +255,20 @@ public class Tetris2805 extends JPanel implements ActionListener {
         bgx = 0;
         bgy = 0;
         bgtx = 0;
+        String audiopath = "src/resources/audio/";
+        AudioManager.load("ambienthigh",audiopath);
+        AudioManager.load("ambientlow",audiopath);
+        AudioManager.load("slide1",audiopath);
+        AudioManager.load("slide2",audiopath);
+        AudioManager.load("slide3",audiopath);
+        AudioManager.load("fwop1",audiopath);
+        AudioManager.load("fwop2",audiopath);
+        AudioManager.load("drop1",audiopath);
+        AudioManager.load("speak1",audiopath);
+        AudioManager.load("speak2",audiopath);
+        AudioManager.load("tap1",audiopath);
+        AudioManager.load("tap2",audiopath);
+        AudioManager.start();
 
         // char -> sprite map
         for (char c = 'A'; c <= 'Z'; c++) D2D.textAtlas.put(c, 74+c - 'A');
@@ -200,8 +289,11 @@ public class Tetris2805 extends JPanel implements ActionListener {
         //input.put(-1,0);
         setInput();
 
-        scores = loadData("src/data/hscore.txt");
-        cfg = loadData("src/data/config.txt");
+        scores = loadData("src/data/hscore.txt",ParseFormat.MAP);
+        cfg = loadData("src/data/config.txt",ParseFormat.JSON);
+
+        NetworkHandler.main = this;
+        NetworkHandler.startNetworkThread();
 
         addMouseMotionListener(new MouseMotionAdapter() {
             @Override
@@ -307,8 +399,8 @@ public class Tetris2805 extends JPanel implements ActionListener {
                 }
             }
             // save data on safe close
-            saveData(scores,"src/data/hscore.txt");
-            saveData(cfg,"src/data/config.txt");
+            saveData(scores,"src/data/hscore.txt",ParseFormat.MAP);
+            saveData(cfg,"src/data/config.txt",ParseFormat.JSON);
             System.exit(1);
         });
         gameThread.start();

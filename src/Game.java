@@ -1,3 +1,4 @@
+import javax.sound.sampled.Clip;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.geom.AffineTransform;
@@ -20,7 +21,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
     public double[][] light;
     public ObjectResource[] parallaxobj;
     //public int[][][][] tetrominoList;
-    public final BufferedImage levelimage = main.loadTexture("resources/load/levelatlas.png");
+    public final BufferedImage levelimage = Tetris2805.loadTexture("resources/load/levelatlas.png");
     public GameObject playerObject;
     public ObjectTetromino currentTetromino;
     //public final String[] taunts = {"YOU SUCK","???","GONNA CRY?","LOL","AINT MEAN IF U AINT GREEN","GOBLINZ RULE","BUYING GOBLIN GF","SO GOBLINCORE","GOBLINMAXXING RN",
@@ -41,6 +42,9 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
     public int enemy_visible;
 
     public double globallight;
+
+    public Clip ahclip;
+    public Clip alclip;
 
     private void loadLevel(int w, int h){ // loads goblin levels from an image, colour data represents what goes where
         BufferedImage in = levelimage;
@@ -337,7 +341,8 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
         stone=1;
         enemy_visible = 0;
 
-
+        AudioManager.audio.get("ambienthigh").play(0,0,0,0);
+        AudioManager.audio.get("ambientlow").play(0,0,0,0);
 
         currentTetromino = (ObjectTetromino)GameObject.CreateObject(new ObjectTetromino(this,PlayerControlScheme.PCS_EXTERN,0,0,0,0,0));
         //ObjectTetromino.tetrominoList = getTetrominoes(main.loadTexture("resources/load/tetrominoatlas5.png"));
@@ -346,9 +351,9 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
         switch(main.gamemode){
             case GM.GM_OFFLINE:{
                 boardWidth = levelimage.getWidth();
-                boardHeight = main.cfg.get("height")+2;
+                boardHeight = (Integer)main.cfg.get("height")+2;
                 board_bound_x = 0;
-                board_bound_w = main.cfg.get("width");
+                board_bound_w = (Integer)main.cfg.get("width");
 
                 /*for(int i = 0; i < 100; i++){
                     GameObject.syncObject(new ObjectResource(this,(int)(boardx+boardWidth*main.SPR_WIDTH*Math.random()),boardy+boardHeight*main.SPR_WIDTH,0.005*(100-i),Math.random() > 0.5 ? 109 : 119,10));
@@ -359,8 +364,8 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                 ObjectTetromino t = (ObjectTetromino) playerObject;
                 t.ResetTetromino();
                 t.control_scheme = PlayerControlScheme.PCS_LOCAL;
-                level = main.cfg.get("level"); // starting level
-                lives = 1+2*main.cfg.get("extend"); // only goblin mode has 3 lives
+                level = (Integer)main.cfg.get("level"); // starting level
+                lives = 1+2*(Integer)main.cfg.get("extend"); // only goblin mode has 3 lives
                 board = new int[boardWidth][boardHeight]; // board init
                 light = new double[boardWidth][boardHeight]; // light init
                 for(int i = 0; i < boardWidth; i++){
@@ -369,7 +374,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                         light[i][j] = 0;
                     }
                 }
-                if(main.cfg.get("extend") == 1) loadLevel(boardWidth,boardHeight); // first goblin level
+                if((Integer)main.cfg.get("extend") == 1) loadLevel(boardWidth,boardHeight); // first goblin level
                 //GameObject.CreateObject(new ObjectCharacter(this,PlayerControlScheme.PCS_LOCAL,137,boardx+40,boardy+10));
                 /*for (Map.Entry<String, Client> entry : NetworkHandler.clients.entrySet()) {
                     Client i = entry.getValue();
@@ -381,9 +386,9 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
             case GM.GM_HOST:{
                 game_start_wait = (int)(30*main.TPS);
                 boardWidth = 100;
-                boardHeight = main.cfg.get("height")+2;
+                boardHeight = (Integer)main.cfg.get("height")+2;
                 board_bound_x = 0;
-                board_bound_w = main.cfg.get("width");
+                board_bound_w = (Integer)main.cfg.get("width");
 
                 /*for(int i = 0; i < 100; i++){
                     GameObject.syncObject(new ObjectResource(this,(int)(boardx+boardWidth*main.SPR_WIDTH*Math.random()),boardy+boardHeight*main.SPR_WIDTH,0.005*(100-i),Math.random() > 0.5 ? 109 : 119,10));
@@ -394,7 +399,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                 ObjectTetromino t = (ObjectTetromino) playerObject;
                 t.ResetTetromino();
                 t.control_scheme = PlayerControlScheme.PCS_LOCAL;
-                level = main.cfg.get("level"); // starting level
+                level = (Integer)main.cfg.get("level"); // starting level
                 lives = 3; // multiplayer is goblin mode only
                 board = new int[boardWidth][boardHeight]; // board init
                 light = new double[boardWidth][boardHeight]; // light init
@@ -415,14 +420,14 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
             case GM.GM_JOIN:{
                 game_start_wait = (int)(30*main.TPS);
                 boardWidth = 100;
-                boardHeight = main.cfg.get("height")+2;
+                boardHeight = (Integer)main.cfg.get("height")+2;
                 board_bound_x = 0;
-                board_bound_w = main.cfg.get("width");
+                board_bound_w = (Integer)main.cfg.get("width");
                 nextTetronimo = 0;//(int)(Math.random() * ObjectTetromino.tetrominoList.length); // random tetromino same as in spawnTetromino
                 playerObject = GameObject.CreateObject(new ObjectCharacter(this,PlayerControlScheme.PCS_LOCAL,137,boardx+40,boardy+10));//(ObjectTetromino) GameObject.CreateObject(new ObjectTetromino(this,PlayerControlScheme.PCS_LOCAL,0,0,0,0,0));
-                if(main.cfg.get("ai") == 1) ((ObjectCharacter)playerObject).control_scheme = PlayerControlScheme.PCS_AI;
+                if((Integer)main.cfg.get("ai") == 1) ((ObjectCharacter)playerObject).control_scheme = PlayerControlScheme.PCS_AI;
                 //currentTetromino.ResetTetromino();
-                level = main.cfg.get("level"); // starting level
+                level = (Integer)main.cfg.get("level"); // starting level
                 lives = 3; // multiplayer is goblin mode only
                 board = new int[boardWidth][boardHeight]; // board init
                 light = new double[boardWidth][boardHeight]; // light init
@@ -436,9 +441,10 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
             }break;
         }
 
-        if(main.cfg.get("ai") == 1 && main.gamemode != GM.GM_JOIN){
+        if((Integer)main.cfg.get("ai") == 1 && main.gamemode != GM.GM_JOIN){
             Thread aithread = new Thread(() -> {
-                double expectedFrametime = 1000000000 / (60.);
+                double expectedFrametime = 1000000000 / (30.);
+                Object[] b = null;
                 ObjectTetromino best = null;
                 ObjectTetromino[] pieces = null;
                 while(state != STATE_GAMEOVER && main.sceneIndex == 4){
@@ -447,30 +453,41 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                         //if(currentTetromino.dy == 0){
                             pieces = new ObjectTetromino[2];
                             pieces[0] = new ObjectTetromino(currentTetromino);
+                            pieces[0].dx -= board_bound_x;
                             pieces[1] = new ObjectTetromino(currentTetromino);
-                            pieces[1].dx = board_bound_x+board_bound_w/2-TET_WIDTH/2;
+                            pieces[1].dx = board_bound_w/2-TET_WIDTH/2;
                             pieces[1].dy = 0;
                             pieces[1].index = nextTetronimo;
                         //}
-                        if(pieces != null) best = (ObjectTetromino) PlayerAgentAI.getBestPosition(board,board_bound_x,board_bound_w,pieces,0)[0];
+                        Object[] pb = null;
+                        if(pieces != null){
+                            pb = PlayerAgentAI.getBestPosition(board,board_bound_x,board_bound_w,pieces,0);
+                        }
+                        if(pb != null){
+                            if(currentTetromino.dy == 0 || b == null || (Double)pb[1] <= (Double)b[1]){
+                                b = pb;
+                            }
+                        }
+                        if(b != null && b[0] != null){
+                            ((ObjectTetromino)b[0]).dx += board_bound_x;
+                            best = (ObjectTetromino)b[0];
+                        }
                         if(best != null){
+
+
                             if(currentTetromino.dx < best.dx) main.input.put(KeyEvent.VK_RIGHT,1);
                             if(currentTetromino.dx > best.dx) main.input.put(KeyEvent.VK_LEFT,1);
                             if(currentTetromino.rotation != best.rotation) main.input.put(KeyEvent.VK_UP,1);
                             if(currentTetromino.dx == best.dx && currentTetromino.rotation == best.rotation) main.input.put(KeyEvent.VK_DOWN,1);
 
-                            for(int i = 0; i < TET_WIDTH; i++){
+                            /*for(int i = 0; i < TET_WIDTH; i++){
                                 for(int j = 0; j < TET_WIDTH; j++){
                                     if(ObjectTetromino.tetrominoList[currentTetromino.index][currentTetromino.rotation][i][j] > 0){
                                         int tx = currentTetromino.dx+i, ty = currentTetromino.dy+1+j; // normalized x and y for tetromino position
-                                        if((int)(Math.random()*10) == 0){
-                                            GameObject.CreateObject(new ObjectParticle(this,boardx+tx*main.SPR_WIDTH,boardy+(ty-1)*main.SPR_WIDTH,
-                                                    -0.1+0.2*Math.random(),-0.1+0.3*Math.random(),
-                                                    30,34,0.05+0.05*Math.random(),240,Math.random()>0.5 ? new Color(24,20,37) : new Color(255,255,255)/*flash[(int)(Math.random()*5)]*/));
-                                        }
+                                        draw.batchPush(155,boardx+tx*main.SPR_WIDTH,boardy+(ty-1)*main.SPR_WIDTH,main.SPR_WIDTH,main.SPR_WIDTH);
                                     }
                                 }
-                            }
+                            }*/
 
                             //for(int i = 0; i < 10; i++) draw.batchPush(23,boardx+(currentTetromino.dx+1)*main.SPR_WIDTH-16+32*Math.random()-32,boardy+(currentTetromino.dy+1)*main.SPR_WIDTH-16+32*Math.random()-32,64,64,flash[(int)(Math.random()*5)]);
                         }else main.input.put(KeyEvent.VK_DOWN,1);//System.out.println("given up..");
@@ -501,6 +518,17 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
     @Override
     public void loop(){
         // animations and interpolations for various states
+
+        if(!AudioManager.audio.get("ambienthigh").playing()) AudioManager.audio.get("ambienthigh").play(0,0,0,0);
+        if(!AudioManager.audio.get("ambientlow").playing()) AudioManager.audio.get("ambientlow").play(0,0,0,0);
+        AudioManager.audio.get("ambientlow").pos(0, draw.view_y+draw.view_h/2,-80,boardy+boardHeight*main.SPR_WIDTH);
+        AudioManager.audio.get("ambienthigh").pos(0, draw.view_y+draw.view_h/2,80,boardy+(boardHeight/4)*main.SPR_WIDTH);
+        //AudioManager.audio.get("ambientlow").setGain((float)Math.max(Math.min((1.-Math.abs(draw.view_y+draw.view_h/2-boardy+boardHeight*main.SPR_WIDTH)/20),1),0)*-0.5f);
+        //AudioManager.audio.get("ambienthigh").setGain((float)Math.max(Math.min((1.-Math.abs(draw.view_y+draw.view_h/2-boardy)/80),1),0)*-0.5f);
+        //AudioManager.audio.get("ambientlow").setGain((float)(1.-Math.abs(draw.view_y+draw.view_h/2-boardy+boardHeight*main.SPR_WIDTH)/100));
+        //AudioManager.audio.get("ambientlow").play(0,0,0,0);;
+        //AudioManager.audio.get("ambientlow").play(0,0,0,0);
+
         enemy_visible = 0;
         double interpolatespeed = 16-12*Math.min(1.,main.input.get(KeyEvent.VK_DOWN));
         boardx -= Math.ceil(boardx-posx)*0.2;
@@ -634,7 +662,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
             }*/
 
             //update enemies in goblin mode
-            if(main.cfg.get("ai") == 1 && main.gamemode == GM.GM_JOIN){
+            if((Integer)main.cfg.get("ai") == 1 && main.gamemode == GM.GM_JOIN){
                 draw.view_x -= (draw.view_x-(playerObject.x-main.FRAMEBUFFER_W/2.))*0.05;
                 draw.view_y -= (draw.view_y-(playerObject.y-main.FRAMEBUFFER_H/2.))*0.05;
             }
@@ -716,7 +744,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                     cleary = 0;
                     clearRows();
                     lines++;
-                    if(lines > 10*(level+1) && main.cfg.get("extend") == 0) level++; // next level if cleared 10+ rows on current level
+                    if(lines > 10*(level+1) && (Integer)main.cfg.get("extend") == 0) level++; // next level if cleared 10+ rows on current level
                     if(checkRows() == 0) state = STATE_PLAY;
                 }
             }else cleary = 0; // reset animation
@@ -736,7 +764,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
             }*/
 
             if((state == STATE_LOSE) && main.gamemode != GM.GM_JOIN){ // lose / level transition board clear animation
-                while(clearx < board_bound_x*board_bound_w-1 && board[board_bound_x+clearx%board_bound_w][clearx/board_bound_w] == 0) clearx++; // skip to next player-placed tile, speeds up the animation
+                //while(clearx < board_bound_x*board_bound_w-1 && board[board_bound_x+clearx%board_bound_w][clearx/board_bound_w] == 0) clearx++; // skip to next player-placed tile, speeds up the animation
                 //clearx++;
                 int x = board_bound_x+clearx%board_bound_w, y = clearx/board_bound_w; // x y coords from animation state clearx
                 if(x >= 0 && x < boardWidth && y >= 0 && y < boardHeight && board[x][y] > 0 && board[x][y] < 100){ // only clear tetromino sprites
@@ -792,7 +820,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
             draw.drawText("LEVEL "+level,(int)draw.view_x+10,(int)draw.view_y+10,10,8,Color.WHITE);
             draw.drawText(""+score,(int)draw.view_x+10,(int)draw.view_y+20,8,6,flash[(score/100)%5]);
 
-            if(main.cfg.get("extend") == 1){ // goblin-specific ui
+            if((Integer)main.cfg.get("extend") == 1){ // goblin-specific ui
                 if(state != STATE_STARTLEVEL && (int)main.frame % (int)main.TPS == 0 && main.gamemode == GM.GM_OFFLINE && enemy_visible == 0){
                     state = STATE_ENDLEVEL;
                     cleardx = board_bound_w*main.SPR_WIDTH;
@@ -927,12 +955,14 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
             draw.view_x = 0;
             draw.view_y = 0;
             main.bgtx = 0;
-            String name = draw.drawTextfield("ENTER NAME",10,60,80,10);
+            /*String name = draw.drawTextfield("ENTER NAME",10,60,80,10);
             if(name != ""){
                 main.scores.put(name.replace(" ",""),score);
-                main.saveData(main.scores,"src/hscore.txt");
-            }
-            if(draw.drawButton("MAIN MENU",10,40,80,10) == 1 || name != "") main.currentScene = new menu(main,draw);
+                main.saveData(main.scores,"src/data/hscore.txt",ParseFormat.MAP);
+            }*/
+            main.scores.put(((String)main.cfg.get("username")).replace(" ",""),score);
+            main.saveData(main.scores,"src/data/hscore.txt",ParseFormat.MAP);
+            if(draw.drawButton("MAIN MENU",10,40,80,10) == 1) main.currentScene = new menu(main,draw);
             if(draw.drawButton("QUIT",10,51,80,10) == 1) main.displayconfirm = 1;
             draw.drawText("GAME OVER",10,30,10,10,Color.RED);
         }

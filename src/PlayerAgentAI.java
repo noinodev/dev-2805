@@ -11,22 +11,53 @@ public class PlayerAgentAI {
         ObjectTetromino best = null;
         int[][] bestboard = null;
         int[][] board = cpy(gameboard,xb,xw);
+
+        /*if(index == 0){
+            int w = 3;
+            for(int x = 0; x < board.length; x++){
+                for(int y = 0; y < board[0].length; y++){
+                    draw.batchPush(board[x][y] == 0?18:9,draw.view_x+20+x*w,draw.view_y+20+y*w,w,w);
+                }
+            }
+        }*/
+
         for(int rotation = 0; rotation < 4; rotation++){
             ObjectTetromino agent = new ObjectTetromino(pieces[index]);
-            agent.dx -= xb;
+            //agent.dx -= xb;
+
+            /*if(index == 0 && rotation == 0){
+                int w  =3;
+                for(int x = 0; x < 4; x++){
+                    for(int y = 0; y < 4; y++){
+                        if(ObjectTetromino.tetrominoList[agent.index][agent.rotation][x][y] != 0) draw.batchPush(9,draw.view_x+20+(agent.dx+x)*w,draw.view_y+20+(agent.dy+y)*w,w,w,Color.RED);
+                    }
+                }
+            }*/
+
             //System.out.print("[rot:"+rotation+"]");
             agent.rotation = rotation;
             while(valid(board,agent) == 1) agent.dx--;
             agent.dx++;
             //System.out.print("[x:"+agent.dx+"]");
+            //if(valid(board,agent) == 0) System.out.println("initial state invalid ["+index+"] "+agent.dx+", "+agent.dy);
             while(valid(board,agent) == 1){
                 ObjectTetromino ta = new ObjectTetromino(agent);
                 while(valid(board,ta) == 1) ta.dy++;
                 ta.dy--;
+
+                /*if(index == 0 && rotation == 0){
+                    int w  =3;
+                    for(int x = 0; x < 4; x++){
+                        for(int y = 0; y < 4; y++){
+                            if(ObjectTetromino.tetrominoList[ta.index][ta.rotation][x][y] != 0) draw.batchPush(9,draw.view_x+20+(ta.dx+x)*w,draw.view_y+20+(ta.dy+y)*w,w,w,Color.GREEN);
+                        }
+                    }
+                }*/
                 //System.out.print("[y:"+ta.dy+"]");
 
                 int[][] tb = cpy(board,0,board.length);
                 merge(tb,ta);
+                //sif(tb.length == 0 || tb[0].length == 0) System.out.println("board length malformed "+tb.length+", "+tb[0].length);
 
 
                 double score = Double.MAX_VALUE;
@@ -38,14 +69,32 @@ public class PlayerAgentAI {
                     best = new ObjectTetromino(agent);
                     bestboard = cpy(tb,0,tb.length);
 
-                    best.dx += xb;
+                    //best.dx += xb;
                 }
                 agent.dx++;
             }
         }
-        Object[] ret = new Object[2];
+
+        /*int w = 3;
+        if(best != null && index == 0){
+            for(int x = 0; x < bestboard.length; x++){
+                for(int y = 0; y < bestboard[0].length; y++){
+                    draw.batchPush(bestboard[x][y] == 0?18:9,draw.view_x+20+x*w,draw.view_y+20+y*w,w,w,Color.MAGENTA);
+                }
+            }
+
+            for(int x = 0; x < 4; x++){
+                for(int y = 0; y < 4; y++){
+                    if(ObjectTetromino.tetrominoList[best.index][best.rotation][x][y] != 0) draw.batchPush(9,draw.view_x+20+(best.dx-xb+x)*w,draw.view_y+20+(best.dy+y)*w,w,w,Color.RED);
+                }
+            }
+        }*/
+
+        //if(best != null) best.dx += xb;
+        Object[] ret = new Object[3];
         ret[0] = best;
         ret[1] = bestscore;
+        ret[2] = bestboard;
         return ret;
     }
 

@@ -86,7 +86,10 @@ public class ObjectCharacter extends PlayerObject {
                     break;
                 case PCS_AI:
                     //System.out.print("gobby... ");
-                    if(taunt.length() > txt.length() && (int)(Math.random()*5) == 0) txt = taunt.substring(0,txt.length()+1); // taunt animation
+                    if(taunt.length() > txt.length() && (int)(Math.random()*5) == 0){
+                        txt = taunt.substring(0,txt.length()+1); // taunt animation
+                        /*if(Math.random() < 0.2) */ //AudioManager.audio.get("speak1").play(x,y,draw.view_x+draw.view_w/2,draw.view_y+draw.view_h/2);
+                    }
                     if(game.state == game.STATE_LOSE || (taunt == "" && (int)(Math.random()*(main.TPS*5)) == 0)) taunt = taunts[(int)(Math.random()*taunts.length)]; // new taunt
 
                     // run away from current tetromino
@@ -100,6 +103,7 @@ public class ObjectCharacter extends PlayerObject {
 
             if(game.pointCheck(x,y) == 1){ // die from being crushed
                 destroy = 1;
+                AudioManager.audio.get("speak2").play(x,y,draw.view_x+draw.view_w/2,draw.view_y+draw.view_h/2);
                 //for(int j = 0; j < 4; j++) draw.particlePush(130,134,0.03+0.02*Math.random(),(int)x,(int)y,-0.1+0.2*Math.random(),-0.1+0.2*Math.random(), Color.WHITE);
                 //draw.particlePush(150,154,0.09+0.01*Math.random(),(int)x-main.SPR_WIDTH/2,(int)y-main.SPR_WIDTH,-0.01+0.02*Math.random(),-0.08,Color.WHITE);
                 for(int j = 0; j < 4; j++) CreateObject(new ObjectParticle(game,(int)x,(int)y,-0.1+0.2*Math.random(),-0.1+0.2*Math.random(),130,134,0.03+0.02*Math.random(),240,Color.WHITE));

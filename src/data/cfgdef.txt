@@ -1,8 +1,12 @@
-extend 1
-music 1
-level 0
-sound 1
-width 10
-ai 0
-height 20
-diag 0
+{"extend":1,
+"music":0,
+"diag":0,
+"level":0,
+"sound":1,
+"width":10,
+"ai":0,
+"height":20,
+"username":"user",
+"networkip":"localhost",
+"networkport":22565}
+

@@ -262,10 +262,12 @@ public class D2D{
             if(alignment == 1) x -= (s.length()*space)/2;
             for(int i = 0; i < s.length(); i++){
                 char j = s.charAt(i);
-                int chr = textAtlas.get(j);
-                if(chr != -1){
-                    batchPush(textAtlas.get(j),x+i*space,y+1,size,size,Color.BLACK);
-                    batchPush(textAtlas.get(j),x+i*space,y,size,size,c);
+                if(textAtlas.get(j) != null){
+                    int chr = textAtlas.get(j);
+                    if(chr != -1){
+                        batchPush(textAtlas.get(j),x+i*space,y+1,size,size,Color.BLACK);
+                        batchPush(textAtlas.get(j),x+i*space,y,size,size,c);
+                    }
                 }
             }
         }
@@ -371,7 +373,7 @@ public class D2D{
         return val;
     }
 
-    public String drawTextfield(String label, int x, int y, int w, int h){
+    public String drawTextfield(String label, String val, int x, int y, int w, int h){
         int m = getButtonContext(x,y,w,h,2);
         if(m == 1 && main.input.get(-1) == 1 && main.keycontext != x+y){
             main.keycontext = x+y;
@@ -381,15 +383,17 @@ public class D2D{
         int c = 255-(int)(80*mouseanim);
         batchPush(9,x+m,y+m,w-2*m,h-2*m,new Color(24,20,37));
         drawBox(x-m,y-m,w+2*m,h+2*m,7-m);
+        batchPush(9,x+w-60,y,59,10,new Color(38,43,68));
         if(main.keycontext == x+y){
-            drawText(main.keybuffer,x+1,y+1,8,6,new Color(c,c,c,255));
+            drawText(main.keybuffer,x+1+w-60,y+1,8,6,new Color(c,c,c,255));
             int a = (int) (Math.sin((main.frame/main.TPS) * 2*Math.PI)*255);
-            batchPush(9,x+main.keybuffer.length()*8+2,y+2,1,4,new Color(255,255,255,Math.abs(a)));
+            batchPush(9,x+w-60+main.keybuffer.length()*8+2,y+2,1,8,new Color(255,255,255,Math.abs(a)));
             if(main.input.get(KeyEvent.VK_ENTER) == 1){
                 main.keycontext = -1;
                 return main.keybuffer;
             }
-        }else drawText(label,x+1+(int)(2*mouseanim),y+1,8,6,new Color(c,c,c,255));
+        }else drawText(val,x+1+w-60,y+1,8,6,new Color(c,c,c,255));
+        drawText(label,x+1+(int)(2*mouseanim),y+1,8,6,new Color(c,c,c,255));
         return "";
     }
 }

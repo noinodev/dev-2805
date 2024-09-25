@@ -1,8 +1,13 @@
-extend 1
-music 0
-diag 0
-level 0
-sound 1
-width 10
-ai 1
-height 20
+{
+   "extend":1,
+   "music":0,
+   "diag":0,
+   "level":0,
+   "networkip":"127.0.0.1",
+   "sound":1,
+   "width":10,
+   "ai":1,
+   "networkport":22565,
+   "height":20,
+   "username":"AMONGUS"
+}
