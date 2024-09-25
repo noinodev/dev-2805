@@ -67,6 +67,7 @@ public abstract class GameObject {
     }
     public static void DestroyAllObjects(){
         objects.clear();
+        netobjects.clear();
     }
 }
 
@@ -134,7 +135,7 @@ class ObjectParticle extends GameObject {
         this.vsp = vsp;
         this.sprite = start;
         this.start = start;
-        this.end = end-1;
+        this.end = end;
         this.spd = spd;
         this.time = time;
         this.colour = colour;

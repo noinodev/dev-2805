@@ -81,7 +81,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
         if(playerObject != null) minDistance = Math.sqrt(Math.pow((playerObject.x/main.SPR_WIDTH)+1 - x, 2) + Math.pow((playerObject.y/main.SPR_WIDTH)+1 - y, 2));
         for (int i = board_bound_x; i < board_bound_x+board_bound_w; i++) {
             for (int j = 0; j < boardHeight; j++) {
-                if (board[i][j] != 0 && (/*board[i][j] < 100 || */(board[i][j] >= 160 && board[i][j] <= 162))) { // brick and scaffold tiles specifically are ignored kinda hacky until i add more decorations and fix it
+                if (board[i][j] != 0 && ((board[i][j] < 100 && Math.random() < 0.05) || (board[i][j] >= 160 && board[i][j] <= 162))) { // brick and scaffold tiles specifically are ignored kinda hacky until i add more decorations and fix it
                     double distance = Math.sqrt(Math.pow(i - x, 2) + Math.pow(j - y, 2)); // euclidean distance to target cell
                     minDistance = Math.min(minDistance, distance); // self explanatory
                 }
@@ -309,6 +309,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
         draw.clearColour = new Color(24,20,37);
         main.sceneIndex = 4;
         GameObject.g = this;
+        GameObject.DestroyAllObjects();
 
         globallight = 0;
         game_start_wait = 0;
@@ -437,27 +438,42 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
 
         if(main.cfg.get("ai") == 1 && main.gamemode != GM.GM_JOIN){
             Thread aithread = new Thread(() -> {
-                double expectedFrametime = 1000000000 / (20.);
+                double expectedFrametime = 1000000000 / (60.);
                 ObjectTetromino best = null;
                 ObjectTetromino[] pieces = null;
                 while(state != STATE_GAMEOVER && main.sceneIndex == 4){
                     long now = System.nanoTime();
                     if(currentTetromino != null){
-                        if(currentTetromino.dy == 0){
+                        //if(currentTetromino.dy == 0){
                             pieces = new ObjectTetromino[2];
                             pieces[0] = new ObjectTetromino(currentTetromino);
                             pieces[1] = new ObjectTetromino(currentTetromino);
                             pieces[1].dx = board_bound_x+board_bound_w/2-TET_WIDTH/2;
                             pieces[1].dy = 0;
                             pieces[1].index = nextTetronimo;
-                        }
+                        //}
                         if(pieces != null) best = (ObjectTetromino) PlayerAgentAI.getBestPosition(board,board_bound_x,board_bound_w,pieces,0)[0];
                         if(best != null){
                             if(currentTetromino.dx < best.dx) main.input.put(KeyEvent.VK_RIGHT,1);
                             if(currentTetromino.dx > best.dx) main.input.put(KeyEvent.VK_LEFT,1);
                             if(currentTetromino.rotation != best.rotation) main.input.put(KeyEvent.VK_UP,1);
                             if(currentTetromino.dx == best.dx && currentTetromino.rotation == best.rotation) main.input.put(KeyEvent.VK_DOWN,1);
-                        }
+
+                            for(int i = 0; i < TET_WIDTH; i++){
+                                for(int j = 0; j < TET_WIDTH; j++){
+                                    if(ObjectTetromino.tetrominoList[currentTetromino.index][currentTetromino.rotation][i][j] > 0){
+                                        int tx = currentTetromino.dx+i, ty = currentTetromino.dy+1+j; // normalized x and y for tetromino position
+                                        if((int)(Math.random()*10) == 0){
+                                            GameObject.CreateObject(new ObjectParticle(this,boardx+tx*main.SPR_WIDTH,boardy+(ty-1)*main.SPR_WIDTH,
+                                                    -0.1+0.2*Math.random(),-0.1+0.3*Math.random(),
+                                                    30,34,0.05+0.05*Math.random(),240,Math.random()>0.5 ? new Color(24,20,37) : new Color(255,255,255)/*flash[(int)(Math.random()*5)]*/));
+                                        }
+                                    }
+                                }
+                            }
+
+                            //for(int i = 0; i < 10; i++) draw.batchPush(23,boardx+(currentTetromino.dx+1)*main.SPR_WIDTH-16+32*Math.random()-32,boardy+(currentTetromino.dy+1)*main.SPR_WIDTH-16+32*Math.random()-32,64,64,flash[(int)(Math.random()*5)]);
+                        }else main.input.put(KeyEvent.VK_DOWN,1);//System.out.println("given up..");
                     }
 
                     long timeTaken = System.nanoTime() - now,
@@ -773,6 +789,9 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                 draw.drawText("ESC TO RESUME",(int)draw.view_x+main.FRAMEBUFFER_W/2,(int)draw.view_y+main.FRAMEBUFFER_H/2+10,8,6,Color.GRAY,1);
             }
 
+            draw.drawText("LEVEL "+level,(int)draw.view_x+10,(int)draw.view_y+10,10,8,Color.WHITE);
+            draw.drawText(""+score,(int)draw.view_x+10,(int)draw.view_y+20,8,6,flash[(score/100)%5]);
+
             if(main.cfg.get("extend") == 1){ // goblin-specific ui
                 if(state != STATE_STARTLEVEL && (int)main.frame % (int)main.TPS == 0 && main.gamemode == GM.GM_OFFLINE && enemy_visible == 0){
                     state = STATE_ENDLEVEL;
@@ -811,9 +830,6 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                         }
                         // level clear message
                         if(state == STATE_STARTLEVEL) draw.drawText("LEVEL CLEARED".substring(0,(int)(13*Math.min(1,((board_bound_w*main.SPR_WIDTH-cleardx)*3)/(board_bound_w*main.SPR_WIDTH)))),(int)draw.view_x+main.FRAMEBUFFER_W/2-65,(int)draw.view_y+main.FRAMEBUFFER_H/2,10,10,null);
-
-                        draw.drawText("LEVEL "+level,(int)draw.view_x+10,(int)draw.view_y+10,10,8,Color.WHITE);
-                        draw.drawText(""+score,(int)draw.view_x+10,(int)draw.view_y+20,8,6,flash[(score/100)%5]);
                     } break;
                     case 2: {
                         double tb = 0;

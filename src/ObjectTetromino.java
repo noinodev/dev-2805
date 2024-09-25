@@ -103,7 +103,7 @@ public class ObjectTetromino extends PlayerObject {
 
         int time = game.time;
         if(game.game_start_wait <= 0){
-            if((time/4f > Math.max(1,60-6*game.level) || (main.input.get(KeyEvent.VK_DOWN)%12 == 1 && control_scheme == PlayerControlScheme.PCS_LOCAL)) && Math.abs(x-dx*main.SPR_WIDTH) + Math.abs(y-dy*main.SPR_WIDTH) < 10){
+            if((time/4f > Math.max(1,60-6*game.level) || (main.input.get(KeyEvent.VK_DOWN)%12 == 1 && control_scheme != PlayerControlScheme.PCS_EXTERN)) && Math.abs(x-dx*main.SPR_WIDTH) + Math.abs(y-dy*main.SPR_WIDTH) < 10){
                 game.time = 0;
                 if(!checkBoardState()){ // collision on drop
                     // merge tetromino
@@ -152,7 +152,7 @@ public class ObjectTetromino extends PlayerObject {
                     draw.batchPush((int)sprite,game.boardx+x+i* main.SPR_WIDTH,game.boardy+y+j* main.SPR_WIDTH,main.SPR_WIDTH,main.SPR_WIDTH); // draw tetromino
                     if(dx+i >= 0 && dx+i < game.boardWidth && dy+j >= 2 && dy+j < game.boardHeight && game.board[dx+i][dy+j] == 0) game.light[dx+i][dy+j] = 10; // illuminate current spot
                 }
-                if(tetrominoList[game.nextTetronimo][0][i][j] > 0) draw.batchPush(8,20+(i+1)*main.SPR_WIDTH,game.boardy+(j+4)*main.SPR_WIDTH,main.SPR_WIDTH, main.SPR_WIDTH); // show next tetromino in hud
+                if(tetrominoList[game.nextTetronimo][0][i][j] > 0) draw.batchPush(8,draw.view_x+20+(i+1)*main.SPR_WIDTH,draw.view_y+game.boardy+(j+4)*main.SPR_WIDTH,main.SPR_WIDTH, main.SPR_WIDTH); // show next tetromino in hud
             }
         }
     }
