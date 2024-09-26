@@ -82,8 +82,11 @@ public class AudioManager {
     static final Map<String, AudioClip> audio = new HashMap<>();
 
     public static void load(String name, String path) {
+        load(name,path,".wav");
+    }
+    public static void load(String name, String path, String ext) {
         try {
-            File file = new File(path+name+".wav");
+            File file = new File(path+name+ext);
             AudioInputStream as = AudioSystem.getAudioInputStream(file);
             Clip clip = AudioSystem.getClip();
             clip.open(as);
