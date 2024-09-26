@@ -270,6 +270,7 @@ public class Tetris2805 extends JPanel implements ActionListener {
         AudioManager.load("tap2",audiopath);
         AudioManager.start();
 
+
         // char -> sprite map
         for (char c = 'A'; c <= 'Z'; c++) D2D.textAtlas.put(c, 74+c - 'A');
         for (char c = '0'; c <= '9'; c++) D2D.textAtlas.put(c, 63 + (c - '0'));
