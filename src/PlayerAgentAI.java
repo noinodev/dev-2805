@@ -43,7 +43,7 @@ public class PlayerAgentAI {
             while(valid(board,agent) == 1){
                 ObjectTetromino ta = new ObjectTetromino(agent);
                 while(valid(board,ta) == 1) ta.dy++;
-                ta.dy--;
+                //ta.dy--;
 
                 /*if(index == 0 && rotation == 0){
                     int w  =3;

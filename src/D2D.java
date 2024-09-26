@@ -9,6 +9,7 @@ import java.util.Map;
 
 class D2DSprite {
     public BufferedImage sprite;
+    public int id;
     public double x,y,w,h;
     Color colour;
 
@@ -22,102 +23,20 @@ class D2DSprite {
     }
 }
 
-/*class D2DRenderBatch {
-    private ArrayList<D2DSprite> batch;
-
-    private BufferedImage tintImage(BufferedImage src, Color color) { // image colouring, pretty sure this is really slow but i just wanted colours
-        BufferedImage out = new BufferedImage(src.getWidth(), src.getHeight(), BufferedImage.TYPE_INT_ARGB);
-        float[] scales = { color.getRed()/255f, color.getGreen()/255f, color.getBlue()/255f, 1f };
-        float[] offsets = new float[4];
-        RescaleOp op = new RescaleOp(scales, offsets, null);
-        op.filter(src, out);
-        return out;
-    }
-
-    public void batchPush(D2D d2d, int id,double x,double y,double w,double h){ batchPush(d2d,id,x,y,w,h,null); }
-    public void batchPush(D2D d2d, int id,double x,double y,double w,double h, Color c){
-        D2DSprite spr = new D2DSprite(d2d.sprites[id],x,y,w,h,c);
-        batch.add(spr);
-    }
-
-    public void batchClear(){
-        batch.clear();
-    }
-
-    public void batchDraw(D2D d2d, D2DFramebuffer fbo){
-        // add particles to batch
-        if(particles.size() > 0){
-            for(int i = 0; i < particles.size(); i++) {
-                ptcl j = particles.get(i);
-                if(j != null){
-                    j.x += j.hsp;
-                    j.y += j.vsp;
-                    j.id += j.animspd;
-                    if(j.id > j.f){
-                        particles.remove(i);
-                        i--;
-                    }else batchPush((int)Math.floor(j.id),j.x,j.y,main.SPR_WIDTH,main.SPR_WIDTH,j.c);
-                }
-            }
-        }
-
-        //viewport.setColor(Color.white);
-        //viewport.fillRect(0,0,framebuffer.getWidth(),framebuffer.getHeight());
-
-        if(batch.size() > 0){
-            for(int i = 0; i < batch.size(); i++) {
-                D2DSprite spr = batch.get(i);
-                if(spr != null){
-                    BufferedImage sprfinal = spr.sprite;
-                    if(spr.colour != null && spr.colour != Color.WHITE) sprfinal = tintImage(sprfinal,spr.colour);
-                    int x,y,w,h;
-                    x = (int)(spr.x-fbo.x);
-                    y = (int)(spr.y-fbo.y);
-                    w = (int)(spr.w*(d2d.d2d_fbo_main.w/fbo.w));
-                    h = (int)(spr.h*(d2d.d2d_fbo_main.h/fbo.h));
-
-                    fbo.viewport.drawImage(sprfinal, x, y, w, h, null);
-                }
-            }
-        }
-        //batch.clear();
-    }
-}*/
-
-/*class D2DFramebuffer {
-    public double x,y,w,h; // bounds of framebuffer in 'world'
-    public BufferedImage framebuffer;
-    public Graphics2D viewport;
-    public Color clearcolour;
-    //public D2DRenderBatch batch;
-
-    public D2DFramebuffer(double x, double y, int w, int h){
-        this.x = x;
-        this.y = y;
-        this.w = w;
-        this.h = h;
-
-        framebuffer = new BufferedImage(w,h,BufferedImage.TYPE_INT_ARGB);
-        viewport = framebuffer.createGraphics();
-    }
-
-    public void resize(){
-
-    }
-}*/
-
 public class D2D{
     private static Tetris2805 main;
     public static final Map<Character,Integer> textAtlas = new HashMap<>();
     public static BufferedImage[] sprites;
+    //public static BufferedImage[] spritecache;
     public static int width,height;
     public static Color clearColour;
     private static D2D instance;
     //public BufferedImage framebuffer;
     //public D2DFramebuffer fbo;
-    public double view_x,view_y,view_w,view_h,view_wscale,view_hscale; // bounds of framebuffer in 'world'
-    public BufferedImage framebuffer;
-    public Graphics2D viewport;
+    public double view_x,view_y,view_w,view_h,view_wscale,view_hscale,vxl,vyl; // bounds of framebuffer in 'world'
+    public final BufferedImage[] framebuffer = new BufferedImage[2];
+    public final Graphics2D[] viewport = new Graphics2D[2];
+    public int gcontext;
     //public D2DRenderBatch batch;
 
     /*public void d2d_set_target(D2DFramebuffer view){
@@ -139,6 +58,7 @@ public class D2D{
     private int lastbutton;
 
     private ArrayList<D2DSprite> batch;
+    public int batchrdy;
 
     private static BufferedImage tintImage(BufferedImage src, Color color) { // image colouring, pretty sure this is really slow but i just wanted colours
         BufferedImage out = new BufferedImage(src.getWidth(), src.getHeight(), BufferedImage.TYPE_INT_ARGB);
@@ -164,30 +84,33 @@ public class D2D{
         }
     }
 
-    /*public void batchDraw(){
-        // add particles to batch
-
-        //viewport.setColor(Color.white);
-        //viewport.fillRect(0,0,framebuffer.getWidth(),framebuffer.getHeight());
-
+    public void batchDraw(){
+        double vw = (framebuffer[gcontext].getWidth()/view_w), vh = (framebuffer[gcontext].getHeight()/view_h);
+        //System.out.println(batch.size());
         if(batch.size() > 0){
+            //long now = System.nanoTime();
             for(int i = 0; i < batch.size(); i++) {
+                //if((System.nanoTime()-now)/1000000. > 12) break;
                 D2DSprite spr = batch.get(i);
                 if(spr != null){
-                    BufferedImage sprfinal = spr.sprite;
-                    if(spr.colour != null && spr.colour != Color.WHITE) sprfinal = tintImage(sprfinal,spr.colour);
-                    int x,y,w,h;
-                    x = (int)(spr.x-fbo.x);
-                    y = (int)(spr.y-fbo.y);
-                    w = (int)(spr.w*(fbo.w/fbo.w));
-                    h = (int)(spr.h*(d2d.d2d_fbo_main.h/fbo.h));
+                    BufferedImage finaldraw;// = spr.sprite;
 
-                    fbo.viewport.drawImage(sprfinal, x, y, w, h, null);
+                    finaldraw = spr.sprite;
+                    if(spr.colour != null && spr.colour != Color.WHITE) finaldraw = tintImage(spr.sprite,spr.colour);
+
+                    int x,y,w,h;
+                    x = (int)((spr.x-view_x)*vw);
+                    y = (int)((spr.y-view_y)*vh);
+                    w = (int)(spr.w*(framebuffer[gcontext].getWidth()/view_w));
+                    h = (int)(spr.h*(framebuffer[gcontext].getHeight()/view_h));
+                    viewport[gcontext].drawImage(finaldraw, x, y, (int)(spr.w), (int)(spr.h), null);
                 }
             }
         }
-        //batch.clear();
-    }*/
+        batch.clear();
+        gcontext = 1-gcontext;
+        if(view_w != main.FRAMEBUFFER_W) D2Dstart(main);//D2Dinit(main);
+    }
 
     private D2D(){}
     public static D2D D2Dget (Tetris2805 m){
@@ -200,8 +123,12 @@ public class D2D{
     }
 
     public void D2Dstart(Tetris2805 m){
-        instance.framebuffer = new BufferedImage(m.FRAMEBUFFER_W,m.FRAMEBUFFER_H,BufferedImage.TYPE_INT_ARGB);
-        instance.viewport = instance.framebuffer.createGraphics();
+        instance.gcontext = 0;
+        instance.batchrdy = 0;
+        instance.framebuffer[0] = new BufferedImage(m.FRAMEBUFFER_W,m.FRAMEBUFFER_H,BufferedImage.TYPE_INT_ARGB);
+        instance.framebuffer[1] = new BufferedImage(m.FRAMEBUFFER_W,m.FRAMEBUFFER_H,BufferedImage.TYPE_INT_ARGB);
+        instance.viewport[0] = instance.framebuffer[0].createGraphics();
+        instance.viewport[1] = instance.framebuffer[1].createGraphics();
         instance.view_w = m.FRAMEBUFFER_W;
         instance.view_h = m.FRAMEBUFFER_H;
     }
@@ -215,6 +142,8 @@ public class D2D{
         instance.batch = new ArrayList<>();
         instance.view_x = 0;
         instance.view_y = 0;
+        instance.vxl = 0;
+        instance.vyl = 0;
         /*instance.view_wscale = instance.framebuffer.getWidth()/instance.view_w;
         instance.view_hscale = instance.framebuffer.getHeight()/instance.view_h;
         AffineTransform scaleTransform = AffineTransform.getScaleInstance(instance.view_wscale, instance.view_hscale);
@@ -227,26 +156,6 @@ public class D2D{
     public static double lerp(double a, double b, double f) { // helper method, java stl doesnt have lerp???
         return (a * (1.0 - f)) + (b * f);
     }
-
-    // feels janky ?
-    //public void particlePush(double id, int f, double animspd, int x, int y, double hsp, double vsp, Color c){
-        /*ptcl p = new ptcl();
-        p.id = id;
-        p.f = f;
-        p.x = x;
-        p.y = y;
-        p.animspd = animspd;
-        p.hsp = hsp;
-        p.vsp = vsp;
-        p.c = c;
-        particles.add(p);*/
-    //}
-
-    /*public void batchPush(int id,double x,double y,double w,double h){ batchPush(id,x,y,w,h,null); }
-    public void batchPush(int id,double x,double y,double w,double h, Color c){
-        D2DSprite spr = new D2DSprite(sprites[id],x,y,w,h,c);
-        batch.add(q);
-    }*/
 
     public void drawBox(int x, int y, int w, int h, int size){ // only really used for ui elements
         batchPush(10,x,y,size,size);
@@ -271,28 +180,6 @@ public class D2D{
                 }
             }
         }
-    }
-
-    public void batchDraw(){
-        double vw = (framebuffer.getWidth()/view_w), vh = (framebuffer.getHeight()/view_h);
-
-        if(batch.size() > 0){
-            for(int i = 0; i < batch.size(); i++) {
-                D2DSprite spr = batch.get(i);
-                if(spr != null){
-                    BufferedImage finaldraw = spr.sprite;
-                    if(spr.colour != null && spr.colour != Color.WHITE) finaldraw = tintImage(finaldraw,spr.colour);
-                    int x,y,w,h;
-                    x = (int)((spr.x-view_x)*vw);
-                    y = (int)((spr.y-view_y)*vh);
-                    w = (int)(spr.w*(framebuffer.getWidth()/view_w));
-                    h = (int)(spr.h*(framebuffer.getHeight()/view_h));
-                    viewport.drawImage(finaldraw, x, y, (int)(spr.w), (int)(spr.h), null);
-                }
-            }
-        }
-        batch.clear();
-        if(view_w != main.FRAMEBUFFER_W) D2Dstart(main);//D2Dinit(main);
     }
 
     // ui elements and functions

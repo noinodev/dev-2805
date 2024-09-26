@@ -30,8 +30,9 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
     // took me way too long to write these consts, i was just remembering the integers before lol (notice how i missed 5 ????)
     public final int STATE_PLAY = 0, STATE_PAUSE = 1, STATE_GAMEOVER = 2, STATE_CLEAR = 3, STATE_LOSE = 4, STATE_oops = 5, STATE_STARTLEVEL = 6, STATE_ENDLEVEL = 7;
 
-    private final BufferedImage water = new BufferedImage(main.FRAMEBUFFER_W,main.FRAMEBUFFER_H,BufferedImage.TYPE_INT_ARGB);
-    private final Graphics2D water2d = water.createGraphics();
+    private final BufferedImage[] water = {new BufferedImage(main.FRAMEBUFFER_W,main.FRAMEBUFFER_H,BufferedImage.TYPE_INT_ARGB),new BufferedImage(main.FRAMEBUFFER_W,main.FRAMEBUFFER_H,BufferedImage.TYPE_INT_ARGB)};
+    private final Graphics2D[] water2d = {water[0].createGraphics(),water[1].createGraphics()}; // stupid double buffering
+    private int watercontext;
     private final BufferedImage dark = new BufferedImage(main.FRAMEBUFFER_W,main.FRAMEBUFFER_H,BufferedImage.TYPE_INT_ARGB);
     private final Graphics2D dark2d = dark.createGraphics();
 
@@ -317,6 +318,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
 
         globallight = 0;
         game_start_wait = 0;
+        watercontext = 0;
         //NetworkHandler.game = this;
 
         posx = 80; // board anchor position
@@ -509,10 +511,38 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
             });
             aithread.start();
 
-            Thread waterthread = new Thread(() -> {
-
+            /*Thread lightthread = new Thread(() -> {
+                double expectedFrametime = 1000000000 / (240.);
+                while(state != STATE_GAMEOVER && main.sceneIndex == 4){
+                    long now = System.nanoTime();
+                    for(int i = boardvisx; i < boardvisx+boardvisw; i++){
+                        for(int j = 2; j < boardHeight; j++){
+                            // draw.batchPush((i+j)%4,boardx+i*main.SPR_WIDTH,boardy+j*main.SPR_WIDTH, main.SPR_WIDTH,main.SPR_WIDTH);
+                            double tl = getLightLevel(i,j,illum)*4;
+                            if(i < boardWidth-1) tl += light[i+1][j];
+                            if(i > 0) tl += light[i-1][j];
+                            if(j < boardHeight-1) tl += light[i][j+1];
+                            if(j > 0) tl += light[i][j-1];
+                            tl /= 8;
+                            light[i][j] -= (light[i][j]-tl)*(0.05/illum); // this didnt need to look so hacky but i wanted the lights to be smoother and take the average of adjacent cells
+                            int li = (int)light[i][j]; // VVV that hack is for the sprite indexes for different light levels since theyre in funny parts of the sprite sheet
+                            //draw.batchPush((li > 0) ? (18+10*(li%5)+li/5) : (i+j)%4,boardx+i*main.SPR_WIDTH,boardy+j*main.SPR_WIDTH, main.SPR_WIDTH,main.SPR_WIDTH);
+                            //if(li > 5) draw.batchPush(59,boardx+i*main.SPR_WIDTH+main.SPR_WIDTH/2-32,boardy+j*main.SPR_WIDTH+main.SPR_WIDTH/2-32, 64,64);
+                            if(board[i][j] < 0) board[i][j] = 0; // moving tetromino sets board cells to negative values, reset this
+                        }
+                    }
+                    long timeTaken = System.nanoTime() - now,
+                            sleepTime = (long)(expectedFrametime - timeTaken);
+                    if (sleepTime > 0) {
+                        try {
+                            Thread.sleep(sleepTime / 1000000, (int)(sleepTime % 1000000));
+                        } catch (InterruptedException e) {
+                            // e.printStackTrace(); // shouldnt happen anyway
+                        }
+                    }
+                }
             });
-            waterthread.start();
+            lightthread.start();*/
         }
 
         parallaxobj = new ObjectResource[boardWidth];
@@ -695,23 +725,27 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                 draw.batchPush(54, boardx+boardWidth*main.SPR_WIDTH+(boardHeight-i)*3, boardy+i*main.SPR_WIDTH,200,10,cr);
             }
 
+            watercontext = 1-watercontext;
+            BufferedImage _water = water[watercontext];
+            Graphics2D _water2d = water2d[1-watercontext];
+
             int waterY = (int)(boardy+(boardHeight+3)*main.SPR_WIDTH-draw.view_y);
-            if((int)main.frame%4==0){
-                int waterHeight = main.FRAMEBUFFER_H-waterY;
+            //if((int)main.frame%240==0){
+            int waterHeight = main.FRAMEBUFFER_H-waterY;
 
-                water2d.setComposite(AlphaComposite.Clear);
-                water2d.fillRect(0, 0, water.getWidth(), water.getHeight());
-                water2d.setComposite(AlphaComposite.SrcOver);
-                water2d.setClip(0, waterY, water.getWidth(), waterHeight);
+            _water2d.setComposite(AlphaComposite.Clear);
+            _water2d.fillRect(0, 0, water[1-watercontext].getWidth(), water[1-watercontext].getHeight());
+            _water2d.setComposite(AlphaComposite.SrcOver);
+            _water2d.setClip(0, waterY, water[1-watercontext].getWidth(), waterHeight);
 
-                AffineTransform flip = new AffineTransform();
-                flip.scale(1, -0.5);
-                flip.translate(0, -3*waterY);
+            AffineTransform flip = new AffineTransform();
+            flip.scale(1, -0.5);
+            flip.translate(0, -3*waterY);
 
-                water2d.drawImage(draw.framebuffer, flip, null);
-            }
+            _water2d.drawImage(draw.framebuffer[1-draw.gcontext], flip, null);
+            //}
 
-            draw.batchPush(water,draw.view_x,draw.view_y,draw.view_w,draw.view_h);
+            draw.batchPush(_water,draw.view_x,draw.view_y,draw.view_w,draw.view_h);
 
             for(int i = 1; i <= 12; i += 2){
                 int s = 118, h = 1;

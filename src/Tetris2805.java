@@ -23,6 +23,9 @@ class ParseFormat {
 }
 
 public class Tetris2805 extends JPanel implements ActionListener {
+    public static Dimension windowSize;
+    public static Rectangle window;
+    public static JFrame jframe;
     public static Tetris2805 main;
     public final int SPR_WIDTH = 10;
     public int FRAMEBUFFER_W = 256, FRAMEBUFFER_H = 256;
@@ -38,7 +41,7 @@ public class Tetris2805 extends JPanel implements ActionListener {
     public final HashMap<Integer,Integer> input = new HashMap<>();
     public final int keybuffermax = 10;
     public String keybuffer;
-    public double mousex,mousey;
+    public double mousex,mousey,mousexraw,mouseyraw,mousexl,mouseyl;
     public int cursorcontext, keycontext, displayconfirm, inputtype;
     public double bgx,bgy,bgtx;
 
@@ -53,6 +56,9 @@ public class Tetris2805 extends JPanel implements ActionListener {
     public byte gamemode_last;
 
     public Path working_directory;
+
+    public int fullscreen;
+    public int draglock;
 
     public static String mapToJson(Map<String,Object> map){
         StringBuilder json = new StringBuilder();
@@ -184,7 +190,9 @@ public class Tetris2805 extends JPanel implements ActionListener {
     private void setInput(){
         if(inputtype == 0){
             input.put(-1,0); // mouse left
-            for (int c = KeyEvent.VK_UNDEFINED; c <= KeyEvent.VK_CONTEXT_MENU; c++) input.put(c,0);
+            for (int c = KeyEvent.VK_UNDEFINED; c <= KeyEvent.VK_CONTEXT_MENU; c++){
+                /*if(c != KeyEvent.VK_F11 || input.get(c) == null)*/ input.put(c,0);
+            }
             cursorcontext = 0;
         }else inputtype = 0;
     }
@@ -204,6 +212,8 @@ public class Tetris2805 extends JPanel implements ActionListener {
     public void handleMouse(MouseEvent e){
         if (isShowing()) {
             Point mouse = MouseInfo.getPointerInfo().getLocation(), screen = getLocationOnScreen();
+            mousexraw = mouse.getX();
+            mouseyraw = mouse.getY();
             mousex = draw.view_x+((mouse.getX()-screen.getX())/getWidth())*FRAMEBUFFER_W;
             mousey = draw.view_y+((mouse.getY()-screen.getY())/getHeight())*FRAMEBUFFER_H;
         }
@@ -220,8 +230,15 @@ public class Tetris2805 extends JPanel implements ActionListener {
         gamemode = GM.GM_OFFLINE;
         gamemode_last = gamemode;
         working_directory = Path.of("").toAbsolutePath();
+
+        fullscreen = 0;
         //String cwd = working_directory.toString();
         //System.out.println(cwd+"src/resources/atlas.png");
+        draglock = 0;
+        mousex = 0;
+        mousey = 0;
+        mousexl = 0;
+        mouseyl = 0;
 
         UID = NetworkHandler.generateUID();
         System.out.println(UID);
@@ -252,6 +269,26 @@ public class Tetris2805 extends JPanel implements ActionListener {
         D2D.sprites[44] = loadTexture("resources/assets/spr_wall.png");
         D2D.sprites[54] = loadTexture("resources/assets/spr_wall2.png");
         D2D.sprites[23] = loadTexture("resources/assets/spr_aithing.png");
+
+        /*D2D.spritecache = getTextureAtlasSquare(atlas,SPR_WIDTH);
+        D2D.spritecache[43] = loadTexture("resources/assets/splashtex.png");
+        D2D.spritecache[42] = loadTexture("resources/assets/bgtex6.png");
+        D2D.spritecache[50] = loadTexture("resources/assets/bgtex1.png"); // reserving sprites for background, kinda hacky but whatever its not a real texture atlas
+        D2D.spritecache[51] = loadTexture("resources/assets/bgtex2.png");
+        D2D.spritecache[52] = loadTexture("resources/assets/bgtex3.png");
+        D2D.spritecache[60] = loadTexture("resources/assets/bgtex4.png");
+        D2D.spritecache[61] = loadTexture("resources/assets/bgtex5.png");
+        D2D.spritecache[109] = loadTexture("resources/assets/spr_tree.png");
+        D2D.spritecache[119] = loadTexture("resources/assets/spr_rock.png");
+        D2D.spritecache[118] = loadTexture("resources/assets/spr_waterhighlights.png");
+        D2D.spritecache[129] = loadTexture("resources/assets/fgtex1.png");
+        D2D.spritecache[128] = loadTexture("resources/assets/fgtex2.png");
+        D2D.spritecache[135] = loadTexture("resources/assets/fgtex3.png");
+        D2D.spritecache[136] = loadTexture("resources/assets/fgtex4.png");
+        D2D.spritecache[44] = loadTexture("resources/assets/spr_wall.png");
+        D2D.spritecache[54] = loadTexture("resources/assets/spr_wall2.png");
+        D2D.spritecache[23] = loadTexture("resources/assets/spr_aithing.png");*/
+        //D2D.spritecache = D2D.sprites.clone();
         bgx = 0;
         bgy = 0;
         bgtx = 0;
@@ -339,19 +376,61 @@ public class Tetris2805 extends JPanel implements ActionListener {
 
         sceneIndex = -1;
         currentScene = new splash(this,draw);
+        Thread renderThread = new Thread(() -> {
+            double expectedFrametime = 1000000000 / (240.);
+            while(gameShouldClose == 0){
+                //System.out.print("start, ");
+                long now = System.nanoTime();
+                /*if(draw.batchrdy == 1){
+                    //draw.batchDraw();
+                    //draw.batchrdy = 0;
+                    System.out.print("batch draw, ");
+                }else System.out.print("batch no draw, ");*/
+                //repaint();
+                long timeTaken = System.nanoTime() - now, sleepTime = (long)(expectedFrametime - timeTaken);
+                //System.out.print("sleep "+sleepTime/1000000+", ");
+                if (sleepTime/1000000 > 0) {
+                    try {
+                        Thread.sleep(sleepTime / 1000000, (int)(sleepTime % 1000000));
+                    } catch (InterruptedException e) {
+                        // e.printStackTrace(); // shouldnt happen anyway
+                    }
+                }
+                //System.out.println("end");
+            }
+        });
+
         Thread gameThread = new Thread(() -> {
             long lastTime = System.nanoTime();
+            long timeTaken = 0;
             double expectedFrametime = 1000000000 / TPS;
             delta = 0;
             frame = 0;
 
             // main loop
             while (gameShouldClose == 0) {
+                if (input.get(KeyEvent.VK_F11) == 1) {
+                    fullscreen = 1 - fullscreen;
+                    if(fullscreen == 1){
+                        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+                        jframe.setSize(screenSize);
+                        jframe.setLocationRelativeTo(null);
+                    }else{
+                        jframe.setSize(windowSize);
+                        jframe.setLocationRelativeTo(null);
+                    }
+                }
+
                 // delta timing
                 long now = System.nanoTime();
                 delta = (now - lastTime) / expectedFrametime;
                 frame += delta;
                 lastTime = now;
+
+                mousex += draw.view_x-draw.vxl;
+                mousey += draw.view_y-draw.vyl;
+                draw.vxl = draw.view_x;
+                draw.vyl = draw.view_y;
 
                 // parallax background
                 //bgx -= (bgx-bgtx)*0.05;
@@ -363,6 +442,10 @@ public class Tetris2805 extends JPanel implements ActionListener {
                     draw.batchPush(bgtex[i],(int)((bgx*(0.1+0.1*i))%FRAMEBUFFER_W-FRAMEBUFFER_W),(int)((bgy*(0.1+0.1*i))%FRAMEBUFFER_H),FRAMEBUFFER_W,FRAMEBUFFER_H);
                 }*/
 
+                if(sceneIndex != 4){
+                    draw.view_x = 0;
+                    draw.view_y = 0;
+                }
                 draw.batchPush(9,draw.view_x,draw.view_y,draw.view_w,draw.view_h,new Color(24,20,37));
 
                 // scene loop
@@ -381,16 +464,53 @@ public class Tetris2805 extends JPanel implements ActionListener {
                     else displayconfirm = displayconfirm*(1-draw.drawButton("NO",x+10,y+50,60,10));
                 }
 
-                // cursor
+                //draw.batchrdy = 1;
+                //repaint();
+                draw.drawText(""+timeTaken/1000000f,(int)draw.view_x+20,FRAMEBUFFER_H-40,8,6,Color.WHITE);
+                draw.batchPush(9,draw.view_x,draw.view_y,FRAMEBUFFER_W,7,new Color(38,43,68));
+
+                if(mouseInArea((int)draw.view_x+FRAMEBUFFER_W-6,(int)draw.view_y,6,6) == 1){
+                    draw.batchPush(175,draw.view_x+FRAMEBUFFER_W-6,draw.view_y+1,SPR_WIDTH,SPR_WIDTH);
+                    if(input.get(-1) == 1){
+                        gameShouldClose = 1;
+                        System.out.println("close!");
+                    }
+                }else{
+                    draw.batchPush(174,draw.view_x+FRAMEBUFFER_W-6,draw.view_y+1,SPR_WIDTH,SPR_WIDTH);
+                    if(input.get(-1) != 2) draglock = 0;
+                    if(mouseInArea((int)draw.view_x,(int)draw.view_y,FRAMEBUFFER_W-6,7) == 1 || draglock == 1){
+                        draw.batchPush(9,draw.view_x,draw.view_y+6,FRAMEBUFFER_W,1,new Color(58,68,102));
+                        if(input.get(-1) == 2){
+                            draglock = 1;
+                            Rectangle bounds = new Rectangle(jframe.getX(),jframe.getY(),jframe.getWidth(),jframe.getHeight());
+                            int xDiff = (int)(mousexraw-mousexl);
+                            int yDiff = (int)(mouseyraw-mouseyl);
+
+                            //One move action per 60ms to avoid frame glitching
+                            if(xDiff!=0 || yDiff != 0) {
+                                bounds.x += xDiff;
+                                bounds.y += yDiff;
+                                //System.out.println(bounds);
+                                jframe.setBounds(bounds);
+                            }//else System.out.println("no!");
+                        }
+                    }
+                }
+                mousexl = mousexraw;
+                mouseyl = mouseyraw;
+
+                //cursor
                 draw.batchPush(20+cursorcontext,(int)mousex-1,(int)mousey+1,SPR_WIDTH,SPR_WIDTH,Color.BLACK);
                 draw.batchPush(20+cursorcontext,(int)mousex-1,(int)mousey,SPR_WIDTH,SPR_WIDTH);
-                repaint();
-                setInput();
 
-                long timeTaken = System.nanoTime() - now,
-                sleepTime = (long)(expectedFrametime - timeTaken);
+                setInput();
+                draw.batchDraw();
+                repaint();
+
+                timeTaken = System.nanoTime() - now;
+                long sleepTime = (long)(expectedFrametime - timeTaken);
                 // debug data
-                /*if(cfg.get("diag") == 1)*/draw.drawText(""+timeTaken/1000000f,(int)draw.view_x+20,FRAMEBUFFER_H-40,8,6,Color.WHITE); // frametime
+                /*if(cfg.get("diag") == 1)*/ // frametime
 
                 // sleep loop
                 if (sleepTime > 0) {
@@ -407,22 +527,40 @@ public class Tetris2805 extends JPanel implements ActionListener {
             System.exit(1);
         });
         gameThread.start();
+        renderThread.start();
     }
 
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
-        draw.batchDraw();
+
+
+        /*if(input.get(KeyEvent.VK_F11) == 1){
+            fullscreen = 1-fullscreen;
+            if(fullscreen == 1){
+                jframe.setVisible(false);
+                Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+                jframe.setSize(screenSize);
+                jframe.setUndecorated(true);
+                jframe.setVisible(true);
+            }else{
+                jframe.setVisible(false);
+                Dimension screenSize = new Dimension(FRAMEBUFFER_W,FRAMEBUFFER_H);
+                jframe.setSize(screenSize);
+                jframe.setUndecorated(false);
+                jframe.setVisible(true);
+            }
+        }*/
 
         // draw framebuffer
-        VIEWPORT_W = getWidth();
-        VIEWPORT_H = getHeight();
+        VIEWPORT_W = jframe.getWidth();
+        VIEWPORT_H = jframe.getHeight();
         //System.out.println("w:"+getWidth()+" h:"+getHeight());
 
-        int w = getWidth(), h = getHeight();
-        g.setColor(new Color(24,20,37));
-        g.clearRect(0,0,getWidth(),getHeight());
-        g.drawImage(draw.framebuffer,(int)((1-draw.view_x%1)*((double)VIEWPORT_W /FRAMEBUFFER_W)),(int)((1-draw.view_y%1)*((double)VIEWPORT_H/FRAMEBUFFER_H)), w, h,null);
+        int w = jframe.getWidth(), h = jframe.getHeight();
+        //g.setColor(new Color(24,20,37));
+        //g.clearRect(0,0,getWidth(),getHeight());
+        g.drawImage(draw.framebuffer[1-draw.gcontext],(int)((-draw.view_x%1)*((double)VIEWPORT_W /FRAMEBUFFER_W)),(int)((-draw.view_y%1)*((double)VIEWPORT_H/FRAMEBUFFER_H)), w+VIEWPORT_W/FRAMEBUFFER_W, h+VIEWPORT_H/FRAMEBUFFER_H,null);
 
         double ratio = VIEWPORT_W/(double)VIEWPORT_H;
         int nfw = (int)(FRAMEBUFFER_H*ratio);
@@ -439,20 +577,58 @@ public class Tetris2805 extends JPanel implements ActionListener {
         // unused
     }
 
-    public static void main(String[] args){
-        // jframe init
-        JFrame frame = new JFrame("Tetris");
+    public static void jframeinit(){
+        if(jframe == null) jframe = new JFrame("Tetris");
+        else jframe.dispose();
         // remove cursor
-        frame.setCursor( frame.getToolkit().createCustomCursor(
+        jframe.setCursor( jframe.getToolkit().createCustomCursor(
                 new BufferedImage( 1, 1, BufferedImage.TYPE_INT_ARGB ),
                 new Point(),
                 null ) );
-        Tetris2805 game = new Tetris2805();
-        frame.add(game);
-        frame.setSize(new Dimension(720,1280));
-        frame.pack();
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setVisible(true);
-        frame.setLocationRelativeTo(null);
+        jframe.add(Tetris2805.main);
+        /*if (Tetris2805.main.fullscreen == 1) {
+            Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+            jframe.setSize(screenSize);
+            jframe.setUndecorated(true);
+            jframe.setVisible(true);
+            jframe.setExtendedState(JFrame.MAXIMIZED_BOTH);  // Maximize to fullscreen
+            //setFulllScreenWindow(null)
+        } else {
+            Dimension windowSize = new Dimension(720,1280);
+            jframe.setSize(windowSize);
+            jframe.setUndecorated(false);
+            jframe.setVisible(true);
+            jframe.setLocationRelativeTo(null);  // Center the window
+        }*/
+        //jframe.setSize(new Dimension(720,1280));
+        windowSize = new Dimension(1080,1080);
+        jframe.setSize(windowSize);
+        jframe.setUndecorated(true);
+        jframe.pack();
+        jframe.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        jframe.setVisible(true);
+        jframe.setLocationRelativeTo(null);
+        //window = new Rectangle(jframe.getX(),jframe.getY(),jframe.getWidth())
+
+    }
+
+    public static void main(String[] args){
+        // jframe init
+        Tetris2805.main = new Tetris2805();
+        jframeinit();
+        /*jframe = new JFrame("Tetris");
+        // remove cursor
+        jframe.setCursor( jframe.getToolkit().createCustomCursor(
+                new BufferedImage( 1, 1, BufferedImage.TYPE_INT_ARGB ),
+                new Point(),
+                null ) );
+        //Tetris2805.jframe = jframe;
+        jframe.add(Tetris2805.main);
+        jframe.setSize(new Dimension(720,1280));
+        //frame.setUndecorated(true);
+        jframe.pack();
+        jframe.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        jframe.setVisible(true);
+        jframe.setLocationRelativeTo(null);*/
     }
 }
