@@ -5,7 +5,7 @@ out/
 atlas.pdn
 levelatlas.pdn
 .idea/uiDesigner.xml
-src/resources/audio/ambienthigh.wav
+###src/resources/audio/ambienthigh.wav###
 
 ### Eclipse ###
 .apt_generated

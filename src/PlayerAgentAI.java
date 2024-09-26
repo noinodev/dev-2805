@@ -43,7 +43,7 @@ public class PlayerAgentAI {
             while(valid(board,agent) == 1){
                 ObjectTetromino ta = new ObjectTetromino(agent);
                 while(valid(board,ta) == 1) ta.dy++;
-                ta.dy--;
+                //ta.dy--;
 
                 /*if(index == 0 && rotation == 0){
                     int w  =3;
@@ -118,8 +118,13 @@ public class PlayerAgentAI {
     }
     static int aggregateHeight(int[][] board){
         int total = 0;
-        for(int x = 0; x < board.length; x++) total += columnHeight(board,x);
-        return total;
+        int max = 0;
+        for(int x = 0; x < board.length; x++){
+            int h = columnHeight(board,x);
+            if(h > max) max = h;
+            total += h;
+        }
+        return total+max;
     }
     static int bumpiness(int[][] board){
         int total = 0;
