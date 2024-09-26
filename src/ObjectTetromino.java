@@ -104,7 +104,7 @@ public class ObjectTetromino extends PlayerObject {
         int time = game.time;
         if(game.game_start_wait <= 0){
             if((time/4f > Math.max(1,60-6*game.level) || (main.input.get(KeyEvent.VK_DOWN)%12 == 1 && control_scheme != PlayerControlScheme.PCS_EXTERN)) && Math.abs(x-dx*main.SPR_WIDTH) + Math.abs(y-dy*main.SPR_WIDTH) < 10){
-                AudioManager.audio.get("tap1").play(0f,0f,0f,0f);
+                AudioManager.audio.get("tap2").play(0f,0f,0f,0f);
                 game.time = 0;
                 if(!checkBoardState()){ // collision on drop
                     // merge tetromino
@@ -159,7 +159,7 @@ public class ObjectTetromino extends PlayerObject {
         }
     }
 
-    private boolean checkBoardState(){ // tetromino collision function
+    public boolean checkBoardState(){ // tetromino collision function
         boolean collision = true;
         int[][] board = game.board;
         for(int i = 0; i < game.TET_WIDTH; i++){
@@ -228,10 +228,11 @@ public class ObjectTetromino extends PlayerObject {
         }
         if(main.input.get(KeyEvent.VK_LEFT) == 1 || main.input.get(KeyEvent.VK_LEFT) > main.TPS/8) {
             dx--;
-            AudioManager.audio.get("tap1").play(0f,0f,0f,0f);
+            AudioManager.audio.get("tap2").play(0f,0f,0f,0f);
         }
         if(main.input.get(KeyEvent.VK_UP) == 1 || main.input.get(KeyEvent.VK_UP) > main.TPS/8){
             rotation = (rotation+1)%4;
+            AudioManager.audio.get("fwop1").play(0f,0f,0f,0f);
         }
         if(main.input.get(KeyEvent.VK_A) == 1 && game.board_bound_x > 0){
             game.board_bound_x -= 1;

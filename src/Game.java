@@ -479,6 +479,9 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                             if(currentTetromino.dx > best.dx) main.input.put(KeyEvent.VK_LEFT,1);
                             if(currentTetromino.rotation != best.rotation) main.input.put(KeyEvent.VK_UP,1);
                             if(currentTetromino.dx == best.dx && currentTetromino.rotation == best.rotation) main.input.put(KeyEvent.VK_DOWN,1);
+                            currentTetromino.dy++;
+                            if(!currentTetromino.checkBoardState()) main.input.put(KeyEvent.VK_DOWN,1);
+                            currentTetromino.dy--;
 
                             /*for(int i = 0; i < TET_WIDTH; i++){
                                 for(int j = 0; j < TET_WIDTH; j++){
@@ -505,6 +508,11 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                 }
             });
             aithread.start();
+
+            Thread waterthread = new Thread(() -> {
+
+            });
+            waterthread.start();
         }
 
         parallaxobj = new ObjectResource[boardWidth];
@@ -688,7 +696,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
             }
 
             int waterY = (int)(boardy+(boardHeight+3)*main.SPR_WIDTH-draw.view_y);
-            if(time%2==0){
+            if((int)main.frame%4==0){
                 int waterHeight = main.FRAMEBUFFER_H-waterY;
 
                 water2d.setComposite(AlphaComposite.Clear);
@@ -740,6 +748,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                             30,33,0.05+0.05*Math.random(), 240, Color.WHITE)
                         );
                     }
+                    AudioManager.audio.get("tap2").play(0,0,0,0);
                     cleardy = 0;
                     cleary = 0;
                     clearRows();

@@ -264,8 +264,11 @@ public class Tetris2805 extends JPanel implements ActionListener {
         AudioManager.load("fwop1",audiopath);
         AudioManager.load("fwop2",audiopath);
         AudioManager.load("drop1",audiopath);
-        AudioManager.load("speak1",audiopath);
         AudioManager.load("speak2",audiopath);
+        AudioManager.load("speak3",audiopath);
+        AudioManager.load("speak4",audiopath);
+        AudioManager.load("speak5",audiopath);
+        AudioManager.load("speak6",audiopath);
         AudioManager.load("tap1",audiopath);
         AudioManager.load("tap2",audiopath);
         AudioManager.start();

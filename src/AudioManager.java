@@ -21,6 +21,22 @@ class AudioClip{
         yf = (float)_yf;
         xt = (float)_xt;
         yt = (float)_yt;
+        if(xf+yf+xt+yt != 0){
+            float pan = Math.max(Math.min((xf-xt)/40,1),-1);
+            float dist = (float)Math.max(Math.min((1.-Math.sqrt((xf-xt)*(xf-xt)+(yf-yt)*(yf-yt))/300.),1),0);
+            if(dist > 0.01){
+                if(fcpan != null) fcpan.setValue(fcpan.getValue()-(fcpan.getValue()-pan)*0.1f);
+                if(fcgain != null){
+                    float minGain = fcgain.getMinimum();
+                    float maxGain = fcgain.getMaximum();
+                    float gainValue = minGain + (maxGain - minGain) * (1 - dist);
+                    fcgain.setValue(fcgain.getValue()-(fcgain.getValue()-gainValue)*0.1f);
+                }
+            }
+        }
+        clip.setFramePosition(0);
+        clip.start();
+        //}
         /*float pan = Math.max(Math.min((xf-xt)/40,1),-1);
         float dist = (float)Math.max(Math.min((1.-Math.sqrt((xf-xt)*(xf-xt)+(yf-yt)*(yf-yt))/200.),1),0);
 
@@ -31,9 +47,6 @@ class AudioClip{
             float gainValue = minGain + (maxGain - minGain) * (1 - dist);
             fcgain.setValue(gainValue);
         }*/
-
-        clip.setFramePosition(0);
-        clip.start();
         /*if(clip != null){
             float pan = Math.max(Math.min((xf-xt)/80,1),-1);
             float dist = (float)Math.max(Math.min((1.-Math.sqrt((xf-xt)*(xf-xt)+(yf-yt)*(yf-yt))/100.),1),0);
@@ -107,7 +120,7 @@ public class AudioManager {
                 float xt = ac.xt;
                 float yt = ac.yt;
                 float pan = Math.max(Math.min((xf-xt)/40,1),-1);
-                float dist = (float)Math.max(Math.min((1.-Math.sqrt((xf-xt)*(xf-xt)+(yf-yt)*(yf-yt))/200.),1),0);
+                float dist = (float)Math.max(Math.min((1.-Math.sqrt((xf-xt)*(xf-xt)+(yf-yt)*(yf-yt))/300.),1),0);
                 if(dist > 0.01){
                     if(ac.fcpan != null) ac.fcpan.setValue(ac.fcpan.getValue()-(ac.fcpan.getValue()-pan)*0.1f);
                     if(ac.fcgain != null){

@@ -22,8 +22,10 @@ public class ObjectCharacter extends PlayerObject {
 
     @Override
     public void update(){
+        int vis = 0;
         if(x > game.boardx+game.board_bound_x*main.SPR_WIDTH && x < game.boardx+(game.board_bound_x+game.board_bound_w)*main.SPR_WIDTH){
             game.enemy_visible = 1;
+            vis = 1;
             //draw.view_x -= (draw.view_x-(x-main.FRAMEBUFFER_W/2.))*0.01;
             //draw.view_y -= (draw.view_y-(y-main.FRAMEBUFFER_H/2.))*0.01;
         }
@@ -88,9 +90,13 @@ public class ObjectCharacter extends PlayerObject {
                     //System.out.print("gobby... ");
                     if(taunt.length() > txt.length() && (int)(Math.random()*5) == 0){
                         txt = taunt.substring(0,txt.length()+1); // taunt animation
-                        /*if(Math.random() < 0.2) */ //AudioManager.audio.get("speak1").play(x,y,draw.view_x+draw.view_w/2,draw.view_y+draw.view_h/2);
+                        //if(Math.random() < 0.1)  AudioManager.audio.get("speak2").play(x,y,draw.view_x+draw.view_w/2,draw.view_y+draw.view_h/2);
                     }
-                    if(game.state == game.STATE_LOSE || (taunt == "" && (int)(Math.random()*(main.TPS*5)) == 0)) taunt = taunts[(int)(Math.random()*taunts.length)]; // new taunt
+                    if(game.state == game.STATE_LOSE || (taunt == "" && (int)(Math.random()*(main.TPS*5)) == 0) && vis == 1){
+                        String[] a = {"speak3","speak4","speak5","speak6"};
+                        AudioManager.audio.get(a[(int)(Math.random()*3)]).play(x,y,draw.view_x+draw.view_w/2,draw.view_y+draw.view_h/2);
+                        taunt = taunts[(int)(Math.random()*taunts.length)]; // new taunt
+                    }
 
                     // run away from current tetromino
                     /*if(Math.abs(currentTetromino.dx+boardx+2*main.SPR_WIDTH-e.x) < 2*main.SPR_WIDTH) e.hsp = -(currentTetromino.dx+boardx+2*main.SPR_WIDTH-e.x)*0.01;
@@ -103,7 +109,7 @@ public class ObjectCharacter extends PlayerObject {
 
             if(game.pointCheck(x,y) == 1){ // die from being crushed
                 destroy = 1;
-                AudioManager.audio.get("speak2").play(x,y,draw.view_x+draw.view_w/2,draw.view_y+draw.view_h/2);
+                AudioManager.audio.get("speak3").play(x,y,draw.view_x+draw.view_w/2,draw.view_y+draw.view_h/2);
                 //for(int j = 0; j < 4; j++) draw.particlePush(130,134,0.03+0.02*Math.random(),(int)x,(int)y,-0.1+0.2*Math.random(),-0.1+0.2*Math.random(), Color.WHITE);
                 //draw.particlePush(150,154,0.09+0.01*Math.random(),(int)x-main.SPR_WIDTH/2,(int)y-main.SPR_WIDTH,-0.01+0.02*Math.random(),-0.08,Color.WHITE);
                 for(int j = 0; j < 4; j++) CreateObject(new ObjectParticle(game,(int)x,(int)y,-0.1+0.2*Math.random(),-0.1+0.2*Math.random(),130,134,0.03+0.02*Math.random(),240,Color.WHITE));

@@ -274,27 +274,7 @@ public class D2D{
     }
 
     public void batchDraw(){
-        /*ArrayList<> batch = d2dbo.batch;
-        // add particles to batch
-        if(particles.size() > 0){
-            for(int i = 0; i < particles.size(); i++) {
-                ptcl j = particles.get(i);
-                if(j != null){
-                    j.x += j.hsp;
-                    j.y += j.vsp;
-                    j.id += j.animspd;
-                    if(j.id > j.f){
-                        particles.remove(i);
-                        i--;
-                    }else batchPush((int)Math.floor(j.id),j.x,j.y,main.SPR_WIDTH,main.SPR_WIDTH,j.c);
-                }
-            }
-        }*/
-
-        //viewport.setColor(Color.white);
-        //viewport.fillRect(0,0,framebuffer.getWidth(),framebuffer.getHeight());
         double vw = (framebuffer.getWidth()/view_w), vh = (framebuffer.getHeight()/view_h);
-        //int s=0,ns=0;
 
         if(batch.size() > 0){
             for(int i = 0; i < batch.size(); i++) {
@@ -307,8 +287,7 @@ public class D2D{
                     y = (int)((spr.y-view_y)*vh);
                     w = (int)(spr.w*(framebuffer.getWidth()/view_w));
                     h = (int)(spr.h*(framebuffer.getHeight()/view_h));
-                    //System.out.println(""+x+", "+y+", "+w+", "+h);
-                    /*if(x+spr.w > 0 && x < main.FRAMEBUFFER_W && y+spr.h > 0 && y < main.FRAMEBUFFER_H)*/ viewport.drawImage(finaldraw, x, y, (int)(spr.w), (int)(spr.h), null);
+                    viewport.drawImage(finaldraw, x, y, (int)(spr.w), (int)(spr.h), null);
                 }
             }
         }
