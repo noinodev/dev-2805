@@ -1,14 +1,14 @@
 {
    "level":0,
    "networkip":"LOCALHOST",
-   "video.colouring":0,
+   "video.colouring":1,
    "sound":1,
-   "ai":1,
+   "ai":0,
    "profiler":1,
    "networkport":22565,
    "extend":1,
    "music":1,
-   "video.particles":0,
+   "video.particles":1,
    "width":15,
    "height":20,
    "username":"SPLAMOGUS"

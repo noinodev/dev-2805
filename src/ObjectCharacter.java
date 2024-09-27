@@ -1,5 +1,6 @@
 import java.awt.*;
 import java.awt.event.KeyEvent;
+import java.nio.ByteBuffer;
 
 public class ObjectCharacter extends PlayerObject {
     //public byte inst = 2;
@@ -8,6 +9,7 @@ public class ObjectCharacter extends PlayerObject {
     public static final Color[] tauntcolours = {new Color(104,46,108), new Color(38,92,66), new Color(25,60,62), new Color(58,68,102), new Color(38,43,68), new Color(62,39,49)};
     public String txt,taunt;
     public Color txtcolour;
+    public int chat;
 
     public ObjectCharacter(Game game, PlayerControlScheme pcs, int sprite, int x, int y){
         super(game,pcs);
@@ -18,6 +20,13 @@ public class ObjectCharacter extends PlayerObject {
         taunt = "";
         txtcolour = tauntcolours[(int)(Math.random()*tauntcolours.length)];
         inst = 2;
+        chat = 0;
+    }
+
+    private void setTaunt(String t){
+        String[] a = {"speak3","speak4","speak5","speak6"};
+        AudioManager.audio.get(a[(int)(Math.random()*3)]).play(x,y,draw.view_x+draw.view_w/2,draw.view_y+draw.view_h/2);
+        taunt = t;
     }
 
     @Override
@@ -51,6 +60,32 @@ public class ObjectCharacter extends PlayerObject {
                     draw.view_y -= (draw.view_y-(y-main.FRAMEBUFFER_H/2.))*0.05;
                     hsp = (main.input.get(KeyEvent.VK_D)-main.input.get(KeyEvent.VK_A))*0.2;
                     if(main.input.get(KeyEvent.VK_W) == 1 && game.pointCheck(x,y+2) == 1) vsp -= 0.5;
+
+                    if(main.gamemode == GM.GM_JOIN){
+                        if(main.input.get(KeyEvent.VK_T) == 1 && chat == 0){
+                            //main.keycontext = UID.hashCode();
+                            main.keybuffer = "";
+                            chat = 1;
+                        }
+                        if(chat == 1){
+                            main.keycontext = main.UID.hashCode();
+                            if(main.input.get(KeyEvent.VK_ENTER) == 1){
+                                chat = 0;
+                                main.keycontext = -1;
+                                // network send
+                                if(main.keybuffer.length() > 0){
+                                    ByteBuffer buffer = NetworkHandler.packet_start(NPH.NET_CHAT);
+                                    buffer.put((byte)1);
+                                    buffer.put(main.UID.getBytes());
+                                    buffer.put((byte)main.keybuffer.length());
+                                    buffer.put(main.keybuffer.getBytes());
+                                    NetworkHandler.send_all(buffer);
+                                }
+                            }
+                            taunt = main.keybuffer;
+                            txt = main.keybuffer;
+                        }
+                    }
 
                     /*int mx = (int)Math.floor((main.mousex-game.posx)/main.SPR_WIDTH), my = (int)((main.mousey-game.posy)/main.SPR_WIDTH);
                     draw.batchPush(155,game.posx+mx*main.SPR_WIDTH,game.posy+my*main.SPR_WIDTH,main.SPR_WIDTH,main.SPR_WIDTH);
@@ -92,17 +127,12 @@ public class ObjectCharacter extends PlayerObject {
                     break;
                 case PCS_AI:
                     //System.out.print("gobby... ");
-                    if(taunt.length() > txt.length() && (int)(Math.random()*5) == 0){
-                        txt = taunt.substring(0,txt.length()+1); // taunt animation
-                        //if(Math.random() < 0.1)  AudioManager.audio.get("speak2").play(x,y,draw.view_x+draw.view_w/2,draw.view_y+draw.view_h/2);
-                    }
                     if(game.state == game.STATE_LOSE || (taunt == "" && (int)(Math.random()*(main.TPS*5)) == 0) && vis == 1){
-                        String[] a = {"speak3","speak4","speak5","speak6"};
+                        setTaunt(taunts[(int)(Math.random()*taunts.length)]);
+                        /*String[] a = {"speak3","speak4","speak5","speak6"};
                         AudioManager.audio.get(a[(int)(Math.random()*3)]).play(x,y,draw.view_x+draw.view_w/2,draw.view_y+draw.view_h/2);
-                        taunt = taunts[(int)(Math.random()*taunts.length)]; // new taunt
+                        taunt = taunts[(int)(Math.random()*taunts.length)]; // new taunt*/
                     }
-
-                    if(main.
 
                     // run away from current tetromino
                     /*if(Math.abs(currentTetromino.dx+boardx+2*main.SPR_WIDTH-e.x) < 2*main.SPR_WIDTH) e.hsp = -(currentTetromino.dx+boardx+2*main.SPR_WIDTH-e.x)*0.01;
@@ -113,14 +143,24 @@ public class ObjectCharacter extends PlayerObject {
 
             if(Math.abs(hsp)+Math.abs(vsp) > 0.01) change = 1;
 
-            if(game.pointCheck(x,y) == 1){ // die from being crushed
-                destroy = 1;
-                AudioManager.audio.get("speak3").play(x,y,draw.view_x+draw.view_w/2,draw.view_y+draw.view_h/2);
-                //for(int j = 0; j < 4; j++) draw.particlePush(130,134,0.03+0.02*Math.random(),(int)x,(int)y,-0.1+0.2*Math.random(),-0.1+0.2*Math.random(), Color.WHITE);
-                //draw.particlePush(150,154,0.09+0.01*Math.random(),(int)x-main.SPR_WIDTH/2,(int)y-main.SPR_WIDTH,-0.01+0.02*Math.random(),-0.08,Color.WHITE);
-                for(int j = 0; j < 4; j++) CreateObject(new ObjectParticle(game,(int)x,(int)y,-0.1+0.2*Math.random(),-0.1+0.2*Math.random(),130,134,0.03+0.02*Math.random(),240,Color.WHITE));
-                CreateObject(new ObjectParticle(game, (int)x-main.SPR_WIDTH/2, (int)y-main.SPR_WIDTH, -0.01+0.02*Math.random(), -0.08, 150, 154, 0.09+0.01*Math.random(), 240, Color.WHITE));
-            }
+        }
+
+        if(taunt.length() > txt.length() && (int)(Math.random()*5) == 0){
+            txt = taunt.substring(0,txt.length()+1); // taunt animation
+        }
+
+        if(game.pointCheck(x,y) == 1){ // die from being crushed
+            destroy = 1;
+            AudioManager.audio.get("speak3").play(x,y,draw.view_x+draw.view_w/2,draw.view_y+draw.view_h/2);
+            //for(int j = 0; j < 4; j++) draw.particlePush(130,134,0.03+0.02*Math.random(),(int)x,(int)y,-0.1+0.2*Math.random(),-0.1+0.2*Math.random(), Color.WHITE);
+            //draw.particlePush(150,154,0.09+0.01*Math.random(),(int)x-main.SPR_WIDTH/2,(int)y-main.SPR_WIDTH,-0.01+0.02*Math.random(),-0.08,Color.WHITE);
+            for(int j = 0; j < 4; j++) CreateObject(new ObjectParticle(game,(int)x,(int)y,-0.1+0.2*Math.random(),-0.1+0.2*Math.random(),130,134,0.03+0.02*Math.random(),240,Color.WHITE));
+            CreateObject(new ObjectParticle(game, (int)x-main.SPR_WIDTH/2, (int)y-main.SPR_WIDTH, -0.01+0.02*Math.random(), -0.08, 150, 154, 0.09+0.01*Math.random(), 240, Color.WHITE));
+        }
+
+        if(UID == main.UID){
+            draw.view_x -= (draw.view_x-(x-main.FRAMEBUFFER_W/2.))*0.05;
+            draw.view_y -= (draw.view_y-(y-main.FRAMEBUFFER_H/2.))*0.05;
         }
 
         // draw self

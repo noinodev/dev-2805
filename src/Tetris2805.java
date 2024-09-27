@@ -537,7 +537,7 @@ public class Tetris2805 extends JPanel implements ActionListener {
                 }
             }
             // save data on safe close
-            if(scores != null) saveData(scores,"src/data/hscore.txt",ParseFormat.JSON);
+            if(scores != null && scores.size() > 0) saveData(scores,"src/data/hscore.txt",ParseFormat.JSON);
             if(cfg != null) saveData(cfg,"src/data/config.txt",ParseFormat.JSON);
             System.exit(1);
         });

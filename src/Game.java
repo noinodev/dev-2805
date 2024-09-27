@@ -513,6 +513,8 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
             });
             aithread.start();
 
+            //playerObject.UID = main.UID;
+
             /*Thread lightthread = new Thread(() -> {
                 double expectedFrametime = 1000000000 / (240.);
                 while(state != STATE_GAMEOVER && main.sceneIndex == 4){
@@ -559,12 +561,14 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
     public void loop(){
         // animations and interpolations for various states
 
-        if(!AudioManager.audio.get("ambienthigh").playing() && (Integer)main.cfg.get("music") == 1) AudioManager.audio.get("ambienthigh").play(0,0,0,0);
-        else AudioManager.audio.get("ambienthigh").stop();
-        if(!AudioManager.audio.get("ambientlow").playing() && (Integer)main.cfg.get("music") == 1) AudioManager.audio.get("ambientlow").play(0,0,0,0);
-        else AudioManager.audio.get("ambienthigh").stop();
-        AudioManager.audio.get("ambientlow").pos(0, draw.view_y+draw.view_h/2,-80,boardy+boardHeight*main.SPR_WIDTH);
-        AudioManager.audio.get("ambienthigh").pos(0, draw.view_y+draw.view_h/2,80,boardy+(boardHeight/4)*main.SPR_WIDTH);
+        if((Integer)main.cfg.get("music") == 1){
+            if(!AudioManager.audio.get("ambienthigh").playing()) AudioManager.audio.get("ambienthigh").play(0,0,0,0);
+            //else AudioManager.audio.get("ambienthigh").stop();
+            if(!AudioManager.audio.get("ambientlow").playing()) AudioManager.audio.get("ambientlow").play(0,0,0,0);
+            //else AudioManager.audio.get("ambienthigh").stop();
+            AudioManager.audio.get("ambientlow").pos(0, draw.view_y+draw.view_h/2,-80,boardy+boardHeight*main.SPR_WIDTH);
+            AudioManager.audio.get("ambienthigh").pos(0, draw.view_y+draw.view_h/2,80,boardy+(boardHeight/4)*main.SPR_WIDTH);
+        }
         //AudioManager.audio.get("ambientlow").setGain((float)Math.max(Math.min((1.-Math.abs(draw.view_y+draw.view_h/2-boardy+boardHeight*main.SPR_WIDTH)/20),1),0)*-0.5f);
         //AudioManager.audio.get("ambienthigh").setGain((float)Math.max(Math.min((1.-Math.abs(draw.view_y+draw.view_h/2-boardy)/80),1),0)*-0.5f);
         //AudioManager.audio.get("ambientlow").setGain((float)(1.-Math.abs(draw.view_y+draw.view_h/2-boardy+boardHeight*main.SPR_WIDTH)/100));

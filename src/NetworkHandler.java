@@ -338,8 +338,27 @@ public class NetworkHandler {
                                 obj.sprite = sprite;
                             }*/
                         } break;
-                        case NPH.NET_HIT: {
-
+                        case NPH.NET_CHAT: {
+                            buffer_recv.get(uidrecv);
+                            byte bounce = buffer_recv.get();
+                            buffer_recv.get(uidrecv);
+                            String uid = new String(uidrecv, StandardCharsets.UTF_8);
+                            byte len = buffer_recv.get();
+                            byte[] msg = new byte[len];
+                            buffer_recv.get(msg);
+                            String msgstr = new String(msg, StandardCharsets.UTF_8);
+                            //async_load.put("game.chat."+uid,msgstr);
+                            if(msgstr.length() > 0 && GameObject.netobjects.get(uid) != null) ((ObjectCharacter)GameObject.netobjects.get(uid)).taunt = msgstr;
+                            //((ObjectCharacter)GameObject.netobjects.get(uid)).txt = msgstr;
+                            if(bounce == 1){
+                                System.out.println(msgstr);
+                                ByteBuffer buffer = packet_start(NPH.NET_CHAT);
+                                buffer.put((byte)0);
+                                buffer.put(uidrecv);
+                                buffer.put(len);
+                                buffer.put(msg);
+                                send_all(buffer);
+                            }
                         } break;
 
                         case NPH.NET_TILE: {
