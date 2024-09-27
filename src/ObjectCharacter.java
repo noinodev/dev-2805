@@ -8,6 +8,7 @@ public class ObjectCharacter extends PlayerObject {
             "WOW...","ZZZ","STOP TRYING","IM IN JAVA?","GOBLINPILLED","GOBLIN4LIFE","...","THEY NOT LIKE US","I LOVE GRIMES"};
     public static final Color[] tauntcolours = {new Color(104,46,108), new Color(38,92,66), new Color(25,60,62), new Color(58,68,102), new Color(38,43,68), new Color(62,39,49)};
     public String txt,taunt;
+    public String name;
     public Color txtcolour;
     public int chat;
 
@@ -18,6 +19,7 @@ public class ObjectCharacter extends PlayerObject {
         this.y = y;
         txt = "";
         taunt = "";
+        name = "";
         txtcolour = tauntcolours[(int)(Math.random()*tauntcolours.length)];
         inst = 2;
         chat = 0;
@@ -56,8 +58,8 @@ public class ObjectCharacter extends PlayerObject {
                 case PCS_LOCAL:
                     //
                     main.inputtype = 1;
-                    draw.view_x -= (draw.view_x-(x-main.FRAMEBUFFER_W/2.))*0.05;
-                    draw.view_y -= (draw.view_y-(y-main.FRAMEBUFFER_H/2.))*0.05;
+                    //draw.view_x -= (draw.view_x-(x-main.FRAMEBUFFER_W/2.))*0.05;
+                    //draw.view_y -= (draw.view_y-(y-main.FRAMEBUFFER_H/2.))*0.05;
                     hsp = (main.input.get(KeyEvent.VK_D)-main.input.get(KeyEvent.VK_A))*0.2;
                     if(main.input.get(KeyEvent.VK_W) == 1 && game.pointCheck(x,y+2) == 1) vsp -= 0.5;
 
@@ -76,6 +78,7 @@ public class ObjectCharacter extends PlayerObject {
                                 if(main.keybuffer.length() > 0){
                                     ByteBuffer buffer = NetworkHandler.packet_start(NPH.NET_CHAT);
                                     buffer.put((byte)1);
+                                    buffer.put((byte)0);
                                     buffer.put(main.UID.getBytes());
                                     buffer.put((byte)main.keybuffer.length());
                                     buffer.put(main.keybuffer.getBytes());
@@ -158,10 +161,11 @@ public class ObjectCharacter extends PlayerObject {
             CreateObject(new ObjectParticle(game, (int)x-main.SPR_WIDTH/2, (int)y-main.SPR_WIDTH, -0.01+0.02*Math.random(), -0.08, 150, 154, 0.09+0.01*Math.random(), 240, Color.WHITE));
         }
 
-        if(UID == main.UID){
+        if(game.playerObject == this){
+            if(Math.random() < 0.2) game.illum *= 0.8;
             draw.view_x -= (draw.view_x-(x-main.FRAMEBUFFER_W/2.))*0.05;
             draw.view_y -= (draw.view_y-(y-main.FRAMEBUFFER_H/2.))*0.05;
-        }
+        }//else if(game.playerObject == null) game.playerObject = this;
 
         // draw self
         int bx = Math.max(Math.min((int)(Math.floor(x-game.boardx)/main.SPR_WIDTH),game.boardWidth-1),0);
@@ -169,10 +173,15 @@ public class ObjectCharacter extends PlayerObject {
 
         Color c = game.getLightLocal(x,y,0);
 
-        draw.batchPush((int)sprite+(int)(main.frame/(main.TPS/2))%2+(hsp != 0 ? 1 : 0),
+        draw.batchPush((int)sprite+(int)(main.frame/(main.TPS/6))%2+(hsp != 0 ? 1 : 0),
                 (int)x-xd*main.SPR_WIDTH/2,
                 (int)y-main.SPR_WIDTH+(int)Math.abs(Math.sin((main.frame/main.TPS + id*234)*Math.PI)*Math.abs(hsp)),
                 xd*main.SPR_WIDTH,main.SPR_WIDTH,c);
+
+        if(name != ""){
+            draw.batchPush(9,(int)x-10-name.length()*3,(int)y+4,name.length()*6,8,new Color(24,20,37));
+            draw.drawText(name,(int)x-10,(int)y+4-(int)x%2,8,6,txtcolour,1);
+        }
         // draw taunt
         if(txt != ""){
             draw.batchPush(9,(int)x-10,(int)y-18-(int)x%2,txt.length()*6,8,new Color(24,20,37));

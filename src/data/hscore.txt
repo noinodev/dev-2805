@@ -1,0 +1,8 @@
+{
+   "ASUKA":23429,
+   "AYANAMI":3453,
+   "SPLAMOGUS":0,
+   "TOHSAKA":346435,
+   "AKASHI":2222,
+   "HARUKO":12463
+}

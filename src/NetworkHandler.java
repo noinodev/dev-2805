@@ -29,6 +29,7 @@ class NPH { //NetworkPacketHeader
     public static final byte NET_HIT=13;
     public static final byte NET_TILE=14;
     public static final byte NET_CHAT=15;
+    public static final byte NET_NAME=15;
 }
 
 class Client {
@@ -273,7 +274,7 @@ public class NetworkHandler {
                         case NPH.NET_OBJ: {
                             GameObject.lock = 1; // poor mans mutex
                             buffer_recv.get(uidrecv);
-                            //String cuid = new String(uidrecv, StandardCharsets.UTF_8);
+                            String cuid = new String(uidrecv, StandardCharsets.UTF_8);
                             int objcount = buffer_recv.getInt();
                             for(int i = 0; i < objcount; i++){
                                 buffer_recv.get(uidrecv);
@@ -295,7 +296,7 @@ public class NetworkHandler {
                                             //System.out.println("tree/rock at: "+x+","+y);
                                         }else if(inst == 2){
                                             o = new ObjectCharacter(GameObject.g,PlayerControlScheme.PCS_EXTERN,137,140,50);
-                                            System.out.println("gobby at: "+x+","+y);
+                                            //System.out.println("gobby at: "+x+","+y);
                                         }
                                         else if(inst == 3) o = new ObjectTetromino(GameObject.g,PlayerControlScheme.PCS_EXTERN,(int)sprite,(int)x,(int)y,0,0);
                                         if(o != null) GameObject.syncObject(o,uid);
@@ -312,7 +313,7 @@ public class NetworkHandler {
                                         p.hsp = hsp;
                                         p.vsp = vsp;
                                         p.change = 1;
-                                    }
+                                    }else System.out.println("something fishy goin on " + uid);
                                 }
                             }
                             GameObject.lock = 0;
@@ -341,6 +342,7 @@ public class NetworkHandler {
                         case NPH.NET_CHAT: {
                             buffer_recv.get(uidrecv);
                             byte bounce = buffer_recv.get();
+                            byte type = buffer_recv.get();
                             buffer_recv.get(uidrecv);
                             String uid = new String(uidrecv, StandardCharsets.UTF_8);
                             byte len = buffer_recv.get();
@@ -348,12 +350,16 @@ public class NetworkHandler {
                             buffer_recv.get(msg);
                             String msgstr = new String(msg, StandardCharsets.UTF_8);
                             //async_load.put("game.chat."+uid,msgstr);
-                            if(msgstr.length() > 0 && GameObject.netobjects.get(uid) != null) ((ObjectCharacter)GameObject.netobjects.get(uid)).taunt = msgstr;
+                            if(msgstr.length() > 0 && GameObject.netobjects.get(uid) != null){
+                                if(type == 0) ((ObjectCharacter)GameObject.netobjects.get(uid)).taunt = msgstr;
+                                else ((ObjectCharacter)GameObject.netobjects.get(uid)).name = msgstr;
+                            }
                             //((ObjectCharacter)GameObject.netobjects.get(uid)).txt = msgstr;
                             if(bounce == 1){
-                                System.out.println(msgstr);
+                                //System.out.println(msgstr);
                                 ByteBuffer buffer = packet_start(NPH.NET_CHAT);
                                 buffer.put((byte)0);
+                                buffer.put(type);
                                 buffer.put(uidrecv);
                                 buffer.put(len);
                                 buffer.put(msg);
@@ -363,10 +369,19 @@ public class NetworkHandler {
 
                         case NPH.NET_TILE: {
                             buffer_recv.get(uidrecv);
+                            byte bounce = buffer_recv.get();
                             int x = buffer_recv.getInt();
                             int y = buffer_recv.getInt();
                             int val = buffer_recv.getInt();
                             GameObject.g.board[x][y] = val;
+                            if(bounce == 1){
+                                ByteBuffer buffer = packet_start(NPH.NET_TILE);
+                                buffer.put((byte)0);
+                                buffer.putInt(x);
+                                buffer.putInt(y);
+                                buffer.putInt(val);
+                                send_all(buffer);
+                            }
                         } break;
 
                         default:

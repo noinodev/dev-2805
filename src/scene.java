@@ -101,10 +101,11 @@ class config extends scene { // config menu
                 main.cfg.put("width",draw.drawSlider("BOARD WIDTH",20,30+10,main.FRAMEBUFFER_W-40,10,(Integer)main.cfg.get("width"),5,15));
                 main.cfg.put("height",draw.drawSlider("BOARD HEIGHT",20,30+10*2,main.FRAMEBUFFER_W-40,10,(Integer)main.cfg.get("height"),15,30));
                 main.cfg.put("level",draw.drawSlider("LEVEL",20,30+10*3,main.FRAMEBUFFER_W-40,10,(Integer)main.cfg.get("level"),0,10));
+                main.cfg.put("light",draw.drawSlider("DARKNESS",20,30+10*4,main.FRAMEBUFFER_W-40,10,(Integer)main.cfg.get("light"),0,10));
 
-                main.cfg.put("music",draw.drawToggle("MUSIC",20,30+10*4,main.FRAMEBUFFER_W-40,10,(Integer)main.cfg.get("music")));
-                main.cfg.put("sound",draw.drawToggle("SFX",20,30+10*5,main.FRAMEBUFFER_W-40,10,(Integer)main.cfg.get("sound")));
-                main.cfg.put("extend",draw.drawToggle("GOBLIN MODE",20,30+10*6,main.FRAMEBUFFER_W-40,10,(Integer)main.cfg.get("extend")));
+                main.cfg.put("music",draw.drawToggle("MUSIC",20,30+10*5,main.FRAMEBUFFER_W-40,10,(Integer)main.cfg.get("music")));
+                main.cfg.put("sound",draw.drawToggle("SFX",20,30+10*6,main.FRAMEBUFFER_W-40,10,(Integer)main.cfg.get("sound")));
+                main.cfg.put("extend",draw.drawToggle("GOBLIN MODE",20,30+10*7,main.FRAMEBUFFER_W-40,10,(Integer)main.cfg.get("extend")));
                 //main.cfg.put("profiler",draw.drawToggle("PROFILER",20,30+10*6,main.FRAMEBUFFER_W-40,10,(Integer)main.cfg.get("profiler")));
             break;
             case 1:
@@ -153,15 +154,19 @@ class config extends scene { // config menu
 
 class hscore extends scene { // leaderboard menu
     private int time;
-    private ArrayList<Map.Entry<String, Integer>> list;
+    private ArrayList<Map.Entry<String, Object>> list;
     public hscore(Tetris2805 m, D2D d) {
         super(m, d);
         time = 0;
         D2D.clearColour = new Color(24,20,37);
         // sorted score list
-        /*list = new ArrayList<>(main.scores.entrySet());
-        list.sort(Map.Entry.<String, Object>comparingByValue().reversed());
-        main.sceneIndex = 3;*/
+        list = new ArrayList<>(main.scores.entrySet());
+        list.sort((entry1, entry2) -> { // comparator sort
+            Integer value1 = (Integer) entry1.getValue();
+            Integer value2 = (Integer) entry2.getValue();
+            return value2.compareTo(value1);
+        });
+        main.sceneIndex = 3;
     }
     @Override
     public void loop(){
@@ -170,12 +175,12 @@ class hscore extends scene { // leaderboard menu
         double a = time/main.TPS;
         draw.drawText("HIGHSCORES",20,20,10,8,new Color((int)(255*a),(int)(255*a),(int)(255*a)));
         // draw leaderboard
-        /*int i = 0;
-        for(Map.Entry<String, Integer> entry : list){
+        int i = 0;
+        for(Map.Entry<String, Object> entry : list){
             int c = (int)(255*(a/(2+i)));
             draw.drawText(entry.getKey() + " " + entry.getValue(),20,30+8*i,8,6,new Color(c,c,c));
             i++;
-        }*/
+        }
         if(draw.drawButton("BACK",20,main.FRAMEBUFFER_H-20,80,10) == 1) main.currentScene = new menu(main,draw);
     }
 
@@ -227,6 +232,8 @@ class MenuLobby extends scene { // config menu
                     // send game settings to all clients and start game
                     // when clients receive, start game
                 }
+                NetworkHandler.async_load.remove("udp.connecting");
+                NetworkHandler.async_load.remove("udp.success");
                 main.currentScene = new Game(main,draw);
             }
         }else{
@@ -243,14 +250,11 @@ class MenuLobby extends scene { // config menu
                         main.gamemode_last = main.gamemode;
                         //initialize telling the server that you are hosting
                         ByteBuffer buffer = NetworkHandler.packet_start(NPH.NET_HOST);
-
                         NetworkHandler.send(buffer,NetworkHandler.mmserver_ip, NetworkHandler.mmserver_port);
                     }
 
                     if((int)main.frame%main.TPS == 0){
                         ByteBuffer buffer = NetworkHandler.packet_start(NPH.NET_PING);
-                        //buffer.put(main.UID.getBytes());
-
                         NetworkHandler.send(buffer,NetworkHandler.mmserver_ip, NetworkHandler.mmserver_port);
                     }
 
@@ -303,7 +307,10 @@ class MenuLobby extends scene { // config menu
                     }else if(currentlobby != trylobby){
                         draw.drawText("WAITING FOR SERVER TO RESPOND",30,50,8,6,Color.GRAY);
                         //int ack = (String) NetworkHandler.async_load.get("mm.join.ack");
-                        if(NetworkHandler.async_load.get("mm.ack.join") != null) currentlobby = trylobby; // join ack
+                        if(NetworkHandler.async_load.get("mm.ack.join") != null){
+                            NetworkHandler.async_load.remove("mm.ack.join");
+                            currentlobby = trylobby; // join ack
+                        }
                     }else{
                         if((int)main.frame%main.TPS == 0){
                             ByteBuffer buffer = NetworkHandler.packet_start(NPH.NET_PING);

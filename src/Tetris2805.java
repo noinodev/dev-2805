@@ -39,7 +39,7 @@ public class Tetris2805 extends JPanel implements ActionListener {
     public Map<String,Object> cfg;
 
     public final HashMap<Integer,Integer> input = new HashMap<>();
-    public final int keybuffermax = 10;
+    public final int keybuffermax = 20;
     public String keybuffer;
     public double mousex,mousey,mousexraw,mouseyraw,mousexl,mouseyl;
     public int cursorcontext, keycontext, displayconfirm, inputtype;

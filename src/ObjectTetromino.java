@@ -102,7 +102,7 @@ public class ObjectTetromino extends PlayerObject {
         }
 
         int time = game.time;
-        if(game.game_start_wait <= 0){
+        if(game.game_start_wait <= 0 && game.state == game.STATE_PLAY){
             if((time/4f > Math.max(1,60-6*game.level) || (main.input.get(KeyEvent.VK_DOWN)%12 == 1 && control_scheme != PlayerControlScheme.PCS_EXTERN)) && Math.abs(x-dx*main.SPR_WIDTH) + Math.abs(y-dy*main.SPR_WIDTH) < 10){
                 AudioManager.audio.get("tap2").play(0f,0f,0f,0f);
                 game.time = 0;
@@ -130,7 +130,7 @@ public class ObjectTetromino extends PlayerObject {
                     //nextTetronimo = (int)(Math.random() * tetrominoList.length);
                     ///*if(control_scheme != PlayerControlScheme.PCS_EXTERN) */ResetTetromino(/*game.board_bound_x+game.board_bound_w/2-game.TET_WIDTH/2,0,game.nextTetronimo,10*Math.min(game.level/2,5)+4+(int)(Math.random()*4)*/);
                     ResetTetromino();
-                    if(!checkBoardState() && game.state != game.STATE_LOSE){ // fail state, if tetromino spawns fouled then state is set to lose
+                    if(!checkBoardState()/* && game.state != game.STATE_LOSE*/){ // fail state, if tetromino spawns fouled then state is set to lose
                         game.lives--;
                         game.clearx = 0;
                         game.state = game.STATE_LOSE;
