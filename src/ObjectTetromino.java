@@ -108,7 +108,7 @@ public class ObjectTetromino extends PlayerObject {
                 game.time = 0;
                 if(!checkBoardState()){ // collision on drop
                     // merge tetromino
-                    AudioManager.audio.get("drop1").play(x,y,draw.view_x+draw.view_w/2,draw.view_y+draw.view_h/2);
+                    AudioManager.audio.get("tap2").play(x,y,draw.view_x+draw.view_w/2,draw.view_y+draw.view_h/2);
                     for(int i = 0; i < game.TET_WIDTH; i++){
                         for(int j = 0; j < game.TET_WIDTH; j++){
                             int tx = dx+i, ty = dy+j;

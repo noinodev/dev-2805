@@ -1,13 +1,15 @@
 {
-   "extend":1,
-   "music":0,
-   "diag":0,
    "level":0,
-   "networkip":"127.0.0.1",
+   "networkip":"LOCALHOST",
+   "video.colouring":0,
    "sound":1,
-   "width":10,
    "ai":1,
+   "profiler":1,
    "networkport":22565,
+   "extend":1,
+   "music":1,
+   "video.particles":0,
+   "width":15,
    "height":20,
-   "username":"AMONGUS"
+   "username":"SPLAMOGUS"
 }

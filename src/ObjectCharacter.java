@@ -47,8 +47,8 @@ public class ObjectCharacter extends PlayerObject {
                 case PCS_LOCAL:
                     //
                     main.inputtype = 1;
-                    //draw.view_x -= (draw.view_x-(x-main.FRAMEBUFFER_W/2.))*0.05;
-                    //draw.view_y -= (draw.view_y-(y-main.FRAMEBUFFER_H/2.))*0.05;
+                    draw.view_x -= (draw.view_x-(x-main.FRAMEBUFFER_W/2.))*0.05;
+                    draw.view_y -= (draw.view_y-(y-main.FRAMEBUFFER_H/2.))*0.05;
                     hsp = (main.input.get(KeyEvent.VK_D)-main.input.get(KeyEvent.VK_A))*0.2;
                     if(main.input.get(KeyEvent.VK_W) == 1 && game.pointCheck(x,y+2) == 1) vsp -= 0.5;
 
@@ -85,6 +85,10 @@ public class ObjectCharacter extends PlayerObject {
                     //
                     x -= (x-tx)*0.3;
                     y -= (y-ty)*0.3;
+                    if(NetworkHandler.async_load.get("game.chat."+UID) != null){
+                        taunt = (String)NetworkHandler.async_load.get("game.chat."+UID);
+                        NetworkHandler.async_load.remove("game.chat."+UID);
+                    }
                     break;
                 case PCS_AI:
                     //System.out.print("gobby... ");
@@ -97,6 +101,8 @@ public class ObjectCharacter extends PlayerObject {
                         AudioManager.audio.get(a[(int)(Math.random()*3)]).play(x,y,draw.view_x+draw.view_w/2,draw.view_y+draw.view_h/2);
                         taunt = taunts[(int)(Math.random()*taunts.length)]; // new taunt
                     }
+
+                    if(main.
 
                     // run away from current tetromino
                     /*if(Math.abs(currentTetromino.dx+boardx+2*main.SPR_WIDTH-e.x) < 2*main.SPR_WIDTH) e.hsp = -(currentTetromino.dx+boardx+2*main.SPR_WIDTH-e.x)*0.01;

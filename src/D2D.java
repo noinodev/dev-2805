@@ -87,6 +87,7 @@ public class D2D{
     public void batchDraw(){
         double vw = (framebuffer[gcontext].getWidth()/view_w), vh = (framebuffer[gcontext].getHeight()/view_h);
         //System.out.println(batch.size());
+        int c = (Integer)Tetris2805.main.cfg.get("video.colouring");
         if(batch.size() > 0){
             //long now = System.nanoTime();
             for(int i = 0; i < batch.size(); i++) {
@@ -96,7 +97,7 @@ public class D2D{
                     BufferedImage finaldraw;// = spr.sprite;
 
                     finaldraw = spr.sprite;
-                    if(spr.colour != null && spr.colour != Color.WHITE) finaldraw = tintImage(spr.sprite,spr.colour);
+                    if((c == 1 || spr.sprite==sprites[9]) && spr.colour != null && spr.colour != Color.WHITE) finaldraw = tintImage(spr.sprite,spr.colour);
 
                     int x,y,w,h;
                     x = (int)((spr.x-view_x)*vw);
@@ -168,13 +169,14 @@ public class D2D{
     public void drawText(String s, int x, int y, int size, int space, Color c) { drawText(s,x,y,size,space,c,0); }
     public void drawText(String s, int x, int y, int size, int space, Color c, int alignment){
         if(s.length() > 0){
+            int col = (Integer)Tetris2805.main.cfg.get("video.colouring");
             if(alignment == 1) x -= (s.length()*space)/2;
             for(int i = 0; i < s.length(); i++){
                 char j = s.charAt(i);
                 if(textAtlas.get(j) != null){
                     int chr = textAtlas.get(j);
                     if(chr != -1){
-                        batchPush(textAtlas.get(j),x+i*space,y+1,size,size,Color.BLACK);
+                        if(col == 1) batchPush(textAtlas.get(j),x+i*space,y+1,size,size,Color.BLACK);
                         batchPush(textAtlas.get(j),x+i*space,y,size,size,c);
                     }
                 }
@@ -187,9 +189,9 @@ public class D2D{
     public int getButtonContext(int x, int y, int w, int h, int mousecontext){ // get cursor context for buttons, text fields etc, and get the current button to reset the animation
         int m = main.mouseInArea(x,y,w,h);
         if(m == 1){
-            if(lastbutton != x+y){ // dum dum button hash, say NO to classes !
+            if(lastbutton != x-(int)view_x+y-(int)view_y){ // dum dum button hash, say NO to classes !
                 buttonanim = 0;
-                lastbutton = x+y;
+                lastbutton = x-(int)view_x+y-(int)view_y;
             }else buttonanim = Math.min((buttonanim+(1-buttonanim)*0.2),1);
             main.cursorcontext = mousecontext;
         }

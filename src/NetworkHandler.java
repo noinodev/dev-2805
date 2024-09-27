@@ -28,6 +28,7 @@ class NPH { //NetworkPacketHeader
     public static final byte NET_SYN=12;
     public static final byte NET_HIT=13;
     public static final byte NET_TILE=14;
+    public static final byte NET_CHAT=15;
 }
 
 class Client {

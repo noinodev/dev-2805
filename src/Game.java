@@ -41,6 +41,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
     private double tilebreak;
     public int game_start_wait;
     public int enemy_visible;
+    public int chat;
 
     public double globallight;
 
@@ -342,6 +343,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
         wood=1;
         stone=1;
         enemy_visible = 0;
+        chat = 0;
 
         AudioManager.audio.get("ambienthigh").play(0,0,0,0);
         AudioManager.audio.get("ambientlow").play(0,0,0,0);
@@ -466,9 +468,9 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                             pb = PlayerAgentAI.getBestPosition(board,board_bound_x,board_bound_w,pieces,0);
                         }
                         if(pb != null){
-                            if(currentTetromino.dy == 0 || b == null || (Double)pb[1] <= (Double)b[1]){
+                            //if(currentTetromino.dy == 0 || b == null || (Double)pb[1] <= (Double)b[1]){
                                 b = pb;
-                            }
+                            //}
                         }
                         if(b != null && b[0] != null){
                             ((ObjectTetromino)b[0]).dx += board_bound_x;
@@ -498,8 +500,8 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                         }else main.input.put(KeyEvent.VK_DOWN,1);//System.out.println("given up..");
                     }
 
-                    long timeTaken = System.nanoTime() - now,
-                            sleepTime = (long)(expectedFrametime - timeTaken);
+                    long timeTaken = System.nanoTime() - now, sleepTime = (long)(expectedFrametime - timeTaken);
+                    main.frametimes[2] = timeTaken;
                     if (sleepTime > 0) {
                         try {
                             Thread.sleep(sleepTime / 1000000, (int)(sleepTime % 1000000));
@@ -557,8 +559,10 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
     public void loop(){
         // animations and interpolations for various states
 
-        if(!AudioManager.audio.get("ambienthigh").playing()) AudioManager.audio.get("ambienthigh").play(0,0,0,0);
-        if(!AudioManager.audio.get("ambientlow").playing()) AudioManager.audio.get("ambientlow").play(0,0,0,0);
+        if(!AudioManager.audio.get("ambienthigh").playing() && (Integer)main.cfg.get("music") == 1) AudioManager.audio.get("ambienthigh").play(0,0,0,0);
+        else AudioManager.audio.get("ambienthigh").stop();
+        if(!AudioManager.audio.get("ambientlow").playing() && (Integer)main.cfg.get("music") == 1) AudioManager.audio.get("ambientlow").play(0,0,0,0);
+        else AudioManager.audio.get("ambienthigh").stop();
         AudioManager.audio.get("ambientlow").pos(0, draw.view_y+draw.view_h/2,-80,boardy+boardHeight*main.SPR_WIDTH);
         AudioManager.audio.get("ambienthigh").pos(0, draw.view_y+draw.view_h/2,80,boardy+(boardHeight/4)*main.SPR_WIDTH);
         //AudioManager.audio.get("ambientlow").setGain((float)Math.max(Math.min((1.-Math.abs(draw.view_y+draw.view_h/2-boardy+boardHeight*main.SPR_WIDTH)/20),1),0)*-0.5f);
@@ -1015,7 +1019,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
 
         if(state == STATE_oops){
             if(main.displayconfirm != main.DIALOG_CONTEXT_MENU) state = oldstate;
-        }else if(draw.drawButton("BACK",20,main.FRAMEBUFFER_H-20,80,10) == 1){
+        }else if(draw.drawButton("BACK",(int)draw.view_x+20,(int)draw.view_y+main.FRAMEBUFFER_H-20,80,10) == 1){
             if(state != STATE_GAMEOVER){
                 oldstate = state;
                 state = STATE_oops;

@@ -140,6 +140,7 @@ class ObjectParticle extends GameObject {
         this.time = time;
         this.colour = colour;
         inst = 1;
+        if((Integer)Tetris2805.main.cfg.get("video.particles") == 1) destroy = 1;
     }
 
     @Override

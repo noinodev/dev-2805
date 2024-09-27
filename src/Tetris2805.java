@@ -48,6 +48,7 @@ public class Tetris2805 extends JPanel implements ActionListener {
     private D2D draw;
     public float frame;
     public double delta;
+    public static final double[] frametimes = new double[5];
 
     public scene currentScene;
     public int sceneIndex;
@@ -136,8 +137,8 @@ public class Tetris2805 extends JPanel implements ActionListener {
             switch(format){
                 case ParseFormat.JSON:
                     String json = new String(Files.readAllBytes(Paths.get(file)));
-                    if(json.charAt(0) == '{') out = JsonToMap(json);
-                    else System.out.println("not json: "+file);
+                    if(json.length() > 0 && json.charAt(0) == '{') out = JsonToMap(json);
+                    else System.out.println("not json or file empty: "+file);
                 break;
                 case ParseFormat.MAP:
                     out = new HashMap<>();
@@ -231,6 +232,10 @@ public class Tetris2805 extends JPanel implements ActionListener {
         gamemode_last = gamemode;
         working_directory = Path.of("").toAbsolutePath();
 
+        scores = loadData("src/data/hscore.txt",ParseFormat.JSON);
+        if(scores == null) scores = new HashMap<>();
+        cfg = loadData("src/data/config.txt",ParseFormat.JSON);
+
         fullscreen = 0;
         //String cwd = working_directory.toString();
         //System.out.println(cwd+"src/resources/atlas.png");
@@ -239,6 +244,10 @@ public class Tetris2805 extends JPanel implements ActionListener {
         mousey = 0;
         mousexl = 0;
         mouseyl = 0;
+
+        frametimes[0] = 0;
+        frametimes[1] = 0;
+        frametimes[2] = 0;
 
         UID = NetworkHandler.generateUID();
         System.out.println(UID);
@@ -329,9 +338,6 @@ public class Tetris2805 extends JPanel implements ActionListener {
         //input.put(-1,0);
         setInput();
 
-        scores = loadData("src/data/hscore.txt",ParseFormat.MAP);
-        cfg = loadData("src/data/config.txt",ParseFormat.JSON);
-
         NetworkHandler.main = this;
         NetworkHandler.startNetworkThread();
 
@@ -361,7 +367,7 @@ public class Tetris2805 extends JPanel implements ActionListener {
             @Override
             public void keyPressed (KeyEvent e) {
                 // key input
-                input.put(e.getKeyCode(),1);
+                if(keycontext == -1 || e.getKeyCode() == KeyEvent.VK_ENTER) input.put(e.getKeyCode(),1);
                 // keybuffer
                 if(e.getKeyCode() == KeyEvent.VK_BACK_SPACE && keybuffer.length() > 0) keybuffer = keybuffer.substring(0,keybuffer.length()-1);
                 char c = (char)e.getKeyCode();
@@ -376,16 +382,16 @@ public class Tetris2805 extends JPanel implements ActionListener {
 
         sceneIndex = -1;
         currentScene = new splash(this,draw);
-        Thread renderThread = new Thread(() -> {
+        /*Thread renderThread = new Thread(() -> {
             double expectedFrametime = 1000000000 / (240.);
             while(gameShouldClose == 0){
                 //System.out.print("start, ");
                 long now = System.nanoTime();
-                /*if(draw.batchrdy == 1){
+                if(draw.batchrdy == 1){
                     //draw.batchDraw();
                     //draw.batchrdy = 0;
                     System.out.print("batch draw, ");
-                }else System.out.print("batch no draw, ");*/
+                }else System.out.print("batch no draw, ");
                 //repaint();
                 long timeTaken = System.nanoTime() - now, sleepTime = (long)(expectedFrametime - timeTaken);
                 //System.out.print("sleep "+sleepTime/1000000+", ");
@@ -398,7 +404,7 @@ public class Tetris2805 extends JPanel implements ActionListener {
                 }
                 //System.out.println("end");
             }
-        });
+        });*/
 
         Thread gameThread = new Thread(() -> {
             long lastTime = System.nanoTime();
@@ -420,6 +426,8 @@ public class Tetris2805 extends JPanel implements ActionListener {
                         jframe.setLocationRelativeTo(null);
                     }
                 }
+                if(input.get(KeyEvent.VK_M) == 1) cfg.put("music",1-(Integer)cfg.get("music"));
+                if(input.get(KeyEvent.VK_N) == 1) cfg.put("sound",1-(Integer)cfg.get("sound"));
 
                 // delta timing
                 long now = System.nanoTime();
@@ -454,7 +462,7 @@ public class Tetris2805 extends JPanel implements ActionListener {
 
                 // confirm exit dialog
                 if(displayconfirm > 0){
-                    int w = 80, h = 80, x = FRAMEBUFFER_W/2-w/2, y = FRAMEBUFFER_H/2-h/2;
+                    int w = 80, h = 80, x = (int)draw.view_x+FRAMEBUFFER_W/2-w/2, y = (int)draw.view_y+FRAMEBUFFER_H/2-h/2;
                     draw.batchPush(9,x,y,w,h,new Color(24,20,37));
                     draw.drawText(displayconfirm == DIALOG_CONTEXT_EXIT ? "EXIT?" : "TO MENU?",x+w/2,y+4,10,8,Color.WHITE,1);
                     int act = draw.drawButton("YES",x+10,y+40,60,10);
@@ -466,38 +474,44 @@ public class Tetris2805 extends JPanel implements ActionListener {
 
                 //draw.batchrdy = 1;
                 //repaint();
-                draw.drawText(""+timeTaken/1000000f,(int)draw.view_x+20,FRAMEBUFFER_H-40,8,6,Color.WHITE);
-                draw.batchPush(9,draw.view_x,draw.view_y,FRAMEBUFFER_W,7,new Color(38,43,68));
+                if((Integer)cfg.get("profiler") == 1){
+                    draw.drawText("RENDER "+frametimes[0]/1000000f+"MS",(int)draw.view_x+20,FRAMEBUFFER_H-40,8,6,Color.WHITE);
+                    draw.drawText("AUDIO "+frametimes[1]/1000000f+"MS",(int)draw.view_x+20,FRAMEBUFFER_H-30,8,6,Color.WHITE);
+                    draw.drawText("AI "+frametimes[2]/1000000f+"MS",(int)draw.view_x+20,FRAMEBUFFER_H-20,8,6,Color.WHITE);
+                }
+                if(fullscreen == 0){
+                    draw.batchPush(9,draw.view_x,draw.view_y,FRAMEBUFFER_W,7,new Color(38,43,68));
 
-                if(mouseInArea((int)draw.view_x+FRAMEBUFFER_W-6,(int)draw.view_y,6,6) == 1){
-                    draw.batchPush(175,draw.view_x+FRAMEBUFFER_W-6,draw.view_y+1,SPR_WIDTH,SPR_WIDTH);
-                    if(input.get(-1) == 1){
-                        gameShouldClose = 1;
-                        System.out.println("close!");
-                    }
-                }else{
-                    draw.batchPush(174,draw.view_x+FRAMEBUFFER_W-6,draw.view_y+1,SPR_WIDTH,SPR_WIDTH);
-                    if(input.get(-1) != 2) draglock = 0;
-                    if(mouseInArea((int)draw.view_x,(int)draw.view_y,FRAMEBUFFER_W-6,7) == 1 || draglock == 1){
-                        draw.batchPush(9,draw.view_x,draw.view_y+6,FRAMEBUFFER_W,1,new Color(58,68,102));
-                        if(input.get(-1) == 2){
-                            draglock = 1;
-                            Rectangle bounds = new Rectangle(jframe.getX(),jframe.getY(),jframe.getWidth(),jframe.getHeight());
-                            int xDiff = (int)(mousexraw-mousexl);
-                            int yDiff = (int)(mouseyraw-mouseyl);
+                    if(mouseInArea((int)draw.view_x+FRAMEBUFFER_W-6,(int)draw.view_y,6,6) == 1){
+                        draw.batchPush(175,draw.view_x+FRAMEBUFFER_W-6,draw.view_y+1,SPR_WIDTH,SPR_WIDTH);
+                        if(input.get(-1) == 1){
+                            gameShouldClose = 1;
+                            System.out.println("close!");
+                        }
+                    }else{
+                        draw.batchPush(174,draw.view_x+FRAMEBUFFER_W-6,draw.view_y+1,SPR_WIDTH,SPR_WIDTH);
+                        if(input.get(-1) != 2) draglock = 0;
+                        if(mouseInArea((int)draw.view_x,(int)draw.view_y,FRAMEBUFFER_W-6,7) == 1 || draglock == 1){
+                            draw.batchPush(9,draw.view_x,draw.view_y+6,FRAMEBUFFER_W,1,new Color(58,68,102));
+                            if(input.get(-1) == 2){
+                                draglock = 1;
+                                Rectangle bounds = new Rectangle(jframe.getX(),jframe.getY(),jframe.getWidth(),jframe.getHeight());
+                                int xDiff = (int)(mousexraw-mousexl);
+                                int yDiff = (int)(mouseyraw-mouseyl);
 
-                            //One move action per 60ms to avoid frame glitching
-                            if(xDiff!=0 || yDiff != 0) {
-                                bounds.x += xDiff;
-                                bounds.y += yDiff;
-                                //System.out.println(bounds);
-                                jframe.setBounds(bounds);
-                            }//else System.out.println("no!");
+                                //One move action per 60ms to avoid frame glitching
+                                if(xDiff!=0 || yDiff != 0) {
+                                    bounds.x += xDiff;
+                                    bounds.y += yDiff;
+                                    //System.out.println(bounds);
+                                    jframe.setBounds(bounds);
+                                }//else System.out.println("no!");
+                            }
                         }
                     }
+                    mousexl = mousexraw;
+                    mouseyl = mouseyraw;
                 }
-                mousexl = mousexraw;
-                mouseyl = mouseyraw;
 
                 //cursor
                 draw.batchPush(20+cursorcontext,(int)mousex-1,(int)mousey+1,SPR_WIDTH,SPR_WIDTH,Color.BLACK);
@@ -508,6 +522,7 @@ public class Tetris2805 extends JPanel implements ActionListener {
                 repaint();
 
                 timeTaken = System.nanoTime() - now;
+                frametimes[0] = timeTaken;
                 long sleepTime = (long)(expectedFrametime - timeTaken);
                 // debug data
                 /*if(cfg.get("diag") == 1)*/ // frametime
@@ -522,12 +537,12 @@ public class Tetris2805 extends JPanel implements ActionListener {
                 }
             }
             // save data on safe close
-            saveData(scores,"src/data/hscore.txt",ParseFormat.MAP);
-            saveData(cfg,"src/data/config.txt",ParseFormat.JSON);
+            if(scores != null) saveData(scores,"src/data/hscore.txt",ParseFormat.JSON);
+            if(cfg != null) saveData(cfg,"src/data/config.txt",ParseFormat.JSON);
             System.exit(1);
         });
         gameThread.start();
-        renderThread.start();
+        //renderThread.start();
     }
 
     @Override
