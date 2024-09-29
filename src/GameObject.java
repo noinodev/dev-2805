@@ -9,6 +9,7 @@ enum PlayerControlScheme {
     PCS_AI
 }
 
+// generic game object class
 public abstract class GameObject {
     public static Game g;
     public int destroy,id;
@@ -38,10 +39,12 @@ public abstract class GameObject {
     }
     public void update(){ }
 
+    // static structures for maintaining object lists
     public static final ArrayList<GameObject> objects = new ArrayList<GameObject>();
     public static final Map<String,GameObject> netobjects = new HashMap<>();
     public static byte lock = 0;
 
+    // method for creating network objects with unique identifiers
     public static GameObject syncObject(GameObject object){
         String UID = NetworkManager.generateUID();
         return syncObject(object,UID);
@@ -56,20 +59,23 @@ public abstract class GameObject {
         }
         return object;
     }
+    // method for creating less expensive objects like particles or other client side objects
     public static GameObject CreateObject(GameObject object){
         objects.add(object);
         return object;
     }
-    public static void DestroyAllObjects(){
+    public static void DestroyAllObjects(){ // self explanatory
         objects.clear();
         netobjects.clear();
     }
 }
 
+// these are the parallaxing trees / rocks in the background
+// originally they were in the midground, and you could click on them to get wood or stone, but it made the board too messy
 class ObjectResource extends GameObject {
     //public byte inst = 0;
     public double z;
-    public int resource, hp, hps, timer;
+    public int  hp, hps, timer;
     public ObjectResource(Game game, int x, int y, double z, int sprite, int hp){
         super(game);
         this.x = x;
@@ -96,8 +102,8 @@ class ObjectResource extends GameObject {
     }
 }
 
+// particle object. starts at a frame, ends at a frame. simple
 class ObjectParticle extends GameObject {
-    //public byte inst = 1;
     public int start, end, time;
     public double spd;
     public Color colour;
@@ -130,6 +136,7 @@ class ObjectParticle extends GameObject {
     }
 }
 
+// player object base class, differentiated by control_scheme
 abstract class PlayerObject extends GameObject {
     public PlayerControlScheme control_scheme;
     public PlayerObject(Game game, PlayerControlScheme pcs){

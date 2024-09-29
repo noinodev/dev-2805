@@ -7,37 +7,43 @@ import java.nio.charset.StandardCharsets;
 import java.rmi.server.UID;
 import java.util.*;
 
-/*class NPH { //NetworkPacketHeader
+class NPH { //NetworkPacketHeader
     public static final byte NET_HOST = 0; // send to matchmaking server to start a new lobby
     public static final byte NET_GET=1;
     public static final byte NET_JOIN=2; // send to matchmaking server to get list of active lobbies
     public static final byte NET_START=3;
     public static final byte NET_PING=4; // keepalive packet
-    public static final byte NET_ACK=5; // handshake packet containing client info to establish UDP connections
+    public static final byte NET_GAME=5; // handshake packet containing client info to establish UDP connections
     public static final byte NET_EVENT=6; // game event, such as a player hitting something or a tetromino merging
     public static final byte NET_STATE=7; // probably board state updates
     public static final byte NET_OBJ=8; // dynamic network synchronized objects, sent from host to clients
     public static final byte NET_DISCONNECT=9;
     public static final byte NET_KICK=10;
-}*/
+    public static final byte NET_ACK=11;
+    public static final byte NET_SYN=12;
+    public static final byte NET_HIT=13;
+    public static final byte NET_TILE=14;
+    public static final byte NET_CHAT=15;
+    public static final byte NET_NAME=15;
+}
 
+// class for client entries on server side
 class SClient {
     String UID;
     String LUID;
-    //String uname;
     InetAddress ipaddr;
     int port;
     long timeout;
 
     public SClient(String id,/* String name,*/ InetAddress ip, int p){
         UID = id;
-        //uname = name;
         ipaddr = ip;
         port = p;
         timeout = System.currentTimeMillis();
     }
 }
 
+// class for lobby entries on server side. maintains list of clients
 class SLobby {
     String host;
     Map<String, SClient> clients;
@@ -52,7 +58,6 @@ class SLobby {
 }
 
 public class MatchmakingServer {
-
     public static final Map<String, SClient> clients = new HashMap<>();
     public static final HashMap<String, SLobby> lobbies = new HashMap<String, SLobby>();
     public static final ByteBuffer buffer_recv = ByteBuffer.allocate(1024);
@@ -64,8 +69,8 @@ public class MatchmakingServer {
     public static final SLobby[] queue = new SLobby[64];
     public static int lobbycount;
 
+    // send a buffer to 1 client
     public static void send(ByteBuffer send, InetAddress ip, int p){
-        //System.out.println("len: "+packet.getLength());
         DatagramPacket packet = new DatagramPacket(send.array(), send.position(), ip, p);
         try{
             socket.send(packet);
@@ -74,9 +79,7 @@ public class MatchmakingServer {
         }
     }
 
-    /*public static int byteToInt(Byte b){
-
-    }*/
+    // listen for incoming udp packets in a loop
     public static void listener(){
         try {
             System.out.println("Starting UDP matchmaking server on port "+socket.getLocalPort());
@@ -86,25 +89,20 @@ public class MatchmakingServer {
                 buffer_recv.clear();
                 DatagramPacket receivePacket = new DatagramPacket(buffer_recv.array(), buffer_recv.capacity());
                 socket.receive(receivePacket);  // Receive the data
-                //System.out.println("recevied packet");
-                //ByteBuffer buffer = ByteBuffer.wrap(recv);
 
-                lock = 1;
+                lock = 1; // idiot mutex because im lazy
 
+                // extract ip and port from packet
                 InetAddress clientAddress = receivePacket.getAddress();
                 int clientPort = receivePacket.getPort();
-                //System.out.println(""+clientAddress.toString()+":"+clientPort);
 
-                int header;//Byte.toUnsignedInt(b);
+                int header;
                 byte[] str = new byte[8];
-                //buffer.get(str); // every client message should contain a header and the users id
-                String UID;// = new String(str, StandardCharsets.UTF_8);
+                String UID;
 
-                int namelen; // host messages have the username, which is the string length followed by the string
-                byte[] namestr;
-                String username;
-
+                // start packet handling
                 if(buffer_recv.remaining() > 0){
+                    // deserialize common, mandatory data, like UID and header
                     header = buffer_recv.get();
                     buffer_recv.get(str); // every client message should contain a header and the users id
                     UID = new String(str, StandardCharsets.UTF_8);
@@ -115,10 +113,6 @@ public class MatchmakingServer {
                     }
                     SClient client = clients.get(UID);
 
-
-
-                    //System.out.println("header: " + header + ", " + UID);
-
                     switch(header){
                         // i hate java so much
                         // fake programming language
@@ -128,33 +122,21 @@ public class MatchmakingServer {
                             // set keepalive for lobby+user combo
                             buffer_recv.get(str);
                             String uidlobby = new String(str, StandardCharsets.UTF_8);
-                            /*Lobby l = lobbies.get(uidlobby);
+                            SLobby l = lobbies.get(uidlobby);
                             if(l != null){
-                                Client c = l.clients.get(UID);
-                                if(c != null){
-                                    c.timeout = System.currentTimeMillis();
-                                    //System.out.println("reset timer on "+c.UID);
-                                }
-                            }*/
+                                SClient c = l.clients.get(UID);
+                                if(c != null) c.timeout = System.currentTimeMillis();
+                            }
                             client.timeout = System.currentTimeMillis();
 
                             buffer_send.clear();
                             buffer_send.put(NPH.NET_PING);
-                            //buffer_send.put(NPH.NET_PING);
-                            //DatagramPacket sendPacket = new DatagramPacket(buffer_send.array(), buffer_send.position(), clientAddress, clientPort);
                             send(buffer_send,clientAddress,clientPort);
 
                         } break;
                         case NPH.NET_HOST: { // create a lobby
-                            /*namelen = buffer_recv.get(); // host messages have the username, which is the string length followed by the string
-                            namestr = new byte[namelen];
-                            buffer_recv.get(namestr);
-                            username = new String(namestr, StandardCharsets.UTF_8);*/
-                            //Client host = new Client(UID,clientAddress,clientPort);
                             client.LUID = UID;
-                            queue[lobbycount++] = new SLobby(client);
-                            //lobbies.put(UID,new Lobby(client));
-                            //client.LUID = UID;
+                            queue[lobbycount++] = new SLobby(client); // append lobby to work queue buffer, for thread safety
                             System.out.println("new lobby created for "+UID);
 
                             buffer_send.clear();
@@ -162,40 +144,35 @@ public class MatchmakingServer {
                             send(buffer_send,clientAddress,clientPort);
                         } break;
                         case NPH.NET_GET: { // get list of lobbies
-                            //Client client = new Client(UID,clientAddress,clientPort);
-                            //ByteBuffer send = ByteBuffer.allocate(1024);// = new byte[1024];
                             buffer_send.clear();
                             buffer_send.put(NPH.NET_GET);
                             // this is the format of NET_GET on the client side when it receives it
                             int lc = 0;
+                            // get lobby count, because not all entries are valid
                             for (Map.Entry<String, SLobby> entry : lobbies.entrySet()) {
                                 SLobby lobby = entry.getValue();
                                 String lobbyuid = entry.getKey();
                                 if(lobby != null && clients.get(lobbyuid) != null) lc++;
                             }
+                            // serialize lobbies
                             buffer_send.put((byte)lc);
                             for (Map.Entry<String, SLobby> entry : lobbies.entrySet()) {
                                 SLobby lobby = entry.getValue();
                                 String lobbyuid = entry.getKey();
                                 if(lobby != null && clients.get(lobbyuid) != null) buffer_send.put(lobbyuid.getBytes());
-                                //buffer_send.put((byte)lobby.clients.get(0).uname.length());
-                                /////////////buffer_send.put(lobby.clients.get(0).uname.getBytes());
                             }
-
+                            // send to client who asked
                             send(buffer_send,clientAddress,clientPort);
                             System.out.println("sent lobby information to "+UID);
                         } break;
                         case NPH.NET_JOIN: { // join a lobby
-                            /*namelen = buffer_recv.get(); // host messages have the username, which is the string length followed by the string
-                            namestr = new byte[namelen];
-                            buffer_recv.get(namestr);
-                            username = new String(namestr, StandardCharsets.UTF_8);*/
-
                             //next 8 bytes should be join code / host uid
                             buffer_recv.get(str);
                             String join = new String(str, StandardCharsets.UTF_8);
                             SLobby lobby = lobbies.get(join);
                             if(lobby != null){
+                                // lobby request is valid
+                                // add client to lobby, notify other clients in lobby
                                 lobby.clients.put(client.UID,client);
                                 client.LUID = join;
                                 System.out.println("added "+UID+" to lobby "+join);
@@ -205,13 +182,6 @@ public class MatchmakingServer {
                                 buffer_send.put(UID.getBytes());
 
                                 System.out.print("told: ");
-                                /*for(Client i : lobby.clients){
-                                    if(i.UID != UID){
-                                        DatagramPacket sendPacket = new DatagramPacket(buffer_send.array(), buffer_send.position(), i.ipaddr, i.port);
-                                        send(sendPacket);
-                                        System.out.print(i.UID+", ");
-                                    }
-                                }*/
                                 for (Map.Entry<String, SClient> entry : lobby.clients.entrySet()) {
                                     SClient i = entry.getValue();
                                     if(i != null/* && !Objects.equals(i.UID, UID)*/){
@@ -231,61 +201,50 @@ public class MatchmakingServer {
                             if(lobby != null){
                                 lock = 1;
                                 lobby.punch=10;
-                                //Client host = lobby.clients.get(0);
-                                //if(clientAddress == client.ipaddr && clientPort == client.port){
-                                    //ByteBuffer send = ByteBuffer.allocate(1024);// = new byte[1024];
-                                    buffer_send.clear();
-                                    buffer_send.put(NPH.NET_START);
+                                buffer_send.clear();
+                                buffer_send.put(NPH.NET_START);
 
-                                    byte clientcount = 0;
-                                    for (Map.Entry<String, SClient> entry : lobby.clients.entrySet()) {
-                                        if (entry.getValue() != null) {
-                                            clientcount++;
-                                        }
+                                // send list of IPs and ports to the host
+
+                                byte clientcount = 0;
+                                for (Map.Entry<String, SClient> entry : lobby.clients.entrySet()) {
+                                    if (entry.getValue() != null) {
+                                        clientcount++;
                                     }
-                                    buffer_send.put((byte)(clientcount-1));
-                                    System.out.println("CLIENTS: " + clientcount);
-                                    for (Map.Entry<String, SClient> entry : lobby.clients.entrySet()) {
-                                        SClient i = entry.getValue();
-                                        if(i != null && !UID.equals(i.UID)){
-                                            System.out.println(i.UID + ", " + i.ipaddr.toString() + ", " + i.port);
-                                            buffer_send.put(i.UID.getBytes());
-                                            /*buffer_send.put((byte)i.uname.length());
-                                            buffer_send.put(i.uname.getBytes());*/
-                                            //buffer_send.put((byte)i.ipaddr.toString().length());
-                                            buffer_send.put(i.ipaddr.getAddress());
-                                            buffer_send.putInt(i.port);
-                                        }
+                                }
+                                buffer_send.put((byte)(clientcount-1));
+                                System.out.println("CLIENTS: " + clientcount);
+                                for (Map.Entry<String, SClient> entry : lobby.clients.entrySet()) {
+                                    SClient i = entry.getValue();
+                                    if(i != null && !UID.equals(i.UID)){
+                                        System.out.println(i.UID + ", " + i.ipaddr.toString() + ", " + i.port);
+                                        buffer_send.put(i.UID.getBytes());
+                                        buffer_send.put(i.ipaddr.getAddress());
+                                        buffer_send.putInt(i.port);
                                     }
+                                }
 
-                                    send(buffer_send,clientAddress,clientPort); // send server list of ips
+                                send(buffer_send,clientAddress,clientPort); // send server list of ips
 
-                                    buffer_send.clear();
-                                    buffer_send.put(NPH.NET_START);
-                                    buffer_send.put((byte)1);
-                                    buffer_send.put(UID.getBytes());
-                                    //buffer_send.put((byte)clientAddress.toString().length());
-                                    buffer_send.put(clientAddress.getAddress());
-                                    buffer_send.putInt(clientPort);
 
-                                    for (Map.Entry<String, SClient> entry : lobby.clients.entrySet()) {
-                                        SClient i = entry.getValue();
-                                        if(i != null && !Objects.equals(i.UID, UID)){
-                                            // send clients server ip
-                                            send(buffer_send,i.ipaddr,i.port);
-                                        }
+                                // send host IP and port to the clients
+                                buffer_send.clear();
+                                buffer_send.put(NPH.NET_START);
+                                buffer_send.put((byte)1);
+                                buffer_send.put(UID.getBytes());
+                                buffer_send.put(clientAddress.getAddress());
+                                buffer_send.putInt(clientPort);
+
+                                for (Map.Entry<String, SClient> entry : lobby.clients.entrySet()) {
+                                    SClient i = entry.getValue();
+                                    if(i != null && !Objects.equals(i.UID, UID)){
+                                        // send clients server ip
+                                        send(buffer_send,i.ipaddr,i.port);
                                     }
-                                //}else System.out.println("start from wrong address?");
+                                }
                                 lock = 0;
                             }else System.out.println("lobby null?");
                         } break;
-
-                        /*case NPH.NET_ACK: {
-                            if(lobbies.get(UID) != null){
-                                lobbies.remove(UID);
-                                System.out.println(UID+ " finished UDP holepunching, server not needed anymore");
-                            }
-                        } break;*/
 
                         default: {
                             //bad header or malformed packet
@@ -305,17 +264,16 @@ public class MatchmakingServer {
     public static void main(String[] args){
         lobbycount = 0;
         lock = 0;
+        // bind socket
         try{
             socket = new DatagramSocket(22565);
-            //byte[] recv = new byte[1024];
-            //System.out.println("Starting UDP matchmaking server on port "+socket.getLocalPort());
-
             networkThread = new Thread(() -> listener());
             networkThread.start();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
+        // asynchronous control, timeout etc
         ByteBuffer buffer_async = ByteBuffer.allocate(1024);
         buffer_async.clear();
         buffer_async.put(NPH.NET_PING);
@@ -330,9 +288,6 @@ public class MatchmakingServer {
                 while (lobbyIterator.hasNext()) {
                     Map.Entry<String, SLobby> le = lobbyIterator.next();
                     SLobby lobby = le.getValue();
-                //llfor (Map.Entry<String, Lobby> le : lobbies.entrySet()) {
-                    //String key = entry.getKey();
-                    //Lobby lobby = le.getValue();
                     if(lobby != null){
                         if(clients.get(lobby.host) == null){
                             lobbyIterator.remove();
@@ -342,11 +297,13 @@ public class MatchmakingServer {
                                 Map.Entry<String, SClient> ce = clientIterator.next();
                                 SClient i = ce.getValue();
 
+                                // timeout mechanism
                                 if (time - i.timeout > 10000) {
                                     System.out.println(ce.getKey() + " timed out");
                                     lobbies.put(i.UID,null);
-                                    clientIterator.remove(); // Remove using the iterator
+                                    clientIterator.remove();
                                 }
+                                // UDP holepunching mechanism, this is trying to open user ports
                                 if(Objects.equals(i.LUID, lobby.host) && lobby.punch > 0){
                                     send(buffer_async,i.ipaddr,i.port);
                                     lobby.punch--;

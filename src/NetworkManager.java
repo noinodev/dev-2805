@@ -53,6 +53,7 @@ class Lobby {
     }
 }
 
+// another horrific giga class
 public class NetworkManager {
     public static int mmserver_port;
     public static InetAddress mmserver_ip;
@@ -66,13 +67,11 @@ public class NetworkManager {
     public static final ByteBuffer buffer_recv = ByteBuffer.allocate(4096);
     public static Tetris2805 main;
     public static Game game;
-    //public static lobby mlobby;
     public static byte[] uidrecv = new byte[8];
     public static DatagramSocket socket;
 
     public static long timeout;
     public static byte disconnect;
-    public static byte natpass;
 
     public static void networkInit(){
         try{
@@ -81,14 +80,13 @@ public class NetworkManager {
             disconnect = 0;
             timeout = System.currentTimeMillis();
             socket = new DatagramSocket(0);
-            //byte[] receiveBuffer = new byte[1024];
             System.out.println("Starting UDP listener on port "+socket.getLocalPort());
             host = null;
 
             while (true) {
                 buffer_recv.clear();
                 DatagramPacket receivePacket = new DatagramPacket(buffer_recv.array(), buffer_recv.capacity());
-                socket.receive(receivePacket);  // Receive the data
+                socket.receive(receivePacket);
                 InetAddress clientAddress = receivePacket.getAddress();
                 int clientPort = receivePacket.getPort();
 
@@ -316,6 +314,7 @@ public class NetworkManager {
         }
     }
 
+    // udp hole punching mechanism
     public static void udpConnect(){
         long time = System.currentTimeMillis();
         long steptime = System.currentTimeMillis();
@@ -340,6 +339,7 @@ public class NetworkManager {
         }
     }
 
+    // helper functions
     public static void startNetworkThread() {
         networkThread = new Thread(NetworkManager::networkInit);
         networkThread.start();
@@ -395,6 +395,4 @@ public class NetworkManager {
         }
         return newUID.toString();
     }
-
-    //public static void packet_send(Data
 }

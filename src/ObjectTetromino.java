@@ -52,31 +52,8 @@ public class ObjectTetromino extends PlayerObject {
     @Override
     public void update(){
 
-        //dx = Math.max(dx,game.board_bound_x);
-        //dx = Math.min(dx-4,game.board_bound_x+game.board_bound_w);
-
         switch(control_scheme){
             case PCS_LOCAL:
-                /*if(dy == 0){
-                    pieces = new ObjectTetromino[2];
-                    pieces[0] = new ObjectTetromino(this);
-                    pieces[1] = new ObjectTetromino(this);
-                    pieces[1].dx = game.board_bound_x+game.board_bound_w/2-game.TET_WIDTH/2;
-                    pieces[1].dy = 0;
-                    pieces[1].index = game.nextTetronimo;
-                }*/
-                //best = (ObjectTetromino) PlayerAgentAI.getBestPosition(game.board,game.board_bound_x,game.board_bound_w,pieces,0)[0];
-                //if(best != null){
-                    //best.dx += game.board_bound_x;
-                    //dx = best.dx;
-                    //rotation = best.rotation;
-                    /*if(dx < best.dx) main.input.put(KeyEvent.VK_RIGHT,1);
-                    if(dx > best.dx) main.input.put(KeyEvent.VK_LEFT,1);
-                    if(rotation != best.rotation) main.input.put(KeyEvent.VK_UP,1);
-                    if(dx == best.dx && rotation == best.rotation) main.input.put(KeyEvent.VK_DOWN,1);*/
-                    //System.out.println("trying to go: "+best.dx+", "+best.rotation);
-                    //System.out.println("is: "+dx+", "+rotation);
-                //}//else rotation = (rotation+1)%4;
                 change = 1;
                 controlLocal(game);
                 break;
@@ -84,18 +61,6 @@ public class ObjectTetromino extends PlayerObject {
 
                 break;
             case PCS_AI:
-                /*if(dy == 0) best = PlayerAgentAI.getBestPosition(game.board,game.board_bound_x,game.board_bound_w,new ObjectTetromino(this));
-                if(best != null){
-                    //best.dx += game.board_bound_x;
-                    //dx = best.dx;
-                    //rotation = best.rotation;
-                    if(dx < best.dx) main.input.put(KeyEvent.VK_RIGHT,1);
-                    if(dx > best.dx) main.input.put(KeyEvent.VK_LEFT,1);
-                    if(rotation != best.rotation) main.input.put(KeyEvent.VK_UP,1);
-                    if(dx == best.dx && rotation == best.rotation) main.input.put(KeyEvent.VK_DOWN,1);
-                    System.out.println("trying to go: "+best.dx+", "+best.rotation);
-                    System.out.println("is: "+dx+", "+rotation);
-                }//else rotation = (rotation+1)%4;*/
                 change = 1;
                 controlLocal(game);
                 break;
@@ -124,13 +89,9 @@ public class ObjectTetromino extends PlayerObject {
                         game.score += game.scores[rows-1]*(game.level+1);
                         game.state = game.STATE_CLEAR;
                     }
-                    // spawn new tetromino
-                    //game.currentTetromino = spawnTetromino();
-                    //Tetromino out = new Tetromino(board_bound_x+board_bound_w/2-TET_WIDTH/2,0,nextTetronimo,0,10*Math.min(level/2,5)+4+(int)(Math.random()*4));
-                    //nextTetronimo = (int)(Math.random() * tetrominoList.length);
-                    ///*if(control_scheme != PlayerControlScheme.PCS_EXTERN) */ResetTetromino(/*game.board_bound_x+game.board_bound_w/2-game.TET_WIDTH/2,0,game.nextTetronimo,10*Math.min(game.level/2,5)+4+(int)(Math.random()*4)*/);
+
                     ResetTetromino();
-                    if(!checkBoardState()/* && game.state != game.STATE_LOSE*/){ // fail state, if tetromino spawns fouled then state is set to lose
+                    if(!checkBoardState()){ // fail state, if tetromino spawns fouled then state is set to lose
                         game.lives--;
                         game.clearx = 0;
                         game.state = game.STATE_LOSE;
@@ -149,7 +110,6 @@ public class ObjectTetromino extends PlayerObject {
         y -= (y-dy*main.SPR_WIDTH)/Math.max(1,16-game.level);
         for(int i = 0; i < game.TET_WIDTH; i++){
             for(int j = 0; j < game.TET_WIDTH; j++){
-                //int tx = (int)x+i*(main.SPR_WIDTH), ty = (int)y+j*(main.SPR_WIDTH); // normalized coordinates
                 if(tetrominoList[index][rotation][i][j] > 0){
                     draw.batchPush((int)sprite,game.boardx+x+i* main.SPR_WIDTH,game.boardy+y+j* main.SPR_WIDTH,main.SPR_WIDTH,main.SPR_WIDTH); // draw tetromino
                     if(dx+i >= 0 && dx+i < game.boardWidth && dy+j >= 2 && dy+j < game.boardHeight && game.board[dx+i][dy+j] == 0) game.light[dx+i][dy+j] = 10; // illuminate current spot
@@ -182,7 +142,7 @@ public class ObjectTetromino extends PlayerObject {
     }
 
     private void controlLocal(Game game){
-        // all other tetromino inputs
+        // all tetromino inputs. play a sound when you move
         int xp =dx, rp = rotation;
         if(main.input.get(KeyEvent.VK_RIGHT) == 1 || main.input.get(KeyEvent.VK_RIGHT) > main.TPS/8) {
             dx++;
@@ -206,30 +166,17 @@ public class ObjectTetromino extends PlayerObject {
             dx += 1;
             AudioManager.audio.get("slide2").play(x,y, draw.view_x+draw.view_w/2, draw.view_y+draw.view_h/2);
         }
-        //game.board_bound_x = (Math.min(game.boardWidth-game.board_bound_w,Math.max(0,dx-game.board_bound_w/2))/game.board_bound_w)*game.board_bound_w;
+
+        // focus camera near tetromino
         draw.view_x -= (draw.view_x-(x-main.FRAMEBUFFER_W/4.))*0.1;
         draw.view_y -= (draw.view_y-(y-main.FRAMEBUFFER_H/4.)*.4)*0.1;
         if(!checkBoardState()){
             dx = xp;
             rotation = rp;
         }
-
-        /*x -= (x-dx*main.SPR_WIDTH)/16; // interpolate tetronimo position
-        y -= (y-dy*main.SPR_WIDTH)/16;
-        for(int i = 0; i < game.TET_WIDTH; i++){
-            for(int j = 0; j < game.TET_WIDTH; j++){
-                //int tx = (int)x+i*(main.SPR_WIDTH), ty = (int)y+j*(main.SPR_WIDTH); // normalized coordinates
-                if(tetrominoList[index][j][i][j] > 0){
-                    draw.batchPush(t,game.boardx+x,game.boardy+y,main.SPR_WIDTH,main.SPR_WIDTH); // draw tetromino
-                    if(dx+i >= 0 && dx+i < game.boardWidth && dy+j >= 2 && dy+j < game.boardHeight && game.board[dx+i][dy+j] == 0) game.light[dx+i][dy+j] = 10; // illuminate current spot
-                }
-                if(tetrominoList[game.nextTetronimo][0][index][j] > 0) draw.batchPush(8,20+(i+1)*main.SPR_WIDTH,game.boardy+(j+4)*main.SPR_WIDTH,main.SPR_WIDTH, main.SPR_WIDTH); // show next tetromino in hud
-            }
-        }*/
     }
 
-    public void ResetTetromino(/*int x, int y, int index, int sprite*/){
-        //game.board_bound_x+game.board_bound_w/2-game.TET_WIDTH/2,0,game.nextTetronimo,10*Math.min(game.level/2,5)+4+(int)(Math.random()*4)
+    public void ResetTetromino(){
         dx = game.board_bound_x+game.board_bound_w/2-game.TET_WIDTH/2;
         dy = 0;
         x = dx*main.SPR_WIDTH;

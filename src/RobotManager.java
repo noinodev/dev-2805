@@ -1,10 +1,7 @@
 public class RobotManager {
-    //static Tetris2805 main;
-    //static byte[][] board; // copy of the visible space of the board
     static final double[] weights = {-0.510066,0.760666,-0.35663,-0.184483};
 
     static Object[] getBestPosition(int[][] gameboard, int xb, int xw,ObjectTetromino[] pieces, int index){
-        D2D draw = D2D.D2Dget();
         double bestscore = -Double.MAX_VALUE;
         ObjectTetromino best = null;
         int[][] bestboard = null;
@@ -64,19 +61,15 @@ public class RobotManager {
     }
     static int aggregateHeight(int[][] board){
         int total = 0;
-        //int max = 0;
         for(int x = 0; x < board.length; x++){
-            int h = columnHeight(board,x);
-            //if(h > max) max = h;
-            //total += h;
+            total += columnHeight(board,x);
         }
-        return total;//+max;
+        return total;
     }
     static int bumpiness(int[][] board){
         int total = 0;
         for(int x = 0; x < board.length-1; x++) total += Math.abs(columnHeight(board,x)-columnHeight(board,x+1));
-        //for(int x = 1; x < board.length; x++) total += Math.abs(columnHeight(board,x)-columnHeight(board,x-1));
-        return total;///2;
+        return total;
     }
     static int lines(int[][] board){
         int total = 0;
