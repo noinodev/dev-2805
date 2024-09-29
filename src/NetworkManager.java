@@ -1,5 +1,5 @@
-//import server.Client;
-//import server.Lobby;
+//import Client;
+//import Lobby;
 
 import java.io.*;
 import java.net.DatagramPacket;
@@ -59,7 +59,7 @@ public class NetworkManager {
 
     public static final Map<String, Object> async_load = new HashMap<>();
 
-    public static final Map<String,Client> clients = new HashMap<>();
+    public static final Map<String, Client> clients = new HashMap<>();
     public static Client host;
     public static Thread networkThread;
     public static final ByteBuffer buffer_send = ByteBuffer.allocate(4096);

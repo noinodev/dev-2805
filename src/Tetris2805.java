@@ -430,25 +430,18 @@ public class Tetris2805 extends JPanel implements ActionListener {
                 draw.vxl = draw.view_x;
                 draw.vyl = draw.view_y;
 
-                // parallax background
-                bgx -= (bgx-(draw.view_x+bgtx))*0.05;
-                //bgx = draw.view_x;
-                bgy = draw.view_y;
-                int[] bgtex = {42,61,60,52,51,50};
-                for(int i = 0; i < bgtex.length; i++){
-                    draw.batchPush(bgtex[i],(int)((bgx*(0.1+0.1*i))%FRAMEBUFFER_W),(int)((bgy*(0.1+0.1*i))%FRAMEBUFFER_H),FRAMEBUFFER_W,FRAMEBUFFER_H);
-                    draw.batchPush(bgtex[i],(int)((bgx*(0.1+0.1*i))%FRAMEBUFFER_W-FRAMEBUFFER_W),(int)((bgy*(0.1+0.1*i))%FRAMEBUFFER_H),FRAMEBUFFER_W,FRAMEBUFFER_H);
-                }
-
                 if(sceneIndex != 4){
                     draw.view_x = 0;
                     draw.view_y = 0;
+                    // parallax background
+                    bgx -= (bgx-(draw.view_x+bgtx))*0.05;
+                    bgy = draw.view_y;
+                    int[] bgtex = {42,61,60,52,51,50};
+                    for(int i = 0; i < bgtex.length; i++){
+                        draw.batchPush(bgtex[i],(int)((bgx*(0.1+0.1*i))%FRAMEBUFFER_W),(int)((bgy*(0.1+0.1*i))%FRAMEBUFFER_H),FRAMEBUFFER_W,FRAMEBUFFER_H);
+                        draw.batchPush(bgtex[i],(int)((bgx*(0.1+0.1*i))%FRAMEBUFFER_W-FRAMEBUFFER_W),(int)((bgy*(0.1+0.1*i))%FRAMEBUFFER_H),FRAMEBUFFER_W,FRAMEBUFFER_H);
+                    }
                 }
-                /*double l = Math.abs(Math.sin(frame/360.));
-                int r = (int)D2D.lerp(0,24,l);
-                int g = (int)D2D.lerp(0,20,l);
-                int b = (int)D2D.lerp(0,37,l);
-                draw.batchPush(9,draw.view_x,draw.view_y,draw.view_w,draw.view_h,new Color(r,g,b));*/
 
                 // scene loop
                 currentScene.loop();

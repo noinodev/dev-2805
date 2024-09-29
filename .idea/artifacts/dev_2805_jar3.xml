@@ -1,8 +1,0 @@
-<component name="ArtifactManager">
-  <artifact type="jar" name="dev-2805:jar3">
-    <output-path>$PROJECT_DIR$/out/artifacts/dev_2805_jar3</output-path>
-    <root id="archive" name="dev-2805.jar">
-      <element id="module-output" name="dev-2805" />
-    </root>
-  </artifact>
-</component>

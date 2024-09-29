@@ -1,4 +1,3 @@
-import javax.sound.sampled.Clip;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.geom.AffineTransform;
@@ -916,11 +915,12 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                 main.scores.put(name.replace(" ",""),score);
                 main.saveData(main.scores,"src/data/highscore.json",ParseFormat.MAP);
             }*/
-            String user = ((String)main.cfg.get("username")).replace(" ","")+control;
+            String user = (main.cfg.get("username")+control).replace(" ","");
             Integer sc = (Integer)main.scores.get(user);
             if(sc == null || score > sc){
                 main.scores.put(user,score);
-                main.saveData(main.scores,"src/data/highscore.json",ParseFormat.MAP);
+                main.saveData(main.scores,"src/data/highscore.json",ParseFormat.JSON);
+                //System.out.println("");
             }
             if(draw.drawButton("MAIN MENU",10,40,80,10) == 1) main.currentScene = new menu(main,draw);
             if(draw.drawButton("QUIT",10,51,80,10) == 1) main.displayconfirm = 1;

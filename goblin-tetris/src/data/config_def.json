@@ -1,0 +1,16 @@
+{
+   "extend":1,
+   "music":1,
+   "profiler":0,
+   "level":0,
+   "networkip":"127.0.0.1",
+   "sound":1,
+   "width":10,
+   "ai":0,
+   "networkport":22565,
+   "height":20,
+   "username":"FORTNITE",
+   "video.colouring":1,
+   "video.particles":1,
+   "light":4
+}

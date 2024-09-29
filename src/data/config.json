@@ -8,9 +8,9 @@
    "networkport":22565,
    "extend":0,
    "music":1,
-   "light":2,
-   "video.particles":0,
-   "width":15,
-   "height":30,
-   "username":"GAMER"
+   "light":10,
+   "video.particles":1,
+   "width":10,
+   "height":20,
+   "username":"GOBLINMAXXER"
 }
