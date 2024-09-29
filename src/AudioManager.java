@@ -38,30 +38,6 @@ class AudioClip{
             clip.setFramePosition(0);
             clip.start();
         }
-        //}
-        /*float pan = Math.max(Math.min((xf-xt)/40,1),-1);
-        float dist = (float)Math.max(Math.min((1.-Math.sqrt((xf-xt)*(xf-xt)+(yf-yt)*(yf-yt))/200.),1),0);
-
-        if(fcpan != null) fcpan.setValue(pan);
-        if(fcgain != null){
-            float minGain = fcgain.getMinimum();
-            float maxGain = fcgain.getMaximum();
-            float gainValue = minGain + (maxGain - minGain) * (1 - dist);
-            fcgain.setValue(gainValue);
-        }*/
-        /*if(clip != null){
-            float pan = Math.max(Math.min((xf-xt)/80,1),-1);
-            float dist = (float)Math.max(Math.min((1.-Math.sqrt((xf-xt)*(xf-xt)+(yf-yt)*(yf-yt))/100.),1),0);
-            fcpan.setValue(pan);
-
-            float minGain = fcgain.getMinimum();
-            float maxGain = fcgain.getMaximum();
-            float gainValue = minGain + (maxGain - minGain) * (1 - dist);
-            fcgain.setValue(gainValue);
-
-            clip.setFramePosition(0);
-            clip.start();
-        }*/
     }
 
     public void pos(double _xf, double _yf, double _xt, double _yt){
@@ -69,18 +45,6 @@ class AudioClip{
         yf = (float)_yf;
         xt = (float)_xt;
         yt = (float)_yt;
-        /*if(clip != null){
-            float pan = Math.max(Math.min((xf-xt)/80,1),-1);
-            float dist = (float)Math.max(Math.min((1.-Math.sqrt((xf-xt)*(xf-xt)+(yf-yt)*(yf-yt))/100.),1),0);
-            if(dist > 0.01){
-                fcpan.setValue(fcpan.getValue()-(fcpan.getValue()-pan)*0.1f);
-
-                float minGain = fcgain.getMinimum();
-                float maxGain = fcgain.getMaximum();
-                float gainValue = minGain + (maxGain - minGain) * (1 - dist);
-                fcgain.setValue(fcgain.getValue()-(fcgain.getValue()-gainValue)*0.1f);
-            }
-        }*/
     }
 
     public void stop(){
@@ -122,13 +86,13 @@ public class AudioManager {
                     AudioClip ac = audio.get(key);
                     if((Integer)Tetris2805.main.cfg.get("sound") == 0){
                         if(ac.playing()) ac.stop();
-                        System.out.println("audio stopped");
+                        //System.out.println("audio stopped");
                         //break;
                         continue;
                     }
                     if((Integer)Tetris2805.main.cfg.get("music") == 0 && (key == "ambienthigh" || key == "ambientlow")){
                         if(ac.playing()) ac.stop();
-                        System.out.println("music stopped");
+                        //System.out.println("music stopped");
                         //break;
                         continue;
                     }

@@ -1,15 +1,9 @@
 //import server.Lobby;
 
 import java.awt.*;
-import java.awt.event.KeyEvent;
-import java.awt.image.BufferedImage;
-import java.io.*;
-import java.net.DatagramPacket;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Scanner;
 
 abstract class scene { // scene base class
     protected Tetris2805 main;
@@ -142,8 +136,8 @@ class config extends scene { // config menu
         String port = draw.drawTextfield("SERVER PORT",uport,20,30+10*11,main.FRAMEBUFFER_W-40,10);
         if(port != "") main.cfg.put("networkport",Integer.getInteger(port));*/
 
-        if(draw.drawButton("APPLY",20,30+10*14,80,10) == 1) Tetris2805.saveData(main.cfg,"src/data/config.txt",ParseFormat.JSON);
-        if(draw.drawButton("RESET",20,30+10*13,80,10) == 1) main.cfg = Tetris2805.loadData("src/data/cfgdef.txt",ParseFormat.JSON);
+        if(draw.drawButton("APPLY",20,30+10*14,80,10) == 1) Tetris2805.saveData(main.cfg,"src/data/config.json",ParseFormat.JSON);
+        if(draw.drawButton("RESET",20,30+10*13,80,10) == 1) main.cfg = Tetris2805.loadData("src/data/config_def.json",ParseFormat.JSON);
 
         if(draw.drawButton("BACK",20,main.FRAMEBUFFER_H-20,80,10) == 1) main.currentScene = new menu(main,draw);
     }
@@ -206,7 +200,7 @@ class MenuLobby extends scene { // config menu
         double a = time/main.TPS;
         draw.drawText("MULTIPLAYER",20,20,10,8,new Color((int)(255*a),(int)(255*a),(int)(255*a)));
 
-        if(NetworkHandler.async_load.get("udp.connecting") != null){
+        if(NetworkManager.async_load.get("udp.connecting") != null){
             //main.currentScene = new Game(main,draw);
             /*System.out.println("NAT TRAVERSE STATUS:");
             int count = 0;
@@ -217,23 +211,23 @@ class MenuLobby extends scene { // config menu
             }
 
             System.out.println("udp holepunching ret: "+count+"/"+NetworkHandler.clients.size());*/
-            if(NetworkHandler.async_load.get("udp.success") != null){
-                NetworkHandler.async_load.remove("udp.success");
+            if(NetworkManager.async_load.get("udp.success") != null){
+                NetworkManager.async_load.remove("udp.success");
                 System.out.println("NAT traversal success");
                 if(main.gamemode == GM.GM_HOST){
-                    ByteBuffer buffer = NetworkHandler.packet_start(NPH.NET_GAME);
-                    for (Map.Entry<String, Client> entry : NetworkHandler.clients.entrySet()) {
+                    ByteBuffer buffer = NetworkManager.packet_start(NPH.NET_GAME);
+                    for (Map.Entry<String, Client> entry : NetworkManager.clients.entrySet()) {
                         Client i = entry.getValue();
                         if(i!=null){
-                            NetworkHandler.send(buffer,i.ipaddr,i.port);
+                            NetworkManager.send(buffer,i.ipaddr,i.port);
                         }
                     }
                     //main.currentScene = new Game(main,draw);
                     // send game settings to all clients and start game
                     // when clients receive, start game
                 }
-                NetworkHandler.async_load.remove("udp.connecting");
-                NetworkHandler.async_load.remove("udp.success");
+                NetworkManager.async_load.remove("udp.connecting");
+                NetworkManager.async_load.remove("udp.success");
                 main.currentScene = new Game(main,draw);
             }
         }else{
@@ -249,18 +243,18 @@ class MenuLobby extends scene { // config menu
                     if(main.gamemode_last != main.gamemode){
                         main.gamemode_last = main.gamemode;
                         //initialize telling the server that you are hosting
-                        ByteBuffer buffer = NetworkHandler.packet_start(NPH.NET_HOST);
-                        NetworkHandler.send(buffer,NetworkHandler.mmserver_ip, NetworkHandler.mmserver_port);
+                        ByteBuffer buffer = NetworkManager.packet_start(NPH.NET_HOST);
+                        NetworkManager.send(buffer, NetworkManager.mmserver_ip, NetworkManager.mmserver_port);
                     }
 
                     if((int)main.frame%main.TPS == 0){
-                        ByteBuffer buffer = NetworkHandler.packet_start(NPH.NET_PING);
-                        NetworkHandler.send(buffer,NetworkHandler.mmserver_ip, NetworkHandler.mmserver_port);
+                        ByteBuffer buffer = NetworkManager.packet_start(NPH.NET_PING);
+                        NetworkManager.send(buffer, NetworkManager.mmserver_ip, NetworkManager.mmserver_port);
                     }
 
                     if(draw.drawButton("START GAME",20,30+10*2,80,10) == 1){
-                        ByteBuffer buffer = NetworkHandler.packet_start(NPH.NET_START);
-                        NetworkHandler.send(buffer,NetworkHandler.mmserver_ip, NetworkHandler.mmserver_port);
+                        ByteBuffer buffer = NetworkManager.packet_start(NPH.NET_START);
+                        NetworkManager.send(buffer, NetworkManager.mmserver_ip, NetworkManager.mmserver_port);
                     }
                 break;
                 case GM.GM_JOIN:
@@ -272,19 +266,19 @@ class MenuLobby extends scene { // config menu
                     // when host confirms, start game and start handling game packets
                     if(main.gamemode_last != main.gamemode){
                         main.gamemode_last = main.gamemode;
-                        ByteBuffer buffer = NetworkHandler.packet_start(NPH.NET_GET);
+                        ByteBuffer buffer = NetworkManager.packet_start(NPH.NET_GET);
 
-                        NetworkHandler.send(buffer,NetworkHandler.mmserver_ip, NetworkHandler.mmserver_port);
+                        NetworkManager.send(buffer, NetworkManager.mmserver_ip, NetworkManager.mmserver_port);
                     }
 
                     if(trylobby == null){
 
                         //ArrayList<Lobby> list = (ArrayList<Lobby>) NetworkHandler.async_load.get("mm.lobbies");
-                        if(NetworkHandler.async_load.get("mm.lobbies") != null){
+                        if(NetworkManager.async_load.get("mm.lobbies") != null){
                             // yuck yuck yuck yuck yuck yuck yuck yuck yuck yuck yuck yuck yuck yuck yuck yuck yuck yuck yuck yuck yuck yuck yuck yuck yuck yuck yuck yuck yuck yuck yuck yuck yuck yuck yuck
                             lobbies.clear();
-                            lobbies.addAll((ArrayList<Lobby>)NetworkHandler.async_load.get("mm.lobbies"));
-                            NetworkHandler.async_load.remove("mm.lobbies");
+                            lobbies.addAll((ArrayList<Lobby>) NetworkManager.async_load.get("mm.lobbies"));
+                            NetworkManager.async_load.remove("mm.lobbies");
                         }
 
                         int i = 0;
@@ -293,12 +287,12 @@ class MenuLobby extends scene { // config menu
                             if(l != null){
                                 //System.out.print(l.uid+", ");
                                 if(draw.drawButton(l.uid,30,50+8*i,80,10) == 1){
-                                    ByteBuffer buffer = NetworkHandler.packet_start(NPH.NET_JOIN);
+                                    ByteBuffer buffer = NetworkManager.packet_start(NPH.NET_JOIN);
                                     //buffer.put((byte)main.UID.length());
                                     //buffer.put(main.UID.getBytes());
                                     buffer.put(l.uid.getBytes());
 
-                                    NetworkHandler.send(buffer,NetworkHandler.mmserver_ip, NetworkHandler.mmserver_port);
+                                    NetworkManager.send(buffer, NetworkManager.mmserver_ip, NetworkManager.mmserver_port);
                                     trylobby = l.uid;
                                 }
                                 i++;
@@ -307,16 +301,16 @@ class MenuLobby extends scene { // config menu
                     }else if(currentlobby != trylobby){
                         draw.drawText("WAITING FOR SERVER TO RESPOND",30,50,8,6,Color.GRAY);
                         //int ack = (String) NetworkHandler.async_load.get("mm.join.ack");
-                        if(NetworkHandler.async_load.get("mm.ack.join") != null){
-                            NetworkHandler.async_load.remove("mm.ack.join");
+                        if(NetworkManager.async_load.get("mm.ack.join") != null){
+                            NetworkManager.async_load.remove("mm.ack.join");
                             currentlobby = trylobby; // join ack
                         }
                     }else{
                         if((int)main.frame%main.TPS == 0){
-                            ByteBuffer buffer = NetworkHandler.packet_start(NPH.NET_PING);
+                            ByteBuffer buffer = NetworkManager.packet_start(NPH.NET_PING);
                             buffer.put(main.UID.getBytes());
 
-                            NetworkHandler.send(buffer,NetworkHandler.mmserver_ip, NetworkHandler.mmserver_port);
+                            NetworkManager.send(buffer, NetworkManager.mmserver_ip, NetworkManager.mmserver_port);
                         }
                         draw.drawText("WAITING FOR HOST",30,50,10,10,Color.MAGENTA);
                     }

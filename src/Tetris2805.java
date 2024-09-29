@@ -198,13 +198,6 @@ public class Tetris2805 extends JPanel implements ActionListener {
         }else inputtype = 0;
     }
 
-    private void updateInput(){
-        for (int c = KeyEvent.VK_UNDEFINED; c <= KeyEvent.VK_CONTEXT_MENU; c++){
-            if(input.get(c) > 0) input.put(c,input.get(c)+1);
-            //else input.put(c,0);
-        }
-    }
-
     public int mouseInArea(int x, int y, int w, int h){
         if(mousex >= x && mousex <= x+w && mousey >= y && mousey <= y+h) return 1;
         return 0;
@@ -220,11 +213,6 @@ public class Tetris2805 extends JPanel implements ActionListener {
         }
     }
 
-    /*public void initGraphics(){
-        draw.framebuffer = new BufferedImage(FRAMEBUFFER_W,FRAMEBUFFER_H,BufferedImage.TYPE_INT_ARGB);
-        draw.viewport = draw.framebuffer.createGraphics();
-    }*/
-
     public Tetris2805(){
         Tetris2805.main = this;
         gameShouldClose = 0;
@@ -232,9 +220,9 @@ public class Tetris2805 extends JPanel implements ActionListener {
         gamemode_last = gamemode;
         working_directory = Path.of("").toAbsolutePath();
 
-        scores = loadData("src/data/hscore.txt",ParseFormat.JSON);
+        scores = loadData("src/data/highscore.json",ParseFormat.JSON);
         if(scores == null) scores = new HashMap<>();
-        cfg = loadData("src/data/config.txt",ParseFormat.JSON);
+        cfg = loadData("src/data/config.json",ParseFormat.JSON);
 
         fullscreen = 0;
         //String cwd = working_directory.toString();
@@ -249,7 +237,7 @@ public class Tetris2805 extends JPanel implements ActionListener {
         frametimes[1] = 0;
         frametimes[2] = 0;
 
-        UID = NetworkHandler.generateUID();
+        UID = NetworkManager.generateUID();
         System.out.println(UID);
 
         // draw init
@@ -325,6 +313,8 @@ public class Tetris2805 extends JPanel implements ActionListener {
         D2D.textAtlas.put('.',73);
         D2D.textAtlas.put('?',62);
         D2D.textAtlas.put(' ',-1);
+        D2D.textAtlas.put('[',168);
+        D2D.textAtlas.put(']',169);
 
         // jpanel init
         setPreferredSize(new Dimension(VIEWPORT_W, VIEWPORT_H));
@@ -338,8 +328,8 @@ public class Tetris2805 extends JPanel implements ActionListener {
         //input.put(-1,0);
         setInput();
 
-        NetworkHandler.main = this;
-        NetworkHandler.startNetworkThread();
+        NetworkManager.main = this;
+        NetworkManager.startNetworkThread();
 
         addMouseMotionListener(new MouseMotionAdapter() {
             @Override
@@ -427,7 +417,7 @@ public class Tetris2805 extends JPanel implements ActionListener {
                     }
                 }
                 if(input.get(KeyEvent.VK_M) == 1) cfg.put("music",1-(Integer)cfg.get("music"));
-                if(input.get(KeyEvent.VK_N) == 1) cfg.put("sound",1-(Integer)cfg.get("sound"));
+                if(input.get(KeyEvent.VK_S) == 1) cfg.put("sound",1-(Integer)cfg.get("sound"));
 
                 // delta timing
                 long now = System.nanoTime();
@@ -459,6 +449,10 @@ public class Tetris2805 extends JPanel implements ActionListener {
                 // scene loop
                 currentScene.loop();
                 //if(sceneIndex >= 2 && draw.drawButton("BACK",20,FRAMEBUFFER_H-20,80,10) == 1) currentScene = new menu(this,draw);
+                draw.batchPush(176,draw.view_x+60,draw.view_y+FRAMEBUFFER_H-20,10,10);
+                draw.batchPush(177,draw.view_x+70,draw.view_y+FRAMEBUFFER_H-20,10,10);
+                if((Integer)cfg.get("sound") == 0) draw.batchPush(178,draw.view_x+60,draw.view_y+FRAMEBUFFER_H-20,10,10);
+                if((Integer)cfg.get("music") == 0) draw.batchPush(178,draw.view_x+70,draw.view_y+FRAMEBUFFER_H-20,10,10);
 
                 // confirm exit dialog
                 if(displayconfirm > 0){
@@ -537,8 +531,8 @@ public class Tetris2805 extends JPanel implements ActionListener {
                 }
             }
             // save data on safe close
-            if(scores != null && scores.size() > 0) saveData(scores,"src/data/hscore.txt",ParseFormat.JSON);
-            if(cfg != null) saveData(cfg,"src/data/config.txt",ParseFormat.JSON);
+            if(scores != null && scores.size() > 0) saveData(scores,"src/data/highscore.json",ParseFormat.JSON);
+            if(cfg != null) saveData(cfg,"src/data/config.json",ParseFormat.JSON);
             System.exit(1);
         });
         gameThread.start();

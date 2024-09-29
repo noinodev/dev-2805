@@ -1,15 +1,12 @@
 //import server.Client;
 //import server.Lobby;
 
-import javax.xml.crypto.Data;
 import java.io.*;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.rmi.server.UID;
 import java.util.*;
 
 class NPH { //NetworkPacketHeader
@@ -56,22 +53,9 @@ class Lobby {
     }
 }
 
-public class NetworkHandler {
+public class NetworkManager {
     public static int mmserver_port;
     public static InetAddress mmserver_ip;
-    /*static {
-        try {
-            Scanner scan = new Scanner(new File("src/data/network.txt"));
-            String ipaddr;
-            if (scan.hasNextLine()) {
-                ipaddr = scan.nextLine();
-            }else ipaddr = "localhost";
-            System.out.println("mmserver: "+ipaddr+":"+mmserver_port);
-            mmserver_ip = InetAddress.getByName(ipaddr);
-        } catch (UnknownHostException | FileNotFoundException e) {
-            throw new RuntimeException("Failed to resolve IP address", e);
-        }
-    }*/
 
     public static final Map<String, Object> async_load = new HashMap<>();
 
@@ -129,17 +113,9 @@ public class NetworkHandler {
                             List<Lobby> lobbylist  = new ArrayList<>();
                             for(int i = 0; i < lobbycount; i++){
                                 buffer_recv.get(uidrecv);
-                                //hostnamelen = buffer_recv.get(); // host messages have the username, which is the string length followed by the string
-                                //hostnamestr = new byte[hostnamelen];
-                                //buffer_recv.get(hostnamestr);
-                                //hostname = new String(hostnamestr, StandardCharsets.UTF_8);
                                 Lobby l = new Lobby(new String(uidrecv, StandardCharsets.UTF_8), new String(uidrecv, StandardCharsets.UTF_8));
                                 System.out.println(new String(uidrecv, StandardCharsets.UTF_8) + ", " + new String(uidrecv, StandardCharsets.UTF_8));
                                 lobbylist.add(l);
-                                //mlobby.lobbies.add(l);
-                                //buffer_recv.get(hostname);
-                                //username = new String(namestr, StandardCharsets.UTF_8);
-                                //byte hostunamelen = buffer_recv.get();
 
                             }
                             if(lobbylist.size() > 0) async_load.put("mm.lobbies",lobbylist);
@@ -161,7 +137,6 @@ public class NetworkHandler {
                             // UDP HOLEPUNCHING
                             byte clientcount = buffer_recv.get();
                             System.out.println("attempting to start with "+clientcount+" players");
-                            //List<Client> clientlist  = new ArrayList<>();
                             clients.clear();
                             for(int i = 0; i < clientcount; i++){
                                 buffer_recv.get(uidrecv);
@@ -171,39 +146,11 @@ public class NetworkHandler {
                                 InetAddress ip = InetAddress.getByAddress(ipbyte);
                                 int port = buffer_recv.getInt();
                                 System.out.println("connection: "+uid+", "+ip+", "+port);
-                                //hostnamelen = buffer_recv.get(); // host messages have the username, which is the string length followed by the string
-                                //hostnamestr = new byte[hostnamelen];
-                                //buffer_recv.get(hostnamestr);
-                                //hostname = new String(hostnamestr, StandardCharsets.UTF_8);
-                                //String ipstr =
-                                //Client l = new Client(uid,ip,port);
-
-                                //ByteBuffer buffer = packet_start(NPH.NET_SYN);
-                                //buffer.put(main.UID.getBytes());
-                                //send(buffer,ip,port);
-
-                                //System.out.println(new String(uidrecv, StandardCharsets.UTF_8) + ", " + new String(uidrecv, StandardCharsets.UTF_8));
                                 clients.put(uid,new Client(uid,ip,port));
-                                //mlobby.lobbies.add(l);
-                                //buffer_recv.get(hostname);
-                                //username = new String(namestr, StandardCharsets.UTF_8);
-                                //byte hostunamelen = buffer_recv.get();
-
                             }
                             if(clients.size() > 0){
-                                //int i = udpConnect(); // start holepunching protocol for all clients
-
-                                Thread punchThread = new Thread(NetworkHandler::udpConnect);
+                                Thread punchThread = new Thread(NetworkManager::udpConnect);
                                 punchThread.start();
-                                //punchThread.join();
-
-                                /*int count = 0;
-                                for (Map.Entry<String, Client> entry : clients.entrySet()) {
-                                    Client i = entry.getValue();
-                                    if(i!=null&&i.syn==1&&i.ack==1) count++;
-                                }
-
-                                System.out.println("udp holepunching ret: "+count);*/
                                 async_load.put("udp.connecting",1);
                                 //natpass = 1;
                             }else System.out.println("host has started the game, but no clients were received?");
@@ -259,15 +206,13 @@ public class NetworkHandler {
                             async_load.put("game.state.width",bw);
                             async_load.put("game.state.height",bh);
 
-                            //System.out.println("received a thing!" +x + " " + w + " "+h);
-
                             int[][] array = new int[bw][bh];
                             for (int i = 0; i < bw; i++) {
                                 for (int j = 0; j < bh; j++) {
                                     array[i][j] = buffer_recv.getInt();
                                 }
                             }
-                            //System.out.println(array);
+
                             async_load.put("game.state.board",array);
                         } break;
 
@@ -317,27 +262,6 @@ public class NetworkHandler {
                                 }
                             }
                             GameObject.lock = 0;
-                            //System.out.println("object: "+x+", "+y+", "+sprite);*/
-                            //async_load.put("game.obj.x."+uid,x);
-
-                            //handle_object(buffer_recv);
-                            /*buffer_recv.get(uidrecv);
-                            buffer_recv.get(uidrecv);
-                            String objuid = new String(uidrecv, StandardCharsets.UTF_8);
-                            byte inst = buffer_recv.get();
-                            double x = buffer_recv.getDouble();
-                            double y = buffer_recv.getDouble();
-                            double sprite = buffer_recv.getDouble();
-                            //byte hp = buffer_recv.get();
-                            GameObject obj = GameObject.getNetObject(objuid);
-                            if(obj == null){
-                                obj = new ObjectResource(GameObject.g,(int)x,(int)y,(int)sprite,hp);
-                                GameObject.syncObject(obj,objuid);
-                            }else{
-                                obj.x = x;
-                                obj.y = y;
-                                obj.sprite = sprite;
-                            }*/
                         } break;
                         case NPH.NET_CHAT: {
                             buffer_recv.get(uidrecv);
@@ -424,11 +348,11 @@ public class NetworkHandler {
     }
 
     public static void udpMaintain(){
-
+        //TODO maybe
     }
 
     public static void startNetworkThread() {
-        networkThread = new Thread(NetworkHandler::networkInit);
+        networkThread = new Thread(NetworkManager::networkInit);
         networkThread.start();
     }
 
@@ -471,10 +395,6 @@ public class NetworkHandler {
         buffer_send.put(header);
         buffer_send.put(uid.getBytes());
         return buffer_send;
-    }
-
-    public static void handle_object(ByteBuffer buffer){
-
     }
 
     public static String generateUID(){

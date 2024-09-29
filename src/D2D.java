@@ -37,23 +37,7 @@ public class D2D{
     public final BufferedImage[] framebuffer = new BufferedImage[2];
     public final Graphics2D[] viewport = new Graphics2D[2];
     public int gcontext;
-    //public D2DRenderBatch batch;
 
-    /*public void d2d_set_target(D2DFramebuffer view){
-
-    }*/
-
-
-    //public ArrayList<D2DFramebuffer> d2d_fbo;
-    //public ArrayList<D2DRenderBatch> d2d_batch;
-
-    //public Graphics2D viewport;
-    //public D2DFramebuffer d2d_fbo_main;
-    //public Color clearColour;
-    //public static class quad { public int id; double x,y,w,h; Color c;}
-    //public static class ptcl { public int f; double id,animspd,x,y,hsp,vsp; Color c;}
-    //private ArrayList<quad> batch;
-    //private ArrayList<ptcl> particles;
     private double buttonanim;
     private int lastbutton;
 
@@ -73,7 +57,7 @@ public class D2D{
     public void batchPush(int id,double x,double y,double w,double h, Color c){
         //int vw = (int)(framebuffer.getWidth()/view_w), vh = (int)(framebuffer.getHeight()/view_h);
         if(x+w > view_x && x < view_x+view_w && y+h > view_y && y < view_y+view_h){
-            D2DSprite spr = new D2DSprite(sprites[id],x,y,w,h,c);
+            D2DSprite spr = new D2DSprite(sprites[id],(int)x,(int)y,(int)w,(int)h,c);
             batch.add(spr);
         }
     }
@@ -137,21 +121,13 @@ public class D2D{
     public void D2Dinit(Tetris2805 m){
         instance.main = m;
         D2Dstart(m);
-        /*instance.viewport.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
-        instance.viewport.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
-        instance.viewport.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);*/
         instance.batch = new ArrayList<>();
         instance.view_x = 0;
         instance.view_y = 0;
         instance.vxl = 0;
         instance.vyl = 0;
-        /*instance.view_wscale = instance.framebuffer.getWidth()/instance.view_w;
-        instance.view_hscale = instance.framebuffer.getHeight()/instance.view_h;
-        AffineTransform scaleTransform = AffineTransform.getScaleInstance(instance.view_wscale, instance.view_hscale);
-        instance.viewport.setTransform(scaleTransform);*/
         instance.buttonanim = 0;
         instance.lastbutton = 0;
-        //System.out.println("w="+instance.framebuffer.getWidth()/instance.view_w);
     }
 
     public static double lerp(double a, double b, double f) { // helper method, java stl doesnt have lerp???

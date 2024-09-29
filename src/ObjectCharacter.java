@@ -76,13 +76,13 @@ public class ObjectCharacter extends PlayerObject {
                                 main.keycontext = -1;
                                 // network send
                                 if(main.keybuffer.length() > 0){
-                                    ByteBuffer buffer = NetworkHandler.packet_start(NPH.NET_CHAT);
+                                    ByteBuffer buffer = NetworkManager.packet_start(NPH.NET_CHAT);
                                     buffer.put((byte)1);
                                     buffer.put((byte)0);
                                     buffer.put(main.UID.getBytes());
                                     buffer.put((byte)main.keybuffer.length());
                                     buffer.put(main.keybuffer.getBytes());
-                                    NetworkHandler.send_all(buffer);
+                                    NetworkManager.send_all(buffer);
                                 }
                             }
                             taunt = main.keybuffer;
@@ -123,9 +123,9 @@ public class ObjectCharacter extends PlayerObject {
                     //
                     x -= (x-tx)*0.3;
                     y -= (y-ty)*0.3;
-                    if(NetworkHandler.async_load.get("game.chat."+UID) != null){
-                        taunt = (String)NetworkHandler.async_load.get("game.chat."+UID);
-                        NetworkHandler.async_load.remove("game.chat."+UID);
+                    if(NetworkManager.async_load.get("game.chat."+UID) != null){
+                        taunt = (String) NetworkManager.async_load.get("game.chat."+UID);
+                        NetworkManager.async_load.remove("game.chat."+UID);
                     }
                     break;
                 case PCS_AI:
