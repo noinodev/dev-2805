@@ -6,7 +6,7 @@
    "ai":1,
    "profiler":0,
    "networkport":22565,
-   "extend":0,
+   "extend":1,
    "music":1,
    "light":10,
    "video.particles":1,

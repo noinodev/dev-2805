@@ -85,23 +85,23 @@ public class Tetris2805 extends JPanel implements ActionListener {
     public static Map<String,Object> JsonToMap(String json){
         Map<String, Object> map = new HashMap<>();
         json = json.replace("\n", "");
-        json = json.trim().substring(1, json.length() - 1); // Remove curly braces
+        json = json.trim().substring(1, json.length() - 1); // remove curly braces
 
-        String[] pairs = json.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)"); // Split by comma outside quotes
+        String[] pairs = json.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)"); // split by comma outside quotes
         for (String pair : pairs) {
             String[] keyValue = pair.split(":", 2);
-            String key = keyValue[0].trim().replaceAll("^\"|\"$", ""); // Remove surrounding quotes
+            String key = keyValue[0].trim().replaceAll("^\"|\"$", ""); // remove surrounding quotes
 
             String valueStr = keyValue[1].trim();
             Object value;
 
             if(valueStr.startsWith("\"")) {
-                value = valueStr.replaceAll("^\"|\"$", ""); // It's a String
+                value = valueStr.replaceAll("^\"|\"$", ""); // remove json characters
             }else{
                 try {
-                    value = Integer.parseInt(valueStr); // It's an integer
+                    value = Integer.parseInt(valueStr);
                 } catch (NumberFormatException e) {
-                    value = valueStr; // If parsing fails, leave it as a String
+                    value = valueStr;
                 }
             }
 
@@ -114,8 +114,6 @@ public class Tetris2805 extends JPanel implements ActionListener {
     public static void saveData(Map<String,Object> map, String file, byte format) {
         try {
             BufferedWriter a = new BufferedWriter(new FileWriter(file));
-            //Set<String> keys = map.keySet();
-            //for(String key: keys) a.write(key+" "+map.get(key)+'\n');
             switch(format){
                 case ParseFormat.JSON:
                     a.write(mapToJson(map));
@@ -191,9 +189,7 @@ public class Tetris2805 extends JPanel implements ActionListener {
     private void setInput(){
         if(inputtype == 0){
             input.put(-1,0); // mouse left
-            for (int c = KeyEvent.VK_UNDEFINED; c <= KeyEvent.VK_CONTEXT_MENU; c++){
-                /*if(c != KeyEvent.VK_F11 || input.get(c) == null)*/ input.put(c,0);
-            }
+            for (int c = KeyEvent.VK_UNDEFINED; c <= KeyEvent.VK_CONTEXT_MENU; c++) input.put(c,0);
             cursorcontext = 0;
         }else inputtype = 0;
     }
@@ -267,25 +263,6 @@ public class Tetris2805 extends JPanel implements ActionListener {
         D2D.sprites[185] = loadTexture("resources/assets/spr_wall2.png");
         D2D.sprites[23] = loadTexture("resources/assets/spr_aithing.png");
 
-        /*D2D.spritecache = getTextureAtlasSquare(atlas,SPR_WIDTH);
-        D2D.spritecache[43] = loadTexture("resources/assets/splashtex.png");
-        D2D.spritecache[42] = loadTexture("resources/assets/bgtex6.png");
-        D2D.spritecache[50] = loadTexture("resources/assets/bgtex1.png"); // reserving sprites for background, kinda hacky but whatever its not a real texture atlas
-        D2D.spritecache[51] = loadTexture("resources/assets/bgtex2.png");
-        D2D.spritecache[52] = loadTexture("resources/assets/bgtex3.png");
-        D2D.spritecache[60] = loadTexture("resources/assets/bgtex4.png");
-        D2D.spritecache[61] = loadTexture("resources/assets/bgtex5.png");
-        D2D.spritecache[109] = loadTexture("resources/assets/spr_tree.png");
-        D2D.spritecache[119] = loadTexture("resources/assets/spr_rock.png");
-        D2D.spritecache[118] = loadTexture("resources/assets/spr_waterhighlights.png");
-        D2D.spritecache[129] = loadTexture("resources/assets/fgtex1.png");
-        D2D.spritecache[128] = loadTexture("resources/assets/fgtex2.png");
-        D2D.spritecache[135] = loadTexture("resources/assets/fgtex3.png");
-        D2D.spritecache[136] = loadTexture("resources/assets/fgtex4.png");
-        D2D.spritecache[44] = loadTexture("resources/assets/spr_wall.png");
-        D2D.spritecache[54] = loadTexture("resources/assets/spr_wall2.png");
-        D2D.spritecache[23] = loadTexture("resources/assets/spr_aithing.png");*/
-        //D2D.spritecache = D2D.sprites.clone();
         bgx = 0;
         bgy = 0;
         bgtx = 0;
@@ -372,29 +349,6 @@ public class Tetris2805 extends JPanel implements ActionListener {
 
         sceneIndex = -1;
         currentScene = new splash(this,draw);
-        /*Thread renderThread = new Thread(() -> {
-            double expectedFrametime = 1000000000 / (240.);
-            while(gameShouldClose == 0){
-                //System.out.print("start, ");
-                long now = System.nanoTime();
-                if(draw.batchrdy == 1){
-                    //draw.batchDraw();
-                    //draw.batchrdy = 0;
-                    System.out.print("batch draw, ");
-                }else System.out.print("batch no draw, ");
-                //repaint();
-                long timeTaken = System.nanoTime() - now, sleepTime = (long)(expectedFrametime - timeTaken);
-                //System.out.print("sleep "+sleepTime/1000000+", ");
-                if (sleepTime/1000000 > 0) {
-                    try {
-                        Thread.sleep(sleepTime / 1000000, (int)(sleepTime % 1000000));
-                    } catch (InterruptedException e) {
-                        // e.printStackTrace(); // shouldnt happen anyway
-                    }
-                }
-                //System.out.println("end");
-            }
-        });*/
 
         Thread gameThread = new Thread(() -> {
             long lastTime = System.nanoTime();
@@ -540,33 +494,18 @@ public class Tetris2805 extends JPanel implements ActionListener {
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
 
-
-        /*if(input.get(KeyEvent.VK_F11) == 1){
-            fullscreen = 1-fullscreen;
-            if(fullscreen == 1){
-                jframe.setVisible(false);
-                Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-                jframe.setSize(screenSize);
-                jframe.setUndecorated(true);
-                jframe.setVisible(true);
-            }else{
-                jframe.setVisible(false);
-                Dimension screenSize = new Dimension(FRAMEBUFFER_W,FRAMEBUFFER_H);
-                jframe.setSize(screenSize);
-                jframe.setUndecorated(false);
-                jframe.setVisible(true);
-            }
-        }*/
-
         // draw framebuffer
         VIEWPORT_W = jframe.getWidth();
         VIEWPORT_H = jframe.getHeight();
-        //System.out.println("w:"+getWidth()+" h:"+getHeight());
 
         int w = jframe.getWidth(), h = jframe.getHeight();
-        //g.setColor(new Color(24,20,37));
-        //g.clearRect(0,0,getWidth(),getHeight());
-        g.drawImage(draw.framebuffer[1-draw.gcontext],(int)((-draw.view_x%1)*((double)VIEWPORT_W /FRAMEBUFFER_W)),(int)((-draw.view_y%1)*((double)VIEWPORT_H/FRAMEBUFFER_H)), w+VIEWPORT_W/FRAMEBUFFER_W, h+VIEWPORT_H/FRAMEBUFFER_H,null);
+        int x = 0;
+        int y = 0;
+        if((Integer)cfg.get("video.subpx") == 1){
+            x = (int)((-draw.view_x%1)*((double)VIEWPORT_W /FRAMEBUFFER_W));
+            y = (int)((-draw.view_y%1)*((double)VIEWPORT_H/FRAMEBUFFER_H));
+        }
+        g.drawImage(draw.framebuffer[1-draw.gcontext],x,y, w+VIEWPORT_W/FRAMEBUFFER_W, h+VIEWPORT_H/FRAMEBUFFER_H,null);
 
         double ratio = VIEWPORT_W/(double)VIEWPORT_H;
         int nfw = (int)(FRAMEBUFFER_H*ratio);

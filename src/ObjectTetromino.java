@@ -104,7 +104,7 @@ public class ObjectTetromino extends PlayerObject {
         int time = game.time;
         if(game.game_start_wait <= 0 && game.state == game.STATE_PLAY){
             if((time/4. > Math.max(1,60-6*game.level) || (main.input.get(KeyEvent.VK_DOWN)%12 == 1 && control_scheme != PlayerControlScheme.PCS_EXTERN)) && Math.abs(x-dx*main.SPR_WIDTH) + Math.abs(y-dy*main.SPR_WIDTH) < 10){
-                AudioManager.audio.get("tap2").play();
+                AudioManager.audio.get("fwop1").play(0f,280f,0f,0f);
                 game.time = 0;
                 if(!checkBoardState()){ // collision on drop
                     // merge tetromino
@@ -169,13 +169,11 @@ public class ObjectTetromino extends PlayerObject {
                     if(ty < 0 || ty >= game.boardHeight || tx < game.board_bound_x || tx >= game.board_bound_x+game.board_bound_w || (board[tx][ty] > 0 && board[tx][ty] < 160)){ // hack to ignore decorative tiles
                         collision = false; // this doesnt make sense because if this happens then there is a collision, but 'nocollision' as a variable name seems silly and i didnt want to reverse usages of the function
                         // create particles even for potential collision because it gives player feedback
-                        //if((int)(Math.random()*2) == 0) draw.particlePush(29,34,0.05+0.05*Math.random(),game.boardx+tx*main.SPR_WIDTH,game.boardy+(ty-1)*main.SPR_WIDTH,-0.1+0.2*Math.random(),-0.1+0.3*Math.random(),game.flash[(int)(Math.random()*5)]); // yuck
                         if((int)(Math.random()*2) == 0){
                             CreateObject(new ObjectParticle(game,game.boardx+tx*main.SPR_WIDTH,game.boardy+(ty-1)*main.SPR_WIDTH,
                                     -0.1+0.2*Math.random(),-0.1+0.3*Math.random(),
                                     30,34,0.05+0.05*Math.random(),240,game.flash[(int)(Math.random()*5)]));
                         }
-                        //CreateObject(new ObjectParticle(game, (int)x-main.SPR_WIDTH/2, (int)y-main.SPR_WIDTH, -0.01+0.02*Math.random(), -0.08, 150, 154, 0.09+0.01*Math.random(), 240, Color.WHITE));
                     }
                 }
             }
@@ -184,42 +182,6 @@ public class ObjectTetromino extends PlayerObject {
     }
 
     private void controlLocal(Game game){
-        /*int time = game.time;
-
-        if((time/4f > Math.max(1,60-6*game.level) || main.input.get(KeyEvent.VK_DOWN)%12 == 1) && Math.abs(x-dx*main.SPR_WIDTH) + Math.abs(y-dy*main.SPR_WIDTH) < 10){
-            game.time = 0;
-            if(!checkBoardState()){ // collision on drop
-                // merge tetromino
-                for(int i = 0; i < game.TET_WIDTH; i++){
-                    for(int j = 0; j < game.TET_WIDTH; j++){
-                        int tx = dx+i, ty = dy+j;
-                        if(tetrominoList[index][rotation][i][j] > 0) game.board[tx][ty] = (int)sprite;
-                    }
-                }
-                // add score and set state to clear rows
-                int rows = game.checkRows();
-                if(rows > 0){ //
-                    game.score += game.scores[rows-1]*(game.level+1);
-                    game.state = game.STATE_CLEAR;
-                }
-                // spawn new tetromino
-                //game.currentTetromino = spawnTetromino();
-                //Tetromino out = new Tetromino(board_bound_x+board_bound_w/2-TET_WIDTH/2,0,nextTetronimo,0,10*Math.min(level/2,5)+4+(int)(Math.random()*4));
-                //nextTetronimo = (int)(Math.random() * tetrominoList.length);
-                ResetTetromino(game.board_bound_x+game.board_bound_w/2-game.TET_WIDTH/2,0,game.nextTetronimo,10*Math.min(game.level/2,5)+4+(int)(Math.random()*4));
-                if(!checkBoardState()){ // fail state, if tetromino spawns fouled then state is set to lose
-                    game.lives--;
-                    game.clearx = 0;
-                    game.state = game.STATE_LOSE;
-                }
-                game.boardx += 2-(int)(Math.random()*4); // shake the board
-                game.boardy += 2-(int)(Math.random()*4);
-                game.illum = 0.5; // light up the board
-            }else{
-                dy++; // drop tetromino
-                game.illum *= 0.8;
-            }
-        }*/
         // all other tetromino inputs
         int xp =dx, rp = rotation;
         if(main.input.get(KeyEvent.VK_RIGHT) == 1 || main.input.get(KeyEvent.VK_RIGHT) > main.TPS/8) {

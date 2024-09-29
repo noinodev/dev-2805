@@ -65,7 +65,7 @@ public class NetworkManager {
     public static final ByteBuffer buffer_send = ByteBuffer.allocate(4096);
     public static final ByteBuffer buffer_recv = ByteBuffer.allocate(4096);
     public static Tetris2805 main;
-    //public static Game game;
+    public static Game game;
     //public static lobby mlobby;
     public static byte[] uidrecv = new byte[8];
     public static DatagramSocket socket;
@@ -106,10 +106,6 @@ public class NetworkManager {
                         case NPH.NET_GET: {
                             System.out.println("Receiving lobby information");
                             byte lobbycount = buffer_recv.get();
-                            //if(mlobby != null){
-                            byte hostnamelen;
-                            byte[] hostnamestr;
-                            String hostname, hostuid;
                             List<Lobby> lobbylist  = new ArrayList<>();
                             for(int i = 0; i < lobbycount; i++){
                                 buffer_recv.get(uidrecv);
@@ -197,7 +193,6 @@ public class NetworkManager {
                             async_load.put("game.state.x",x);
                             async_load.put("game.state.y",y);
                             async_load.put("game.state.sprite",sprite);
-                            //System.out.println(async_load);
 
                             int bx = buffer_recv.get();
                             int bw = buffer_recv.get();
@@ -230,9 +225,8 @@ public class NetworkManager {
                                 double sprite = buffer_recv.getDouble();
                                 double hsp = buffer_recv.getDouble();
                                 double vsp = buffer_recv.getDouble();
-                                //GameObject p = GameObject.netobjects.get(uid);
                                 if(!uid.equals(main.UID)){
-                                    if(GameObject.netobjects.get(uid) == null){
+                                    if(GameObject.netobjects.get(uid) == null && GameObject.g != null){
                                         GameObject o = null;
                                         if(inst == 0){
                                             o = new ObjectResource(GameObject.g,(int)x,(int)y,0.1*Math.random(),(int)sprite,10);
@@ -344,11 +338,6 @@ public class NetworkManager {
                 }
             }
         }
-        //return count-clients.size(); // negative if couldnt establish all connections
-    }
-
-    public static void udpMaintain(){
-        //TODO maybe
     }
 
     public static void startNetworkThread() {
@@ -364,7 +353,7 @@ public class NetworkManager {
         }
     }
 
-    public static void send(/*DatagramPacket packet*/ByteBuffer buffer, InetAddress ip, int p){
+    public static void send(ByteBuffer buffer, InetAddress ip, int p){
         DatagramPacket send = new DatagramPacket(buffer.array(), buffer.position(), ip, p);
         try {
             socket.send(send);

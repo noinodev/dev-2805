@@ -82,13 +82,14 @@ class config extends scene { // config menu
         main.bgtx = 400+main.frame*0.1;
         if(time < main.TPS) time++;
         double a = time/main.TPS;
+        int w = (main.FRAMEBUFFER_W-40)/3;
         draw.drawText("CONFIGURE",20,20,10,8,new Color((int)(255*a),(int)(255*a),(int)(255*a)));
         if(menu == 0) draw.drawText("GAME",21,31,8,6,new Color(38,43,68));
         else if(draw.drawButton("GAME",20,30,80,10) == 1) menu = 0;
-        if(menu == 1) draw.drawText("VIDEO",101,31,8,6,new Color(38,43,68));
-        else if(draw.drawButton("VIDEO",100,30,80,10) == 1) menu = 1;
-        if(menu == 2) draw.drawText("USER",181,31,8,6,new Color(38,43,68));
-        else if(draw.drawButton("USER",180,30,80,10) == 1) menu = 2;
+        if(menu == 1) draw.drawText("VIDEO",21+w,31,8,6,new Color(38,43,68));
+        else if(draw.drawButton("VIDEO",20+w,30,w,10) == 1) menu = 1;
+        if(menu == 2) draw.drawText("USER",21+2*w,31,8,6,new Color(38,43,68));
+        else if(draw.drawButton("USER",20+2*w,30,w,10) == 1) menu = 2;
 
         switch(menu){
             case 0:
@@ -107,6 +108,7 @@ class config extends scene { // config menu
                 main.cfg.put("profiler",draw.drawToggle("PROFILER",20,30+10,main.FRAMEBUFFER_W-40,10,(Integer)main.cfg.get("profiler")));
                 main.cfg.put("video.colouring",draw.drawToggle("SPRITE COLOURING",20,30+10*2,main.FRAMEBUFFER_W-40,10,(Integer)main.cfg.get("video.colouring")));
                 main.cfg.put("video.particles",draw.drawToggle("PARTICLES",20,30+10*3,main.FRAMEBUFFER_W-40,10,(Integer)main.cfg.get("video.particles")));
+                main.cfg.put("video.subpx",draw.drawToggle("SUBPIXEL CAMERA",20,30+10*4,main.FRAMEBUFFER_W-40,10,(Integer)main.cfg.get("video.subpx")));
             break;
             case 2:
                 String uname = (String)main.cfg.get("username");
@@ -174,6 +176,11 @@ class hscore extends scene { // leaderboard menu
             draw.drawText(entry.getKey() + " " + entry.getValue(),20,30+8*i,8,6,new Color(c,c,c));
             i++;
         }
+        if(draw.drawButton("RESET",20,main.FRAMEBUFFER_H-30,80,10) == 1) {
+            main.scores.clear();
+            main.saveData(main.scores,"src/data/highscore.json",ParseFormat.MAP);
+            main.currentScene = new hscore(main,draw);
+        }
         if(draw.drawButton("BACK",20,main.FRAMEBUFFER_H-20,80,10) == 1) main.currentScene = new menu(main,draw);
     }
 
@@ -190,7 +197,7 @@ class MenuLobby extends scene { // config menu
 
         time = 0;
         D2D.clearColour = new Color(24,20,37);
-        main.sceneIndex = 4;
+        main.sceneIndex = 5;
     }
     @Override
     public void loop(){
@@ -200,16 +207,6 @@ class MenuLobby extends scene { // config menu
         draw.drawText("MULTIPLAYER",20,20,10,8,new Color((int)(255*a),(int)(255*a),(int)(255*a)));
 
         if(NetworkManager.async_load.get("udp.connecting") != null){
-            //main.currentScene = new Game(main,draw);
-            /*System.out.println("NAT TRAVERSE STATUS:");
-            int count = 0;
-            for (Map.Entry<String, Client> entry : NetworkHandler.clients.entrySet()) {
-                Client i = entry.getValue();
-                if(i!=null&&i.syn==1&&i.ack==1) count++;
-                System.out.println("uid: "+i.UID+" syn: "+i.syn+" ack: "+i.ack);
-            }
-
-            System.out.println("udp holepunching ret: "+count+"/"+NetworkHandler.clients.size());*/
             if(NetworkManager.async_load.get("udp.success") != null){
                 NetworkManager.async_load.remove("udp.success");
                 System.out.println("NAT traversal success");

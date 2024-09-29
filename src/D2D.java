@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+// class for batch-sprite data, including for other 'framebuffers', to draw the water and the 'nighttime' overlay
 class D2DSprite {
     public BufferedImage sprite;
     public int id;
@@ -27,16 +28,12 @@ public class D2D{
     private static Tetris2805 main;
     public static final Map<Character,Integer> textAtlas = new HashMap<>();
     public static BufferedImage[] sprites;
-    //public static BufferedImage[] spritecache;
-    public static int width,height;
     public static Color clearColour;
     private static D2D instance;
-    //public BufferedImage framebuffer;
-    //public D2DFramebuffer fbo;
-    public double view_x,view_y,view_w,view_h,view_wscale,view_hscale,vxl,vyl; // bounds of framebuffer in 'world'
+    public double view_x,view_y,view_w,view_h,vxl,vyl; // bounds of framebuffer in 'world'
     public final BufferedImage[] framebuffer = new BufferedImage[2];
     public final Graphics2D[] viewport = new Graphics2D[2];
-    public int gcontext;
+    public int gcontext; // double buffering index
 
     private double buttonanim;
     private int lastbutton;
@@ -53,9 +50,10 @@ public class D2D{
         return out;
     }
 
+    // push sprite to batch, with overloads for simplification (colour is optional etc)
+    // also skip sprites that are guaranteed outside the view plane
     public void batchPush(int id,double x,double y,double w,double h){ batchPush(id,x,y,w,h,null); }
     public void batchPush(int id,double x,double y,double w,double h, Color c){
-        //int vw = (int)(framebuffer.getWidth()/view_w), vh = (int)(framebuffer.getHeight()/view_h);
         if(x+w > view_x && x < view_x+view_w && y+h > view_y && y < view_y+view_h){
             D2DSprite spr = new D2DSprite(sprites[id],(int)x,(int)y,(int)w,(int)h,c);
             batch.add(spr);
@@ -68,17 +66,17 @@ public class D2D{
         }
     }
 
+    // submit the batch, offset sprites by the camera position to create camera effect
     public void batchDraw(){
         double vw = (framebuffer[gcontext].getWidth()/view_w), vh = (framebuffer[gcontext].getHeight()/view_h);
-        //System.out.println(batch.size());
+        // sprite colouring off doubles performance minimum
         int c = (Integer)Tetris2805.main.cfg.get("video.colouring");
         if(batch.size() > 0){
-            //long now = System.nanoTime();
+            // iterate batch and draw all sprites
             for(int i = 0; i < batch.size(); i++) {
-                //if((System.nanoTime()-now)/1000000. > 12) break;
                 D2DSprite spr = batch.get(i);
                 if(spr != null){
-                    BufferedImage finaldraw;// = spr.sprite;
+                    BufferedImage finaldraw;
 
                     finaldraw = spr.sprite;
                     if((c == 1 || spr.sprite==sprites[9]) && spr.colour != null && spr.colour != Color.WHITE) finaldraw = tintImage(spr.sprite,spr.colour);
@@ -93,10 +91,11 @@ public class D2D{
             }
         }
         batch.clear();
-        gcontext = 1-gcontext;
-        if(view_w != main.FRAMEBUFFER_W) D2Dstart(main);//D2Dinit(main);
+        gcontext = 1-gcontext; // switch double buffer context
+        if(view_w != main.FRAMEBUFFER_W) D2Dstart(main); // FRAMEBUFFER_W is updated in the EDT, if view_w and FBW dont match, reset and resize the framebuffer
     }
 
+    // singleton initializers
     private D2D(){}
     public static D2D D2Dget (Tetris2805 m){
         if(instance == null) instance = new D2D();
@@ -107,6 +106,7 @@ public class D2D{
         return instance;
     }
 
+    // reset D2D framebuffer
     public void D2Dstart(Tetris2805 m){
         instance.gcontext = 0;
         instance.batchrdy = 0;
@@ -118,6 +118,7 @@ public class D2D{
         instance.view_h = m.FRAMEBUFFER_H;
     }
 
+    // initialize variables
     public void D2Dinit(Tetris2805 m){
         instance.main = m;
         D2Dstart(m);
@@ -132,15 +133,15 @@ public class D2D{
 
     public static double lerp(double a, double b, double f) { // helper method, java stl doesnt have lerp???
         return (a * (1.0 - f)) + (b * f);
-    }
+    } // helper function
+
 
     public void drawBox(int x, int y, int w, int h, int size){ // only really used for ui elements
         batchPush(10,x,y,size,size);
-        //batchPush(11,x+w-size,y,size,size);
         batchPush(12,x,y+h-size,size,size);
-        //batchPush(13,x+w-size,y+h-size,size,size);
     }
 
+    // draw text, specify alignment, kerning, size etc. strings with characters not in textAtlas are skipped
     public void drawText(String s, int x, int y, int size, int space) { drawText(s,x,y,size,space,null,0); }
     public void drawText(String s, int x, int y, int size, int space, Color c) { drawText(s,x,y,size,space,c,0); }
     public void drawText(String s, int x, int y, int size, int space, Color c, int alignment){
@@ -162,6 +163,7 @@ public class D2D{
 
     // ui elements and functions
 
+    // set the cursor and reset the global animation based on mouse position, buttons are IDd by their position
     public int getButtonContext(int x, int y, int w, int h, int mousecontext){ // get cursor context for buttons, text fields etc, and get the current button to reset the animation
         int m = main.mouseInArea(x,y,w,h);
         if(m == 1){
@@ -174,6 +176,7 @@ public class D2D{
         return m;
     }
 
+    // returns 1 if clicked, 0 otherwise
     public int drawButton(String label, int x, int y, int w, int h){
         int m = getButtonContext(x,y,w,h,1);
         double mouseanim = m*buttonanim;
@@ -185,6 +188,7 @@ public class D2D{
         return 0;
     }
 
+    // returns the current value for the position of the slider at any time. set upper bound, lower bound, etc
     public int drawSlider(String label, int x, int y, int w, int h, int val, int lb, int ub){
         int m = getButtonContext(x,y,w,h,1);
         double mouseanim = m*buttonanim;
@@ -200,11 +204,11 @@ public class D2D{
         batchPush(9,x+w-98+(int)sx,y,1,10);
         if(m == 1 && main.input.get(-1) == 2) sx = main.mousex-(x+w-98);
         sx = Math.max(Math.min(96,sx),0);
-        //val = (int)(sx*(double)(ub-lb)*96+lb);
         val = (int)Math.round((sx/96)*(double)(ub-lb))+lb;
         return val;
     }
 
+    // toggle button. returns current value at all times. inverts value if clicked
     public int drawToggle(String label, int x, int y, int w, int h, int val){
         int m = getButtonContext(x,y,w,h,1);
         double mouseanim = m*buttonanim;
@@ -217,6 +221,8 @@ public class D2D{
         return val;
     }
 
+    // textfield, when clicked, points keycontext to this ui component. this clears the keybuffer and readies it for writing to this component
+    // when pressing enter, it returns the current keybuffer as a string
     public String drawTextfield(String label, String val, int x, int y, int w, int h){
         int m = getButtonContext(x,y,w,h,2);
         if(m == 1 && main.input.get(-1) == 1 && main.keycontext != x+y){

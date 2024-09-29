@@ -6,6 +6,10 @@ atlas.pdn
 levelatlas.pdn
 .idea/uiDesigner.xml
 ###src/resources/audio/ambienthigh.wav###
+stun-server/
+goblin-tetris/
+bin/
+out/
 
 ### Eclipse ###
 .apt_generated
