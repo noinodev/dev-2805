@@ -918,7 +918,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
             }*/
             String user = ((String)main.cfg.get("username")).replace(" ","")+control;
             Integer sc = (Integer)main.scores.get(user);
-            if(sc != null && score > sc){
+            if(sc == null || score > sc){
                 main.scores.put(user,score);
                 main.saveData(main.scores,"src/data/highscore.json",ParseFormat.MAP);
             }

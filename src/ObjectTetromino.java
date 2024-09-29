@@ -246,7 +246,7 @@ public class ObjectTetromino extends PlayerObject {
         }
         //game.board_bound_x = (Math.min(game.boardWidth-game.board_bound_w,Math.max(0,dx-game.board_bound_w/2))/game.board_bound_w)*game.board_bound_w;
         draw.view_x -= (draw.view_x-(x-main.FRAMEBUFFER_W/4.))*0.1;
-        draw.view_y -= (draw.view_y-(y-main.FRAMEBUFFER_H/4.)*.2)*0.1;
+        draw.view_y -= (draw.view_y-(y-main.FRAMEBUFFER_H/4.)*.4)*0.1;
         if(!checkBoardState()){
             dx = xp;
             rotation = rp;

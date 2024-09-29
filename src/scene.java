@@ -83,12 +83,12 @@ class config extends scene { // config menu
         if(time < main.TPS) time++;
         double a = time/main.TPS;
         draw.drawText("CONFIGURE",20,20,10,8,new Color((int)(255*a),(int)(255*a),(int)(255*a)));
-        if(menu == 0) draw.drawText("GAME SETTINGS",21,31,8,6,new Color(192,203,220));
-        else if(draw.drawButton("GAME SETTINGS",20,30,80,10) == 1) menu = 0;
-        if(menu == 1) draw.drawText("VIDEO SETTINGS",101,31,8,6,new Color(192,203,220));
-        else if(draw.drawButton("VIDEO SETTINGS",100,30,80,10) == 1) menu = 1;
-        if(menu == 2) draw.drawText("USER SETTINGS",181,31,8,6,new Color(192,203,220));
-        else if(draw.drawButton("USER SETTINGS",180,30,80,10) == 1) menu = 2;
+        if(menu == 0) draw.drawText("GAME",21,31,8,6,new Color(38,43,68));
+        else if(draw.drawButton("GAME",20,30,80,10) == 1) menu = 0;
+        if(menu == 1) draw.drawText("VIDEO",101,31,8,6,new Color(38,43,68));
+        else if(draw.drawButton("VIDEO",100,30,80,10) == 1) menu = 1;
+        if(menu == 2) draw.drawText("USER",181,31,8,6,new Color(38,43,68));
+        else if(draw.drawButton("USER",180,30,80,10) == 1) menu = 2;
 
         switch(menu){
             case 0:
@@ -100,6 +100,7 @@ class config extends scene { // config menu
                 main.cfg.put("music",draw.drawToggle("MUSIC",20,30+10*5,main.FRAMEBUFFER_W-40,10,(Integer)main.cfg.get("music")));
                 main.cfg.put("sound",draw.drawToggle("SFX",20,30+10*6,main.FRAMEBUFFER_W-40,10,(Integer)main.cfg.get("sound")));
                 main.cfg.put("extend",draw.drawToggle("GOBLIN MODE",20,30+10*7,main.FRAMEBUFFER_W-40,10,(Integer)main.cfg.get("extend")));
+                main.cfg.put("ai",draw.drawToggle("AI MODE",20,30+10*8,main.FRAMEBUFFER_W-40,10,(Integer)main.cfg.get("ai")));
                 //main.cfg.put("profiler",draw.drawToggle("PROFILER",20,30+10*6,main.FRAMEBUFFER_W-40,10,(Integer)main.cfg.get("profiler")));
             break;
             case 1:
@@ -119,8 +120,6 @@ class config extends scene { // config menu
                 String uport = ((Integer)main.cfg.get("networkport")).toString();
                 String port = draw.drawTextfield("SERVER PORT",uport,20,30+10*2,main.FRAMEBUFFER_W-40,10);
                 if(port != "") main.cfg.put("networkport",Integer.getInteger(port));
-
-                main.cfg.put("ai",draw.drawToggle("AI MODE",20,30+10*4,main.FRAMEBUFFER_W-40,10,(Integer)main.cfg.get("ai")));
             break;
         }
 
