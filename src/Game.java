@@ -57,8 +57,12 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                     else if(c == 0xFFFF80) b[x][y] = 191; // scaffold horizontal
                     else if(c == 0xFF00FF) b[x][y] = 192; // pole
                     else if(c == 0xFF80FF) b[x][y] = 163; // flag
-                    if(c == 0xFF0000 && b == board) GameObject.syncObject(new ObjectCharacter(this,PlayerControlScheme.PCS_AI,137+10*(int)(Math.random()*3),posx+x*main.SPR_WIDTH,posy+y*main.SPR_WIDTH));//spawnEnemy(posx+x*main.SPR_WIDTH,posy+y*main.SPR_WIDTH); // goblin only spawn in board area
+                    if(c == 0xFF0000 && b == board){
+                        int spr = 137+10*(int)(Math.random()*3);
+                        if(Math.random() < 0.05) spr = 187;
+                        GameObject.syncObject(new ObjectCharacter(this,PlayerControlScheme.PCS_AI,spr,posx+x*main.SPR_WIDTH,posy+y*main.SPR_WIDTH));//spawnEnemy(posx+x*main.SPR_WIDTH,posy+y*main.SPR_WIDTH); // goblin only spawn in board area
                     //else System.out.println("funny colour dattebayo.. " + c); // precision error logging
+                    }
                 }
             }
         }
@@ -450,7 +454,7 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                             pb = RobotManager.getBestPosition(board,board_bound_x,board_bound_w,pieces,0);
                         }
                         if(pb != null){
-                            //if(currentTetromino.dy == 0 || b == null || (Double)pb[1] <= (Double)b[1]){
+                            //if(currentTetromino.dy == 0 || b == null || (Double)pb[1] > (Double)b[1]){
                                 b = pb;
                             //}
                         }
@@ -566,6 +570,10 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
         //if(main.input.get(-1) == 1) Object.CreateObject(new ObjectCharacter(this,PlayerControlScheme.PCS_AI,137,(int)main.mousex,(int)main.mousey));
 
         networkUpdate();
+
+        String control = "";
+        if((Integer)main.cfg.get("ai") == 1) control = " [AI]";
+        if(main.gamemode == GM.GM_JOIN) control = " [MP]";
 
         time++;
         if(state != STATE_GAMEOVER){
@@ -908,18 +916,17 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
                 main.scores.put(name.replace(" ",""),score);
                 main.saveData(main.scores,"src/data/highscore.json",ParseFormat.MAP);
             }*/
-            if(score > (Integer)main.scores.get(((String)main.cfg.get("username")).replace(" ",""))){
-                main.scores.put(((String)main.cfg.get("username")).replace(" ",""),score);
+            String user = ((String)main.cfg.get("username")).replace(" ","")+control;
+            Integer sc = (Integer)main.scores.get(user);
+            if(sc != null && score > sc){
+                main.scores.put(user,score);
                 main.saveData(main.scores,"src/data/highscore.json",ParseFormat.MAP);
             }
             if(draw.drawButton("MAIN MENU",10,40,80,10) == 1) main.currentScene = new menu(main,draw);
             if(draw.drawButton("QUIT",10,51,80,10) == 1) main.displayconfirm = 1;
-            draw.drawText("GAME OVER",10,30,10,10,Color.RED);
+            draw.drawText("GAME OVER "+user,10,30,10,10,Color.RED);
         }
         // context independent ui for level and score
-        String control = "";
-        if((Integer)main.cfg.get("ai") == 1) control = " [AI]";
-        if(main.gamemode == GM.GM_JOIN) control = " [MP]";
         draw.drawText("LEVEL "+level+control,(int)draw.view_x+10,(int)draw.view_y+10,10,8,flash[level%5]);
         draw.drawText(""+score,(int)draw.view_x+10,(int)draw.view_y+20,8,6,flash[(score/100)%5]);
 

@@ -5,7 +5,7 @@ public class RobotManager {
 
     static Object[] getBestPosition(int[][] gameboard, int xb, int xw,ObjectTetromino[] pieces, int index){
         D2D draw = D2D.D2Dget();
-        double bestscore = Double.MAX_VALUE;
+        double bestscore = -Double.MAX_VALUE;
         ObjectTetromino best = null;
         int[][] bestboard = null;
         int[][] board = cpy(gameboard,xb,xw);
@@ -19,15 +19,16 @@ public class RobotManager {
             while(valid(board,agent) == 1){
                 ObjectTetromino ta = new ObjectTetromino(agent);
                 while(valid(board,ta) == 1) ta.dy++;
+                ta.dy--;
 
                 int[][] tb = cpy(board,0,board.length);
                 merge(tb,ta);
 
 
                 double score;
-                if(index == pieces.length-1) score = -weights[0]*aggregateHeight(tb)+weights[1]*lines(tb)-weights[2]*holes(tb)-weights[3]*bumpiness(tb);
+                if(index == pieces.length-1) score = weights[0]*aggregateHeight(tb)+weights[1]*lines(tb)+weights[2]*holes(tb)+weights[3]*bumpiness(tb);
                 else score = (double) getBestPosition(tb,0,tb.length,pieces,index+1)[1];
-                if(score < bestscore){
+                if(score > bestscore){
                     bestscore = score;
                     best = new ObjectTetromino(agent);
                     bestboard = cpy(tb,0,tb.length);
@@ -67,15 +68,15 @@ public class RobotManager {
         for(int x = 0; x < board.length; x++){
             int h = columnHeight(board,x);
             //if(h > max) max = h;
-            total += h;
+            //total += h;
         }
         return total;//+max;
     }
     static int bumpiness(int[][] board){
         int total = 0;
         for(int x = 0; x < board.length-1; x++) total += Math.abs(columnHeight(board,x)-columnHeight(board,x+1));
-        for(int x = 1; x < board.length; x++) total += Math.abs(columnHeight(board,x)-columnHeight(board,x-1));
-        return total/2;
+        //for(int x = 1; x < board.length; x++) total += Math.abs(columnHeight(board,x)-columnHeight(board,x-1));
+        return total;///2;
     }
     static int lines(int[][] board){
         int total = 0;
@@ -117,7 +118,7 @@ public class RobotManager {
         for(int i = 0; i < 4; i++){
             for(int j = 0; j < 4; j++){
                 if(ObjectTetromino.tetrominoList[agent.index][agent.rotation][i][j] > 0){
-                    int tx = agent.dx+i, ty = agent.dy+1+j;
+                    int tx = agent.dx+i, ty = agent.dy+j;
                     if(ty < 0 || ty >= board[0].length || tx < 0 || tx >= board.length || board[tx][ty] > 0){
                         return 0;
                     }

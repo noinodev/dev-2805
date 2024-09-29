@@ -103,7 +103,7 @@ public class ObjectTetromino extends PlayerObject {
 
         int time = game.time;
         if(game.game_start_wait <= 0 && game.state == game.STATE_PLAY){
-            if((time/4f > Math.max(1,60-6*game.level) || (main.input.get(KeyEvent.VK_DOWN)%12 == 1 && control_scheme != PlayerControlScheme.PCS_EXTERN)) && Math.abs(x-dx*main.SPR_WIDTH) + Math.abs(y-dy*main.SPR_WIDTH) < 10){
+            if((time/4. > Math.max(1,60-6*game.level) || (main.input.get(KeyEvent.VK_DOWN)%12 == 1 && control_scheme != PlayerControlScheme.PCS_EXTERN)) && Math.abs(x-dx*main.SPR_WIDTH) + Math.abs(y-dy*main.SPR_WIDTH) < 10){
                 AudioManager.audio.get("tap2").play(0f,0f,0f,0f);
                 game.time = 0;
                 if(!checkBoardState()){ // collision on drop
@@ -145,8 +145,8 @@ public class ObjectTetromino extends PlayerObject {
             }
         }
 
-        x -= (x-dx*main.SPR_WIDTH)/16; // interpolate tetronimo position
-        y -= (y-dy*main.SPR_WIDTH)/16;
+        x -= (x-dx*main.SPR_WIDTH)/Math.max(1,16-game.level); // interpolate tetronimo position
+        y -= (y-dy*main.SPR_WIDTH)/Math.max(1,16-game.level);
         for(int i = 0; i < game.TET_WIDTH; i++){
             for(int j = 0; j < game.TET_WIDTH; j++){
                 //int tx = (int)x+i*(main.SPR_WIDTH), ty = (int)y+j*(main.SPR_WIDTH); // normalized coordinates
