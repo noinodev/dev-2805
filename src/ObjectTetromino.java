@@ -104,7 +104,7 @@ public class ObjectTetromino extends PlayerObject {
         int time = game.time;
         if(game.game_start_wait <= 0 && game.state == game.STATE_PLAY){
             if((time/4. > Math.max(1,60-6*game.level) || (main.input.get(KeyEvent.VK_DOWN)%12 == 1 && control_scheme != PlayerControlScheme.PCS_EXTERN)) && Math.abs(x-dx*main.SPR_WIDTH) + Math.abs(y-dy*main.SPR_WIDTH) < 10){
-                AudioManager.audio.get("tap2").play(0f,0f,0f,0f);
+                AudioManager.audio.get("tap2").play();
                 game.time = 0;
                 if(!checkBoardState()){ // collision on drop
                     // merge tetromino
@@ -224,25 +224,25 @@ public class ObjectTetromino extends PlayerObject {
         int xp =dx, rp = rotation;
         if(main.input.get(KeyEvent.VK_RIGHT) == 1 || main.input.get(KeyEvent.VK_RIGHT) > main.TPS/8) {
             dx++;
-            AudioManager.audio.get("tap1").play(0f,0f,0f,0f);
+            AudioManager.audio.get("tap1").play(x,y, draw.view_x+draw.view_w/2, draw.view_y+draw.view_h/2);
         }
         if(main.input.get(KeyEvent.VK_LEFT) == 1 || main.input.get(KeyEvent.VK_LEFT) > main.TPS/8) {
             dx--;
-            AudioManager.audio.get("tap2").play(0f,0f,0f,0f);
+            AudioManager.audio.get("tap2").play(x,y, draw.view_x+draw.view_w/2, draw.view_y+draw.view_h/2);
         }
         if(main.input.get(KeyEvent.VK_UP) == 1 || main.input.get(KeyEvent.VK_UP) > main.TPS/8){
             rotation = (rotation+1)%4;
-            AudioManager.audio.get("fwop1").play(0f,0f,0f,0f);
+            AudioManager.audio.get("fwop1").play(x,y, draw.view_x+draw.view_w/2, draw.view_y+draw.view_h/2);
         }
         if(main.input.get(KeyEvent.VK_A) == 1 && game.board_bound_x > 0){
             game.board_bound_x -= 1;
             dx -= 1;
-            AudioManager.audio.get("slide2").play(0f,0f,0f,0f);
+            AudioManager.audio.get("slide2").play(x,y, draw.view_x+draw.view_w/2, draw.view_y+draw.view_h/2);
         }
         if(main.input.get(KeyEvent.VK_D) == 1 && game.board_bound_x < game.boardWidth-game.board_bound_w){
             game.board_bound_x += 1;
             dx += 1;
-            AudioManager.audio.get("slide2").play(0f,0f,0f,0f);
+            AudioManager.audio.get("slide2").play(x,y, draw.view_x+draw.view_w/2, draw.view_y+draw.view_h/2);
         }
         //game.board_bound_x = (Math.min(game.boardWidth-game.board_bound_w,Math.max(0,dx-game.board_bound_w/2))/game.board_bound_w)*game.board_bound_w;
         draw.view_x -= (draw.view_x-(x-main.FRAMEBUFFER_W/4.))*0.1;

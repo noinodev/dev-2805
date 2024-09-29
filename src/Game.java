@@ -667,8 +667,8 @@ class Game extends scene { // main gameplay scene, i put it in its own class fil
             for(int i = 0; i < boardHeight+3; i++){
                 Color cl = getLightLocal(boardx+1,boardy+i*main.SPR_WIDTH,0);
                 Color cr = getLightLocal(boardx+boardWidth*main.SPR_WIDTH-1,boardy+i*main.SPR_WIDTH,0);
-                draw.batchPush(44,boardx-200-(boardHeight-i)*3,boardy+i*main.SPR_WIDTH,200,10,cl);
-                draw.batchPush(54, boardx+boardWidth*main.SPR_WIDTH+(boardHeight-i)*3, boardy+i*main.SPR_WIDTH,200,10,cr);
+                draw.batchPush(184,boardx-200-(boardHeight-i)*3,boardy+i*main.SPR_WIDTH,200,10,cl);
+                draw.batchPush(185, boardx+boardWidth*main.SPR_WIDTH+(boardHeight-i)*3, boardy+i*main.SPR_WIDTH,200,10,cr);
             }
 
             watercontext = 1-watercontext;
