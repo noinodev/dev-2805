@@ -151,14 +151,13 @@ public class NetworkManager {
 
                         } break;
                         case NPH.NET_SYN: {
-                            // holy shit it gets received!!?
+                            // holy it gets received!!?
                             buffer_recv.get(uidrecv);
                             String uid = new String(uidrecv, StandardCharsets.UTF_8);
                             System.out.println("SYN from "+uid);
                             clients.get(uid).syn=1;
 
                             ByteBuffer buffer = packet_start(NPH.NET_ACK);
-                            //buffer.put(main.UID.getBytes());
                             send(buffer,clientAddress,clientPort);
 
                         } break;
